@@ -61,12 +61,16 @@ Route::middleware([SendaAuth::class])->group(function () {
     // Gestión de Usuarios y Roles (Administrador, Cajero, Vendedor)
     Route::resource('usuarios', UserController::class)->names('users');
 
-    // Ajustes del Sistema y Conexión Supabase
+    // Ajustes del Sistema y Copias de Seguridad
     Route::get('/ajustes', [SettingController::class, 'index'])->name('settings.index');
     Route::post('/ajustes', [SettingController::class, 'update'])->name('settings.update');
-    Route::post('/ajustes/test-supabase', [SettingController::class, 'testSupabase'])->name('settings.test-supabase');
+    Route::get('/backup/export-json', [SettingController::class, 'exportJson'])->name('backup.export-json');
+    Route::post('/backup/restore-json', [SettingController::class, 'restoreJson'])->name('backup.restore-json');
+    Route::get('/backup/export-csv', [SettingController::class, 'exportInventoryCsv'])->name('backup.export-csv');
+    Route::post('/backup/import-csv', [SettingController::class, 'importInventoryCsv'])->name('backup.import-csv');
+    Route::post('/backup/reset-database', [SettingController::class, 'resetDatabase'])->name('backup.reset-database');
 
     // Módulos Complementarios del Menú Senda
-    Route::get('/backup', function() { return view('modules.backup'); })->name('backup.index');
+    Route::get('/backup', [SettingController::class, 'backupCenter'])->name('backup.index');
     Route::get('/categorias', function() { return redirect()->route('products.index'); })->name('categories.index');
 });
