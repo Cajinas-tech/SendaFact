@@ -150,7 +150,6 @@
                                 ['route' => 'customers.index', 'pattern' => 'clientes*', 'icon' => 'users', 'label' => 'Gestión de Clientes'],
                             ],
                             'ADMINISTRACIÓN' => [
-                                ['route' => 'users.index', 'pattern' => 'usuarios*', 'icon' => 'user-cog', 'label' => 'Usuarios & Roles'],
                                 ['route' => 'settings.index', 'pattern' => 'ajustes*', 'icon' => 'sliders-horizontal', 'label' => 'Ajuste del Sistema'],
                             ],
                         ];
