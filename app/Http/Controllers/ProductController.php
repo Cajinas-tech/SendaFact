@@ -64,24 +64,6 @@ class ProductController extends Controller
 
     public function index(Request $request)
     {
-        // Sanitize session to prevent header overflow
-        $rawSession = session('custom_products', []);
-        $cleanSession = [];
-        foreach ($rawSession as $k => $v) {
-            if (is_object($v)) {
-                if (!empty($v->image_url) && str_starts_with($v->image_url, 'data:image')) {
-                    $v->image_url = (stripos($v->name ?? '', 'ventana') !== false) 
-                        ? '/images/products/ventana-aluminio.svg' 
-                        : '/images/products/puerta-aluminio.svg';
-                }
-                $cleanSession[$k] = $v;
-            }
-        }
-        if (count($rawSession) !== count($cleanSession)) {
-            session(['custom_products' => $cleanSession]);
-        }
-
-        $sessionProducts = collect($cleanSession)->values();
         $categories = $this->getFallbackCategories();
 
         try {
@@ -97,39 +79,23 @@ class ProductController extends Controller
                       ->orWhere('sku', 'like', "%{$request->search}%");
                 });
             }
-            $dbProducts = $query->get();
+            $products = $query->paginate(15);
 
-            if ($dbProducts->count() > 0) {
-                $allProducts = $dbProducts;
-                foreach ($sessionProducts as $sp) {
-                    if (!$allProducts->contains('id', $sp->id) && !$allProducts->contains('sku', $sp->sku)) {
-                        $allProducts->prepend($sp);
-                    }
-                }
-            } else {
-                $allProducts = $this->getFallbackProducts()->merge($sessionProducts);
+            if ($products->isEmpty() && !$request->search) {
+                $fallback = $this->getFallbackProducts();
+                $products = new LengthAwarePaginator($fallback, $fallback->count(), 15, 1, ['path' => $request->url()]);
             }
         } catch (\Throwable $e) {
-            $allProducts = $this->getFallbackProducts()->merge($sessionProducts);
+            $fallback = $this->getFallbackProducts();
+            if ($request->search) {
+                $term = strtolower($request->search);
+                $fallback = $fallback->filter(function($p) use ($term) {
+                    return str_contains(strtolower($p->name ?? ''), $term) || 
+                           str_contains(strtolower($p->sku ?? ''), $term);
+                });
+            }
+            $products = new LengthAwarePaginator($fallback, $fallback->count(), 15, 1, ['path' => $request->url()]);
         }
-
-        if ($request->search) {
-            $term = strtolower($request->search);
-            $allProducts = $allProducts->filter(function($p) use ($term) {
-                return str_contains(strtolower($p->name ?? ''), $term) || 
-                       str_contains(strtolower($p->sku ?? ''), $term);
-            });
-        }
-
-        $page = (int) $request->get('page', 1);
-        $perPage = 15;
-        $products = new LengthAwarePaginator(
-            $allProducts->forPage($page, $perPage)->values(),
-            $allProducts->count(),
-            $perPage,
-            $page,
-            ['path' => $request->url(), 'query' => $request->query()]
-        );
 
         return view('products.index', compact('products', 'categories'));
     }
@@ -169,13 +135,9 @@ class ProductController extends Controller
         $data['is_finished_good'] = true;
         $data['status'] = 'active';
 
-        $savedInDb = false;
-        $createdId = null;
-
-        // Try Database Save
         try {
             try {
-                \Illuminate\Support\Facades\DB::statement("ALTER TABLE products ALTER COLUMN image_url TYPE text");
+                DB::statement("ALTER TABLE products ALTER COLUMN image_url TYPE text");
             } catch (\Throwable $ex) {}
 
             $catId = $data['category_id'] ?? 1;
@@ -193,47 +155,10 @@ class ProductController extends Controller
                 $data['sku'] = $data['sku'] . '-' . rand(10, 99);
             }
 
-            $prod = Product::create($data);
-            $savedInDb = true;
-            $createdId = $prod->id;
+            Product::create($data);
         } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::error("DB Product Store Error: " . $e->getMessage());
+            Log::error("DB Product Store Error: " . $e->getMessage());
         }
-
-        // Prepare safe session item WITHOUT large base64 strings
-        $sessionItemData = $data;
-        if (!empty($sessionItemData['image_url']) && str_starts_with($sessionItemData['image_url'], 'data:image')) {
-            $sessionItemData['image_url'] = (stripos($sessionItemData['name'] ?? '', 'ventana') !== false) 
-                ? '/images/products/ventana-aluminio.svg' 
-                : '/images/products/puerta-aluminio.svg';
-        }
-
-        $sessionProducts = session('custom_products', []);
-        $newId = $savedInDb && $createdId ? $createdId : (count($sessionProducts) + 100 + rand(1, 50));
-        
-        $categoriesMap = [
-            1 => 'PUERTAS',
-            2 => 'VENTANAS',
-            3 => 'LÁCTEOS',
-            4 => 'BEBIDAS',
-            5 => 'FERRETERÍA',
-            6 => 'GENERAL'
-        ];
-        $catName = $categoriesMap[$data['category_id'] ?? 1] ?? 'GENERAL';
-
-        $sessionItem = (object) array_merge($sessionItemData, [
-            'id' => $newId,
-            'category' => (object)[
-                'id' => $data['category_id'] ?? 1,
-                'name' => $catName,
-                'slug' => strtolower($catName)
-            ],
-            'expiry_date' => $data['expiry_date'] ?? date('Y-m-d'),
-            'updated_at' => date('Y-m-d')
-        ]);
-
-        $sessionProducts[$newId] = $sessionItem;
-        session(['custom_products' => $sessionProducts]);
 
         return redirect()->route('products.index')->with('success', 'Producto registrado exitosamente.');
     }
@@ -255,7 +180,7 @@ class ProductController extends Controller
 
         try {
             try {
-                \Illuminate\Support\Facades\DB::statement("ALTER TABLE products ALTER COLUMN image_url TYPE text");
+                DB::statement("ALTER TABLE products ALTER COLUMN image_url TYPE text");
             } catch (\Throwable $ex) {}
 
             $product = Product::find($id);
@@ -263,43 +188,7 @@ class ProductController extends Controller
                 $product->update($data);
             }
         } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::error("DB Product Update Error: " . $e->getMessage());
-        }
-
-        // Safe session update WITHOUT base64 data
-        $sessionItemData = $data;
-        if (!empty($sessionItemData['image_url']) && str_starts_with($sessionItemData['image_url'], 'data:image')) {
-            $sessionItemData['image_url'] = (stripos($sessionItemData['name'] ?? '', 'ventana') !== false) 
-                ? '/images/products/ventana-aluminio.svg' 
-                : '/images/products/puerta-aluminio.svg';
-        }
-
-        $sessionProducts = session('custom_products', []);
-        if (isset($sessionProducts[$id])) {
-            $item = (array) $sessionProducts[$id];
-            $merged = array_merge($item, $sessionItemData);
-            $sessionProducts[$id] = (object) $merged;
-            session(['custom_products' => $sessionProducts]);
-        } else {
-            $categoriesMap = [
-                1 => 'PUERTAS',
-                2 => 'VENTANAS',
-                3 => 'LÁCTEOS',
-                4 => 'BEBIDAS',
-                5 => 'FERRETERÍA',
-                6 => 'GENERAL'
-            ];
-            $catName = $categoriesMap[$data['category_id'] ?? 1] ?? 'GENERAL';
-            $sessionProducts[$id] = (object) array_merge($sessionItemData, [
-                'id' => $id,
-                'category' => (object)[
-                    'id' => $data['category_id'] ?? 1,
-                    'name' => $catName,
-                    'slug' => strtolower($catName)
-                ],
-                'updated_at' => date('Y-m-d')
-            ]);
-            session(['custom_products' => $sessionProducts]);
+            Log::error("DB Product Update Error: " . $e->getMessage());
         }
 
         return redirect()->route('products.index')->with('success', 'Producto actualizado.');
@@ -313,12 +202,6 @@ class ProductController extends Controller
                 $product->delete();
             }
         } catch (\Throwable $e) {}
-
-        $sessionProducts = session('custom_products', []);
-        if (isset($sessionProducts[$id])) {
-            unset($sessionProducts[$id]);
-            session(['custom_products' => $sessionProducts]);
-        }
 
         return redirect()->route('products.index')->with('success', 'Producto eliminado.');
     }

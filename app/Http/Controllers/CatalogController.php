@@ -43,17 +43,9 @@ class CatalogController extends Controller
             }
 
             $products = $query->get();
-            $sessionProducts = collect(session('custom_products', []))->values();
-            if ($products->count() > 0) {
-                foreach ($sessionProducts as $sp) {
-                    if (!$products->contains('id', $sp->id) && !$products->contains('sku', $sp->sku)) {
-                        $products->prepend($sp);
-                    }
-                }
-            }
             $categories = Category::withCount('products')->get();
-            $totalFinishedGoods = Product::where('is_finished_good', true)->count() + $sessionProducts->count();
-            $immediateStockCount = Product::where('stock', '>', 0)->count() + $sessionProducts->count();
+            $totalFinishedGoods = Product::where('is_finished_good', true)->count();
+            $immediateStockCount = Product::where('stock', '>', 0)->count();
 
         } catch (\Throwable $e) {
             // Fallback de catálogo digital
@@ -142,14 +134,8 @@ class CatalogController extends Controller
             ];
 
             $products = collect([$p1, $p2, $p3, $p4]);
-            $sessionProducts = collect(session('custom_products', []))->values();
-            foreach ($sessionProducts as $sp) {
-                if (!$products->contains('id', $sp->id) && !$products->contains('sku', $sp->sku)) {
-                    $products->prepend($sp);
-                }
-            }
-            $totalFinishedGoods = $products->count();
-            $immediateStockCount = $products->count();
+            $totalFinishedGoods = 4;
+            $immediateStockCount = 4;
         }
 
         return view('catalog.index', compact(
