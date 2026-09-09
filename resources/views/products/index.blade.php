@@ -92,8 +92,8 @@
                 <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
                     @forelse($products as $p)
                         @php
-                            $imgSrc = $p->image_url;
-                            $fallbackImg = (stripos($p->name, 'ventana') !== false) ? '/images/products/ventana-aluminio.svg' : '/images/products/puerta-aluminio.svg';
+                            $imgSrc = $p->image_url ?? null;
+                            $fallbackImg = (stripos($p->name ?? '', 'ventana') !== false) ? '/images/products/ventana-aluminio.svg' : '/images/products/puerta-aluminio.svg';
                             
                             if (empty($imgSrc) || $imgSrc === 'null' || (!str_starts_with($imgSrc, 'data:image') && !str_starts_with($imgSrc, 'http') && !str_starts_with($imgSrc, '/'))) {
                                 $imgSrc = $fallbackImg;

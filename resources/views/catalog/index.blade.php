@@ -120,13 +120,13 @@
                     <!-- Visual Illustration / Photo -->
                     <div class="w-full h-48 flex items-center justify-center p-2 group-hover:scale-105 transition-transform duration-300">
                         @php
-                            $pImg = $product->image_url;
-                            $fallbackSvg = (stripos($product->name, 'ventana') !== false) ? '/images/products/ventana-aluminio.svg' : '/images/products/puerta-aluminio.svg';
+                            $pImg = $product->image_url ?? null;
+                            $fallbackSvg = (stripos($product->name ?? '', 'ventana') !== false) ? '/images/products/ventana-aluminio.svg' : '/images/products/puerta-aluminio.svg';
                             
                             if (empty($pImg) || $pImg === 'null' || (!str_starts_with($pImg, 'data:image') && !str_starts_with($pImg, 'http') && !str_starts_with($pImg, '/'))) {
-                                if (stripos($product->name, 'puerta') !== false) {
+                                if (stripos($product->name ?? '', 'puerta') !== false) {
                                     $pImg = '/images/products/puerta-aluminio.svg';
-                                } elseif (stripos($product->name, 'ventana') !== false) {
+                                } elseif (stripos($product->name ?? '', 'ventana') !== false) {
                                     $pImg = '/images/products/ventana-aluminio.svg';
                                 } else {
                                     $pImg = null;

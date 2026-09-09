@@ -29,6 +29,7 @@ class ProductController extends Controller
                 'name' => 'PUERTA DE ALUMINIO-VIDRIO',
                 'sku' => '#SKU-9859',
                 'category' => $catPuertas,
+                'category_id' => 1,
                 'cost_price' => 2200.00,
                 'price_cordobas' => 3500.00,
                 'price_usd' => 95.11,
@@ -36,6 +37,9 @@ class ProductController extends Controller
                 'min_stock' => 2,
                 'dimensions' => '2.10 m',
                 'subtitle' => 'PUERTAS DE ALUMINIO Y VIDRIO 210X80X4.44',
+                'image_url' => '/images/products/puerta-aluminio.svg',
+                'expiry_date' => '2026-09-05',
+                'updated_at' => '2026-09-05',
             ];
 
             $p2 = (object)[
@@ -43,6 +47,7 @@ class ProductController extends Controller
                 'name' => 'VENTANA ALUMINIO-VIDRIO',
                 'sku' => '#SKU-5640',
                 'category' => $catVentanas,
+                'category_id' => 2,
                 'cost_price' => 5000.00,
                 'price_cordobas' => 8000.00,
                 'price_usd' => 217.39,
@@ -50,6 +55,9 @@ class ProductController extends Controller
                 'min_stock' => 2,
                 'dimensions' => '1.80 m',
                 'subtitle' => 'VENTANA DE VIDRIO Y ALUMINIO 1.80 LARGO X 1.20 ALTO X 5.71 CM',
+                'image_url' => '/images/products/ventana-aluminio.svg',
+                'expiry_date' => '2026-09-05',
+                'updated_at' => '2026-09-05',
             ];
 
             $items = collect([$p1, $p2]);
