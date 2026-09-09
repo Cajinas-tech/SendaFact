@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Menu, Moon, Sun, DollarSign, UserCheck, ShieldCheck } from 'lucide-react';
+import { Menu, Moon, Sun, CloudDownload } from 'lucide-react';
 import { storage } from '../../lib/storage';
 import { User } from '../../types';
 
@@ -8,12 +8,12 @@ interface HeaderProps {
   onOpenMobileMenu: () => void;
 }
 
-export default function Header({ titleBadge = 'SISTEMA POS & FACTURACIÓN', onOpenMobileMenu }: HeaderProps) {
+export default function Header({ titleBadge = 'DASHBOARD / ESTADÍSTICAS', onOpenMobileMenu }: HeaderProps) {
   const [darkMode, setDarkMode] = useState(() => {
     return document.documentElement.classList.contains('dark');
   });
   const [currentUser, setCurrentUser] = useState<User>(() => storage.getCurrentUser());
-  const settings = storage.getSettings();
+  const activeRegister = storage.getActiveCashRegister();
 
   const toggleDarkMode = () => {
     if (darkMode) {
@@ -38,10 +38,17 @@ export default function Header({ titleBadge = 'SISTEMA POS & FACTURACIÓN', onOp
     }
   }, []);
 
+  const getInitials = (name: string) => {
+    if (!name) return 'JA';
+    const parts = name.split(' ');
+    if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
+    return name.slice(0, 2).toUpperCase();
+  };
+
   return (
-    <header className="sticky top-0 z-30 flex items-center justify-between px-4 sm:px-8 py-3.5 bg-white/80 dark:bg-[#070b14]/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800">
+    <header className="sticky top-0 z-30 flex items-center justify-between px-4 sm:px-8 py-3 bg-white/90 dark:bg-[#070b14]/90 backdrop-blur-md border-b border-slate-200/80 dark:border-slate-800 transition-colors">
       
-      {/* LEFT: MOBILE TOGGLE & PAGE BADGE */}
+      {/* LEFT: MOBILE MENU & TITLE */}
       <div className="flex items-center gap-3">
         <button
           type="button"
@@ -51,44 +58,55 @@ export default function Header({ titleBadge = 'SISTEMA POS & FACTURACIÓN', onOp
           <Menu className="w-5 h-5" />
         </button>
 
-        <div className="flex items-center gap-2">
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-[11px] font-black uppercase tracking-wider bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 border border-blue-200/60 dark:border-blue-800/40 shadow-2xs">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-            {titleBadge}
-          </span>
-        </div>
+        <h2 className="text-xs sm:text-sm font-black uppercase tracking-wider text-slate-700 dark:text-slate-200">
+          {titleBadge}
+        </h2>
       </div>
 
-      {/* RIGHT: EXCHANGE RATE, THEME TOGGLE, USER BADGE */}
-      <div className="flex items-center gap-2.5 sm:gap-4">
+      {/* RIGHT: BUTTONS & USER PILL */}
+      <div className="flex items-center gap-2 sm:gap-3">
         
-        {/* Dual Currency Exchange Rate Pill */}
-        <div className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700/80 text-xs font-mono font-bold text-slate-700 dark:text-slate-300">
-          <DollarSign className="w-3.5 h-3.5 text-emerald-500" />
-          <span>T.C: 1 USD = C$ {settings.exchange_rate.toFixed(2)}</span>
-        </div>
+        {/* Instalar App Pill Button */}
+        <button
+          type="button"
+          onClick={() => alert('Para instalar SendaFact POS como App de escritorio, haz clic en el ícono de instalar en la barra de direcciones de tu navegador Chrome o Edge.')}
+          className="hidden md:flex items-center gap-1.5 px-3.5 py-1.5 rounded-full border border-blue-200 dark:border-blue-900 bg-blue-50/60 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/60 text-xs font-bold uppercase tracking-wider transition"
+        >
+          <CloudDownload className="w-3.5 h-3.5" />
+          <span>INSTALAR APP</span>
+        </button>
 
-        {/* Theme Toggle Button */}
+        {/* Modo Claro / Oscuro Button */}
         <button
           type="button"
           onClick={toggleDarkMode}
-          className="p-2 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition"
-          title={darkMode ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}
+          className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold uppercase tracking-wider shadow-2xs transition cursor-pointer"
         >
-          {darkMode ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-slate-600" />}
+          {darkMode ? <Sun className="w-3.5 h-3.5 text-amber-400" /> : <Moon className="w-3.5 h-3.5 text-slate-600" />}
+          <span>{darkMode ? 'MODO OSCURO' : 'MODO CLARO'}</span>
         </button>
 
-        {/* User Pill */}
-        <div className="flex items-center gap-2.5 pl-2 sm:pl-3 border-l border-slate-200 dark:border-slate-800">
-          <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-500 text-white font-black text-xs flex items-center justify-center shadow-xs">
-            {currentUser.name.charAt(0).toUpperCase()}
+        {/* Caja Lista Badge */}
+        <div className={`hidden sm:flex items-center gap-1.5 px-3 py-1 rounded-full border text-xs font-bold uppercase tracking-wider ${
+          activeRegister
+            ? 'bg-emerald-50 dark:bg-emerald-950/50 border-emerald-200 dark:border-emerald-800 text-emerald-600 dark:text-emerald-400'
+            : 'bg-rose-50 dark:bg-rose-950/50 border-rose-200 dark:border-rose-800 text-rose-600 dark:text-rose-400'
+        }`}>
+          <span className={`w-2 h-2 rounded-full ${activeRegister ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'}`} />
+          <span>{activeRegister ? 'CAJA LISTA' : 'CAJA CERRADA'}</span>
+        </div>
+
+        {/* User Badge */}
+        <div className="flex items-center gap-2.5 pl-2 border-l border-slate-200 dark:border-slate-800">
+          <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300 font-bold text-xs flex items-center justify-center">
+            {getInitials(currentUser.name)}
           </div>
-          <div className="hidden sm:block text-left">
-            <p className="text-xs font-extrabold text-slate-900 dark:text-white uppercase leading-none">
+          <div className="hidden sm:block text-left leading-tight">
+            <p className="text-xs font-black text-slate-800 dark:text-white capitalize">
               {currentUser.name.split(' ')[0]}
             </p>
-            <span className="text-[10px] font-bold text-blue-500 uppercase tracking-wide">
-              {currentUser.role}
+            <span className="text-[10px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-wide">
+              {currentUser.role === 'admin' ? 'ADMINISTRADOR' : currentUser.role === 'supervisor' ? 'SUPERVISOR' : 'CAJERO'}
             </span>
           </div>
         </div>
