@@ -406,7 +406,7 @@ function compressImageFile(file, maxWidth, callback) {
             const canvas = document.createElement('canvas');
             let w = img.width;
             let h = img.height;
-            const max = maxWidth || 800;
+            const max = maxWidth || 600;
             if (w > max || h > max) {
                 if (w > h) {
                     h = Math.round((h * max) / w);
@@ -420,7 +420,7 @@ function compressImageFile(file, maxWidth, callback) {
             canvas.height = h;
             const ctx = canvas.getContext('2d');
             ctx.drawImage(img, 0, 0, w, h);
-            const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+            const dataUrl = canvas.toDataURL('image/jpeg', 0.80);
             callback(dataUrl);
         };
         img.src = e.target.result;

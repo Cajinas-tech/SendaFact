@@ -64,7 +64,24 @@ class ProductController extends Controller
 
     public function index(Request $request)
     {
-        $sessionProducts = collect(session('custom_products', []))->values();
+        // Sanitize session to prevent header overflow
+        $rawSession = session('custom_products', []);
+        $cleanSession = [];
+        foreach ($rawSession as $k => $v) {
+            if (is_object($v)) {
+                if (!empty($v->image_url) && str_starts_with($v->image_url, 'data:image')) {
+                    $v->image_url = (stripos($v->name ?? '', 'ventana') !== false) 
+                        ? '/images/products/ventana-aluminio.svg' 
+                        : '/images/products/puerta-aluminio.svg';
+                }
+                $cleanSession[$k] = $v;
+            }
+        }
+        if (count($rawSession) !== count($cleanSession)) {
+            session(['custom_products' => $cleanSession]);
+        }
+
+        $sessionProducts = collect($cleanSession)->values();
         $categories = $this->getFallbackCategories();
 
         try {
@@ -183,7 +200,14 @@ class ProductController extends Controller
             \Illuminate\Support\Facades\Log::error("DB Product Store Error: " . $e->getMessage());
         }
 
-        // Always save to Session / Local persistence cache
+        // Prepare safe session item WITHOUT large base64 strings
+        $sessionItemData = $data;
+        if (!empty($sessionItemData['image_url']) && str_starts_with($sessionItemData['image_url'], 'data:image')) {
+            $sessionItemData['image_url'] = (stripos($sessionItemData['name'] ?? '', 'ventana') !== false) 
+                ? '/images/products/ventana-aluminio.svg' 
+                : '/images/products/puerta-aluminio.svg';
+        }
+
         $sessionProducts = session('custom_products', []);
         $newId = $savedInDb && $createdId ? $createdId : (count($sessionProducts) + 100 + rand(1, 50));
         
@@ -197,7 +221,7 @@ class ProductController extends Controller
         ];
         $catName = $categoriesMap[$data['category_id'] ?? 1] ?? 'GENERAL';
 
-        $sessionItem = (object) array_merge($data, [
+        $sessionItem = (object) array_merge($sessionItemData, [
             'id' => $newId,
             'category' => (object)[
                 'id' => $data['category_id'] ?? 1,
@@ -242,11 +266,18 @@ class ProductController extends Controller
             \Illuminate\Support\Facades\Log::error("DB Product Update Error: " . $e->getMessage());
         }
 
-        // Update in session
+        // Safe session update WITHOUT base64 data
+        $sessionItemData = $data;
+        if (!empty($sessionItemData['image_url']) && str_starts_with($sessionItemData['image_url'], 'data:image')) {
+            $sessionItemData['image_url'] = (stripos($sessionItemData['name'] ?? '', 'ventana') !== false) 
+                ? '/images/products/ventana-aluminio.svg' 
+                : '/images/products/puerta-aluminio.svg';
+        }
+
         $sessionProducts = session('custom_products', []);
         if (isset($sessionProducts[$id])) {
             $item = (array) $sessionProducts[$id];
-            $merged = array_merge($item, $data);
+            $merged = array_merge($item, $sessionItemData);
             $sessionProducts[$id] = (object) $merged;
             session(['custom_products' => $sessionProducts]);
         } else {
@@ -259,7 +290,7 @@ class ProductController extends Controller
                 6 => 'GENERAL'
             ];
             $catName = $categoriesMap[$data['category_id'] ?? 1] ?? 'GENERAL';
-            $sessionProducts[$id] = (object) array_merge($data, [
+            $sessionProducts[$id] = (object) array_merge($sessionItemData, [
                 'id' => $id,
                 'category' => (object)[
                     'id' => $data['category_id'] ?? 1,
