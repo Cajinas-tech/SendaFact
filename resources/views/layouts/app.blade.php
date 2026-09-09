@@ -71,23 +71,24 @@
             background: rgba(15, 23, 42, 0.95);
             border-color: #1e293b;
         }
-        /* Barra de Desplazamiento Visible Permanente para el Menú Lateral */
+        /* Barra de Desplazamiento Independiente y Suave para el Menú Lateral */
         .sidebar-scroll {
-            overflow-y: scroll !important;
+            overflow-y: auto !important;
+            overflow-x: hidden;
             scrollbar-width: thin;
-            scrollbar-color: #3b82f6 #e2e8f0;
+            scrollbar-color: #3b82f6 #f1f5f9;
+            scroll-behavior: smooth;
+            -webkit-overflow-scrolling: touch;
         }
         .dark .sidebar-scroll {
             scrollbar-color: #3b82f6 #1e293b;
         }
         .sidebar-scroll::-webkit-scrollbar {
-            width: 6px;
-            display: block;
+            width: 5px;
         }
         .sidebar-scroll::-webkit-scrollbar-track {
             background: #f1f5f9;
             border-radius: 9999px;
-            margin: 6px 0;
         }
         .dark .sidebar-scroll::-webkit-scrollbar-track {
             background: #1e293b;
@@ -107,7 +108,7 @@
         
         <!-- SIDEBAR (INDEPENDENT FIXED HEIGHT CONTAINER) -->
         <aside :class="sidebarCollapsed ? 'w-20' : 'w-64'" 
-               class="bg-white dark:bg-[#0f172a] border-r border-slate-200 dark:border-slate-800 h-screen flex flex-col justify-between transition-all duration-300 z-30 shrink-0 select-none shadow-sm">
+               class="bg-white dark:bg-[#0f172a] border-r border-slate-200 dark:border-slate-800 h-screen max-h-screen flex flex-col justify-between transition-all duration-300 z-30 shrink-0 shadow-sm">
             
             <!-- Sidebar Top: Brand Logo (Pinned Top) -->
             <div class="p-4 border-b border-slate-100 dark:border-slate-800/60 shrink-0">
@@ -132,32 +133,46 @@
             </div>
 
             <!-- Sidebar Navigation Items (INDEPENDENT VERTICAL SCROLL) -->
-            <div class="flex-1 overflow-y-auto px-3 py-4 space-y-1 sidebar-scroll overscroll-contain">
+            <div id="sidebarScrollContainer" class="flex-1 overflow-y-auto px-3 py-4 space-y-1.5 sidebar-scroll">
                 @php
-                    $navItems = [
-                        ['route' => 'dashboard', 'pattern' => 'dashboard*', 'icon' => 'layout-dashboard', 'label' => 'Panel Central'],
-                        ['route' => 'catalog.index', 'pattern' => 'catalogo*', 'icon' => 'book-open', 'label' => 'Catálogo de Productos'],
-                        ['route' => 'pos.index', 'pattern' => 'pos*', 'icon' => 'shopping-cart', 'label' => 'Ventas (POS)'],
-                        ['route' => 'products.index', 'pattern' => 'productos*', 'icon' => 'package', 'label' => 'Gestión de Productos'],
-                        ['route' => 'movements.index', 'pattern' => 'movimientos*', 'icon' => 'clipboard-list', 'label' => 'Inventario & Movimientos'],
-                        ['route' => 'credits.index', 'pattern' => 'creditos*', 'icon' => 'credit-card', 'label' => 'Créditos'],
-                        ['route' => 'backup.index', 'pattern' => 'backup*', 'icon' => 'shield-check', 'label' => 'Backup y Seguridad'],
-                        ['route' => 'cash.index', 'pattern' => 'caja*', 'icon' => 'banknote', 'label' => 'Caja'],
-                        ['route' => 'customers.index', 'pattern' => 'clientes*', 'icon' => 'users', 'label' => 'Gestión de Clientes'],
-                        ['route' => 'users.index', 'pattern' => 'usuarios*', 'icon' => 'user-cog', 'label' => 'Usuarios & Roles'],
-                        ['route' => 'settings.index', 'pattern' => 'ajustes*', 'icon' => 'sliders-horizontal', 'label' => 'Ajuste del Sistema'],
+                    $navSections = [
+                        'OPERACIONES' => [
+                            ['route' => 'dashboard', 'pattern' => 'dashboard*', 'icon' => 'layout-dashboard', 'label' => 'Panel Central'],
+                            ['route' => 'catalog.index', 'pattern' => 'catalogo*', 'icon' => 'book-open', 'label' => 'Catálogo de Productos'],
+                            ['route' => 'pos.index', 'pattern' => 'pos*', 'icon' => 'shopping-cart', 'label' => 'Ventas (POS)'],
+                            ['route' => 'cash.index', 'pattern' => 'caja*', 'icon' => 'banknote', 'label' => 'Control de Caja'],
+                        ],
+                        'INVENTARIO Y CRÉDITOS' => [
+                            ['route' => 'products.index', 'pattern' => 'productos*', 'icon' => 'package', 'label' => 'Gestión de Productos'],
+                            ['route' => 'movements.index', 'pattern' => 'movimientos*', 'icon' => 'clipboard-list', 'label' => 'Inventario & Movimientos'],
+                            ['route' => 'credits.index', 'pattern' => 'creditos*', 'icon' => 'credit-card', 'label' => 'Créditos y Cuentas'],
+                            ['route' => 'customers.index', 'pattern' => 'clientes*', 'icon' => 'users', 'label' => 'Gestión de Clientes'],
+                        ],
+                        'ADMINISTRACIÓN' => [
+                            ['route' => 'users.index', 'pattern' => 'usuarios*', 'icon' => 'user-cog', 'label' => 'Usuarios & Roles'],
+                            ['route' => 'backup.index', 'pattern' => 'backup*', 'icon' => 'archive', 'label' => 'Centro de Respaldos'],
+                            ['route' => 'settings.index', 'pattern' => 'ajustes*', 'icon' => 'sliders-horizontal', 'label' => 'Ajuste del Sistema'],
+                        ],
                     ];
                 @endphp
 
-                @foreach($navItems as $item)
-                    @php
-                        $isActive = request()->is($item['pattern']) || (request()->routeIs('dashboard') && $item['route'] === 'dashboard');
-                    @endphp
-                    <a href="{{ route($item['route']) }}" 
-                       class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 group {{ $isActive ? 'bg-blue-600 text-white shadow-md shadow-blue-500/25' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/60 hover:text-slate-900 dark:hover:text-white' }}">
-                        <i data-lucide="{{ $item['icon'] }}" class="w-5 h-5 shrink-0 {{ $isActive ? 'text-white' : 'text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-300' }}"></i>
-                        <span x-show="!sidebarCollapsed" class="truncate font-medium">{{ $item['label'] }}</span>
-                    </a>
+                @foreach($navSections as $sectionName => $items)
+                    <div class="pt-2 pb-1 first:pt-0" x-show="!sidebarCollapsed">
+                        <span class="text-[10px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500 px-3">
+                            {{ $sectionName }}
+                        </span>
+                    </div>
+
+                    @foreach($items as $item)
+                        @php
+                            $isActive = request()->is($item['pattern']) || (request()->routeIs('dashboard') && $item['route'] === 'dashboard');
+                        @endphp
+                        <a href="{{ route($item['route']) }}" 
+                           class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all duration-200 group {{ $isActive ? 'bg-blue-600 text-white shadow-md shadow-blue-500/25' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/60 hover:text-slate-900 dark:hover:text-white' }}">
+                            <i data-lucide="{{ $item['icon'] }}" class="w-5 h-5 shrink-0 {{ $isActive ? 'text-white' : 'text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-300' }}"></i>
+                            <span x-show="!sidebarCollapsed" class="truncate font-medium">{{ $item['label'] }}</span>
+                        </a>
+                    @endforeach
                 @endforeach
             </div>
 
@@ -302,6 +317,14 @@
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             lucide.createIcons();
+            
+            // Garantizar desplazamiento vertical suave con la rueda del mouse en el menú lateral
+            const sidebarEl = document.getElementById('sidebarScrollContainer');
+            if (sidebarEl) {
+                sidebarEl.addEventListener('wheel', (e) => {
+                    sidebarEl.scrollTop += e.deltaY;
+                }, { passive: true });
+            }
         });
         document.addEventListener('alpine:initialized', () => {
             lucide.createIcons();
