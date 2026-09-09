@@ -84,7 +84,7 @@
             scrollbar-color: #3b82f6 #1e293b;
         }
         .sidebar-scroll::-webkit-scrollbar {
-            width: 5px;
+            width: 6px;
         }
         .sidebar-scroll::-webkit-scrollbar-track {
             background: #f1f5f9;
@@ -106,9 +106,9 @@
 <body class="bg-[#f4f7fb] dark:bg-[#0b1120] text-[#1e293b] dark:text-[#f1f5f9] font-sans antialiased h-screen overflow-hidden transition-colors duration-200">
     <div class="flex h-screen w-full overflow-hidden">
         
-        <!-- SIDEBAR (INDEPENDENT FIXED HEIGHT CONTAINER) -->
+        <!-- SIDEBAR (INDEPENDENT FULL HEIGHT CONTAINER) -->
         <aside :class="sidebarCollapsed ? 'w-20' : 'w-64'" 
-               class="bg-white dark:bg-[#0f172a] border-r border-slate-200 dark:border-slate-800 h-screen max-h-screen flex flex-col justify-between transition-all duration-300 z-30 shrink-0 shadow-sm">
+               class="bg-white dark:bg-[#0f172a] border-r border-slate-200 dark:border-slate-800 h-screen max-h-screen overflow-hidden flex flex-col transition-all duration-300 z-30 shrink-0 shadow-sm">
             
             <!-- Sidebar Top: Brand Logo (Pinned Top) -->
             <div class="p-4 border-b border-slate-100 dark:border-slate-800/60 shrink-0">
@@ -132,8 +132,8 @@
                 </div>
             </div>
 
-            <!-- Sidebar Navigation Items (INDEPENDENT VERTICAL SCROLL EXTENDING TO BOTTOM) -->
-            <div id="sidebarScrollContainer" class="flex-1 overflow-y-auto px-3 py-4 space-y-1.5 sidebar-scroll flex flex-col justify-between">
+            <!-- Sidebar Navigation Items (INDEPENDENT VERTICAL SCROLL EXTENDING FULLY TO BOTTOM) -->
+            <div id="sidebarScrollContainer" class="flex-1 min-h-0 overflow-y-auto px-3 pt-3 pb-12 space-y-1.5 sidebar-scroll flex flex-col justify-between">
                 <div>
                     @php
                         $navSections = [
@@ -178,7 +178,7 @@
                 </div>
 
                 <!-- ACCIONES INFERIORES DENTRO DEL DESPLAZAMIENTO (SALIR DEL SISTEMA Y CONTRAER BARRA) -->
-                <div class="pt-4 mt-3 border-t border-slate-100 dark:border-slate-800/80 space-y-1">
+                <div class="pt-4 mt-4 border-t border-slate-100 dark:border-slate-800/80 space-y-1 shrink-0 pb-4">
                     <!-- BOTÓN SALIR DEL SISTEMA -->
                     <form action="{{ route('logout') }}" method="POST" class="w-full">
                         @csrf
