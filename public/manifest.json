@@ -1,0 +1,24 @@
+{
+  "name": "SendaFact POS - Sistema de Facturación",
+  "short_name": "SendaFact",
+  "description": "Sistema POS, Facturación, Inventario y Créditos Senda Sistemas",
+  "start_url": "/login",
+  "display": "standalone",
+  "background_color": "#0b1120",
+  "theme_color": "#2563eb",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "/images/logo/senda-logo.svg",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/images/logo/senda-logo.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
