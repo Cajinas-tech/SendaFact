@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Users, UserPlus, Search, Phone, Mail, 
-  MapPin, CreditCard, DollarSign, Edit, 
-  Trash2, ShieldCheck, CheckCircle2, RefreshCw
+  MapPin, Edit
 } from 'lucide-react';
 import { storage } from '../lib/storage';
 import { Customer } from '../types';
@@ -77,18 +76,18 @@ export const CustomersPage: React.FC = () => {
   );
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-fade-in">
       {/* Header Banner */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-slate-900/40 p-6 rounded-2xl border border-slate-800/80 backdrop-blur-md">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white dark:bg-slate-900/40 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm backdrop-blur-md">
         <div className="flex items-center gap-4">
-          <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 p-0.5 shadow-lg shadow-blue-500/20 flex items-center justify-center">
-            <div className="w-full h-full bg-slate-950 rounded-[14px] flex items-center justify-center">
+          <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 p-0.5 shadow-lg shadow-blue-500/20 flex items-center justify-center shrink-0">
+            <div className="w-full h-full bg-slate-900 dark:bg-slate-950 rounded-[14px] flex items-center justify-center">
               <Users className="w-7 h-7 text-blue-400" />
             </div>
           </div>
           <div>
-            <h1 className="text-2xl font-black text-white tracking-tight">Directorio de Clientes</h1>
-            <p className="text-sm text-slate-400 mt-1">Administración de clientes, historial de crédito y datos de facturación</p>
+            <h1 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">Directorio de Clientes</h1>
+            <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Administración de clientes, historial de crédito y datos de facturación</p>
           </div>
         </div>
 
@@ -110,7 +109,7 @@ export const CustomersPage: React.FC = () => {
             placeholder="Buscar por nombre, cédula / RUC o teléfono..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full bg-slate-900 border border-slate-700/80 rounded-xl pl-10 pr-4 py-2.5 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-blue-500"
+            className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl pl-10 pr-4 py-2.5 text-sm text-slate-900 dark:text-slate-200 placeholder-slate-400 focus:outline-none focus:border-blue-500"
           />
         </div>
       </div>
@@ -121,28 +120,28 @@ export const CustomersPage: React.FC = () => {
           <div key={c.id} className="glass-card p-5 relative overflow-hidden group hover:border-blue-500/50 transition">
             <div className="flex items-start justify-between mb-3">
               <div>
-                <h3 className="text-base font-bold text-white group-hover:text-blue-400 transition">{c.name}</h3>
-                <span className="text-xs text-slate-400 font-mono">ID: {c.identification || 'Sin Identificación'}</span>
+                <h3 className="text-base font-bold text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition">{c.name}</h3>
+                <span className="text-xs text-slate-500 dark:text-slate-400 font-mono">ID: {c.identification || 'Sin Identificación'}</span>
               </div>
               <button
                 onClick={() => openEditModal(c)}
-                className="p-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs transition"
+                className="p-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-lg text-xs transition"
               >
                 <Edit className="w-3.5 h-3.5" />
               </button>
             </div>
 
-            <div className="space-y-2 text-xs text-slate-300 py-3 border-y border-slate-800/80">
+            <div className="space-y-2 text-xs text-slate-600 dark:text-slate-300 py-3 border-y border-slate-100 dark:border-slate-800">
               <div className="flex items-center gap-2">
-                <Phone className="w-3.5 h-3.5 text-slate-500" />
+                <Phone className="w-3.5 h-3.5 text-slate-400" />
                 <span>{c.phone || 'No registrado'}</span>
               </div>
               <div className="flex items-center gap-2">
-                <Mail className="w-3.5 h-3.5 text-slate-500" />
+                <Mail className="w-3.5 h-3.5 text-slate-400" />
                 <span className="truncate">{c.email || 'No registrado'}</span>
               </div>
               <div className="flex items-center gap-2">
-                <MapPin className="w-3.5 h-3.5 text-slate-500" />
+                <MapPin className="w-3.5 h-3.5 text-slate-400" />
                 <span className="truncate">{c.address || 'Managua, Nicaragua'}</span>
               </div>
             </div>
@@ -150,11 +149,11 @@ export const CustomersPage: React.FC = () => {
             <div className="mt-3 pt-2 flex items-center justify-between text-xs">
               <div>
                 <span className="text-slate-500 block">Límite de Crédito:</span>
-                <span className="text-white font-mono font-bold">C$ {(c.credit_limit || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
+                <span className="text-slate-800 dark:text-white font-mono font-bold">C$ {(c.credit_limit || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
               </div>
               <div className="text-right">
                 <span className="text-slate-500 block">Saldo Actual:</span>
-                <span className={`font-mono font-black ${c.current_debt > 0 ? 'text-rose-400' : 'text-emerald-400'}`}>
+                <span className={`font-mono font-black ${c.current_debt > 0 ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
                   C$ {(c.current_debt || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}
                 </span>
               </div>
@@ -165,80 +164,80 @@ export const CustomersPage: React.FC = () => {
 
       {/* MODAL: Nuevo / Editar Cliente */}
       {showModal && (
-        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-lg p-6 shadow-2xl space-y-5 animate-in fade-in zoom-in-95 duration-200">
-            <h3 className="text-lg font-bold text-white flex items-center gap-2">
-              <Users className="w-5 h-5 text-blue-400" />
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl w-full max-w-lg p-6 shadow-2xl space-y-5 animate-in fade-in zoom-in-95 duration-200">
+            <h3 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
+              <Users className="w-5 h-5 text-blue-500" />
               {editingCustomer ? 'Editar Cliente' : 'Registrar Nuevo Cliente'}
             </h3>
 
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="block text-xs font-bold uppercase text-slate-400 mb-1.5">Nombre Completo / Razón Social</label>
+                <label className="block text-xs font-bold uppercase text-slate-600 dark:text-slate-400 mb-1.5">Nombre Completo / Razón Social</label>
                 <input
                   type="text"
                   required
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-blue-500"
+                  className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-slate-900 dark:text-white text-sm focus:outline-none focus:border-blue-500"
                   placeholder="Ej. Distribuidora del Norte S.A."
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-bold uppercase text-slate-400 mb-1.5">Cédula / RUC</label>
+                  <label className="block text-xs font-bold uppercase text-slate-600 dark:text-slate-400 mb-1.5">Cédula / RUC</label>
                   <input
                     type="text"
                     value={identification}
                     onChange={(e) => setIdentification(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-blue-500"
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-slate-900 dark:text-white text-sm focus:outline-none focus:border-blue-500"
                     placeholder="001-010190-0002A"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold uppercase text-slate-400 mb-1.5">Teléfono / WhatsApp</label>
+                  <label className="block text-xs font-bold uppercase text-slate-600 dark:text-slate-400 mb-1.5">Teléfono / WhatsApp</label>
                   <input
                     type="text"
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-blue-500"
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-slate-900 dark:text-white text-sm focus:outline-none focus:border-blue-500"
                     placeholder="+505 8888-8888"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-bold uppercase text-slate-400 mb-1.5">Correo Electrónico</label>
+                <label className="block text-xs font-bold uppercase text-slate-600 dark:text-slate-400 mb-1.5">Correo Electrónico</label>
                 <input
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-blue-500"
+                  className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-slate-900 dark:text-white text-sm focus:outline-none focus:border-blue-500"
                   placeholder="cliente@ejemplo.com"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold uppercase text-slate-400 mb-1.5">Dirección / Ubicación</label>
+                <label className="block text-xs font-bold uppercase text-slate-600 dark:text-slate-400 mb-1.5">Dirección / Ubicación</label>
                 <input
                   type="text"
                   value={address}
                   onChange={(e) => setAddress(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-blue-500"
+                  className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-slate-900 dark:text-white text-sm focus:outline-none focus:border-blue-500"
                   placeholder="Semáforos El Zumen 2c al lago..."
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold uppercase text-slate-400 mb-1.5">Límite de Crédito Autorizado (C$)</label>
+                <label className="block text-xs font-bold uppercase text-slate-600 dark:text-slate-400 mb-1.5">Límite de Crédito Autorizado (C$)</label>
                 <input
                   type="number"
                   step="0.01"
                   min="0"
                   value={creditLimit}
                   onChange={(e) => setCreditLimit(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-2.5 text-white font-mono font-bold focus:outline-none focus:border-blue-500"
+                  className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-slate-900 dark:text-white font-mono font-bold focus:outline-none focus:border-blue-500"
                 />
               </div>
 
@@ -246,7 +245,7 @@ export const CustomersPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setShowModal(false)}
-                  className="flex-1 px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-sm font-bold transition"
+                  className="flex-1 px-4 py-2.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl text-sm font-bold transition"
                 >
                   Cancelar
                 </button>
