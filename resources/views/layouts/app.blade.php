@@ -181,24 +181,31 @@
 
                     <!-- Estado de Caja Pill -->
                     @php
-                        $activeBox = \App\Models\CashRegister::where('status', 'open')->latest()->first();
-                        $authUser = auth()->user() ?? \App\Models\User::first();
+                        $activeBox = null;
+                        try {
+                            $activeBox = \App\Models\CashRegister::where('status', 'open')->latest()->first();
+                        } catch (\Throwable $e) {}
+                        
+                        $currentName = session('user_name') ?? (auth()->user()->name ?? 'Jairo');
+                        $currentEmail = session('user_email') ?? (auth()->user()->email ?? 'jairotten84@gmail.com');
+                        $currentRole = session('user_role') ?? (auth()->user()->role ?? 'administrador');
+                        $currentRoleLabel = strtoupper($currentRole);
                     @endphp
-                    <a href="{{ route('cash.index') }}" class="flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold border {{ $activeBox ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800/50' : 'bg-rose-50 text-rose-700 border-rose-200' }}">
-                        <span class="w-2 h-2 rounded-full {{ $activeBox ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500' }}"></span>
-                        <span>{{ $activeBox ? 'CAJA ABIERTA' : 'CAJA CERRADA' }}</span>
+                    <a href="{{ route('cash.index') }}" class="flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold border {{ $activeBox ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800/50' : 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800/50' }}">
+                        <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                        <span>{{ $activeBox ? 'CAJA ABIERTA' : 'CAJA LISTA' }}</span>
                     </a>
 
                     <!-- User Profile Dropdown Pill (DYNAMIC FROM DATABASE ROLE) -->
                     <div class="relative" x-data="{ open: false }">
                         <button @click="open = !open" class="flex items-center gap-3 p-1.5 pr-3 rounded-full border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 transition">
-                            <div class="w-8 h-8 rounded-full {{ ($authUser->role ?? 'administrador') === 'administrador' ? 'bg-blue-100 text-blue-600' : (($authUser->role ?? '') === 'cajero' ? 'bg-emerald-100 text-emerald-600' : 'bg-purple-100 text-purple-600') }} flex items-center justify-center font-black text-xs">
-                                {{ substr($authUser->name ?? 'J', 0, 2) }}
+                            <div class="w-8 h-8 rounded-full {{ $currentRole === 'administrador' ? 'bg-blue-100 text-blue-600' : ($currentRole === 'cajero' ? 'bg-emerald-100 text-emerald-600' : 'bg-purple-100 text-purple-600') }} flex items-center justify-center font-black text-xs">
+                                {{ substr($currentName, 0, 2) }}
                             </div>
                             <div class="text-left hidden sm:block">
-                                <p class="text-xs font-bold text-slate-800 dark:text-white leading-tight">{{ $authUser->name ?? 'Jairo' }}</p>
-                                <p class="text-[10px] font-extrabold uppercase {{ ($authUser->role ?? 'administrador') === 'administrador' ? 'text-blue-600 dark:text-blue-400' : (($authUser->role ?? '') === 'cajero' ? 'text-emerald-600 dark:text-emerald-400' : 'text-purple-600 dark:text-purple-400') }}">
-                                    {{ $authUser->role_label ?? 'ADMINISTRADOR' }}
+                                <p class="text-xs font-bold text-slate-800 dark:text-white leading-tight">{{ $currentName }}</p>
+                                <p class="text-[10px] font-extrabold uppercase {{ $currentRole === 'administrador' ? 'text-blue-600 dark:text-blue-400' : ($currentRole === 'cajero' ? 'text-emerald-600 dark:text-emerald-400' : 'text-purple-600 dark:text-purple-400') }}">
+                                    {{ $currentRoleLabel }}
                                 </p>
                             </div>
                             <i data-lucide="chevron-down" class="w-3.5 h-3.5 text-slate-400"></i>
@@ -208,8 +215,8 @@
                         <div x-show="open" @click.away="open = false" x-cloak
                              class="absolute right-0 mt-2 w-52 bg-white dark:bg-slate-800 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-700 py-2 z-50">
                             <div class="px-4 py-2 border-b border-slate-100 dark:border-slate-700 text-xs">
-                                <p class="font-bold text-slate-800 dark:text-white">{{ $authUser->name ?? 'Usuario' }}</p>
-                                <p class="text-[11px] text-slate-400 font-mono truncate">{{ $authUser->email ?? 'admin@sendasistemas.com' }}</p>
+                                <p class="font-bold text-slate-800 dark:text-white">{{ $currentName }}</p>
+                                <p class="text-[11px] text-slate-400 font-mono truncate">{{ $currentEmail }}</p>
                             </div>
                             <a href="{{ route('users.index') }}" class="flex items-center gap-2 px-4 py-2 text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700">
                                 <i data-lucide="users" class="w-4 h-4 text-blue-500"></i> Gestión de Usuarios

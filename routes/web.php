@@ -13,15 +13,24 @@ use App\Http\Controllers\ProductController;
 use App\Http\Controllers\QuoteController;
 use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\SettingController;
+use Illuminate\Support\Facades\Auth;
 
 // Autenticación (Login & Logout)
 Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
 Route::post('/login', [AuthController::class, 'login'])->name('login.post');
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
-Route::get('/logout', [AuthController::class, 'logout']); // Soporte para GET directo
+Route::get('/logout', [AuthController::class, 'logout']);
 
-// Rutas protegidas
-Route::middleware(['auth'])->group(function () {
+// Middleware de Autenticación Híbrida (Auth + Sesión persistente para Serverless)
+$authMiddleware = function ($request, $next) {
+    if (!Auth::check() && !session('is_authenticated')) {
+        return redirect()->route('login');
+    }
+    return $next($request);
+};
+
+// Rutas protegidas del Sistema SendaFact
+Route::middleware([$authMiddleware])->group(function () {
     
     // Panel Central / Dashboard
     Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
@@ -35,7 +44,6 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/pos', [PosController::class, 'index'])->name('pos.index');
     Route::post('/pos/store', [PosController::class, 'store'])->name('pos.store');
     Route::get('/pos/ticket/{id}', [PosController::class, 'ticket'])->name('pos.ticket');
-
 
     // Gestión de Productos e Inventario
     Route::resource('productos', ProductController::class)->names('products');
