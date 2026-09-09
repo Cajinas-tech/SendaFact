@@ -186,9 +186,14 @@
                             $activeBox = \App\Models\CashRegister::where('status', 'open')->latest()->first();
                         } catch (\Throwable $e) {}
                         
-                        $currentName = session('user_name') ?? (auth()->user()->name ?? 'Jairo');
-                        $currentEmail = session('user_email') ?? (auth()->user()->email ?? 'jairotten84@gmail.com');
-                        $currentRole = session('user_role') ?? (auth()->user()->role ?? 'administrador');
+                        $cookieUser = null;
+                        if (isset($_COOKIE['senda_user'])) {
+                            $cookieUser = json_decode($_COOKIE['senda_user'], true);
+                        }
+                        
+                        $currentName = $cookieUser['name'] ?? session('user_name') ?? (auth()->user()->name ?? 'Jairo');
+                        $currentEmail = $cookieUser['email'] ?? session('user_email') ?? (auth()->user()->email ?? 'jairotten84@gmail.com');
+                        $currentRole = $cookieUser['role'] ?? session('user_role') ?? (auth()->user()->role ?? 'administrador');
                         $currentRoleLabel = strtoupper($currentRole);
                     @endphp
                     <a href="{{ route('cash.index') }}" class="flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold border {{ $activeBox ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800/50' : 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800/50' }}">

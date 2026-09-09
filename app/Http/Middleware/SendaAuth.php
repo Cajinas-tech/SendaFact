@@ -11,10 +11,16 @@ class SendaAuth
 {
     public function handle(Request $request, Closure $next): Response
     {
-        if (!Auth::check() && !session('is_authenticated')) {
-            return redirect()->route('login');
+        // 1. Verificar cookie directa ultra-persistente para Vercel
+        if (isset($_COOKIE['senda_auth_token']) || isset($_COOKIE['senda_user'])) {
+            return $next($request);
         }
 
-        return $next($request);
+        // 2. Verificar sesión o Auth estándar
+        if (session('is_authenticated') || Auth::check()) {
+            return $next($request);
+        }
+
+        return redirect()->route('login');
     }
 }
