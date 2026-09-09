@@ -151,7 +151,6 @@
                             ],
                             'ADMINISTRACIÓN' => [
                                 ['route' => 'users.index', 'pattern' => 'usuarios*', 'icon' => 'user-cog', 'label' => 'Usuarios & Roles'],
-                                ['route' => 'backup.index', 'pattern' => 'backup*', 'icon' => 'archive', 'label' => 'Centro de Respaldos'],
                                 ['route' => 'settings.index', 'pattern' => 'ajustes*', 'icon' => 'sliders-horizontal', 'label' => 'Ajuste del Sistema'],
                             ],
                         ];

@@ -71,6 +71,6 @@ Route::middleware([SendaAuth::class])->group(function () {
     Route::post('/backup/reset-database', [SettingController::class, 'resetDatabase'])->name('backup.reset-database');
 
     // Módulos Complementarios del Menú Senda
-    Route::get('/backup', [SettingController::class, 'backupCenter'])->name('backup.index');
+    Route::get('/backup', function() { return redirect()->route('settings.index'); })->name('backup.index');
     Route::get('/categorias', function() { return redirect()->route('products.index'); })->name('categories.index');
 });
