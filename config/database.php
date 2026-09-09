@@ -42,6 +42,10 @@ return [
             'prefix_indexes' => true,
             'search_path' => 'public',
             'sslmode' => 'require',
+            'connect_timeout' => 2,
+            'options' => [
+                \PDO::ATTR_TIMEOUT => 2,
+            ],
         ],
 
     ],

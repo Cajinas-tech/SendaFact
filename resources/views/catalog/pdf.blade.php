@@ -36,17 +36,17 @@
             @foreach($products as $p)
                 <div class="border rounded-2xl p-5 space-y-3 bg-slate-50/50">
                     <div class="flex justify-between items-center text-xs">
-                        <span class="font-bold px-2 py-0.5 bg-slate-800 text-white rounded">{{ $p->category->name }}</span>
-                        <span class="font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded">{{ $p->stock }} en Stock</span>
+                        <span class="font-bold px-2 py-0.5 bg-slate-800 text-white rounded">{{ $p->category->name ?? 'GENERAL' }}</span>
+                        <span class="font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded">{{ $p->stock ?? 0 }} en Stock</span>
                     </div>
                     <div class="h-44 flex items-center justify-center bg-white rounded-xl p-2 border">
                         <img src="{{ $p->image_url ?? '/images/products/puerta-aluminio.svg' }}" class="max-h-full max-w-full object-contain">
                     </div>
                     <h3 class="font-black text-slate-900 text-sm uppercase">{{ $p->name }}</h3>
-                    <p class="text-xs text-slate-500 font-mono">{{ $p->subtitle }}</p>
+                    <p class="text-xs text-slate-500 font-mono">{{ $p->subtitle ?? '' }}</p>
                     <div class="flex justify-between items-center pt-2 border-t">
-                        <span class="text-base font-black text-blue-600 font-mono">C$ {{ number_format($p->price_cordobas, 2) }}</span>
-                        <span class="text-xs font-bold text-slate-600 font-mono">≈ ${{ number_format($p->price_usd, 2) }} USD</span>
+                        <span class="text-base font-black text-blue-600 font-mono">C$ {{ number_format($p->price_cordobas ?? 0, 2) }}</span>
+                        <span class="text-xs font-bold text-slate-600 font-mono">≈ ${{ number_format($p->price_usd ?? 0, 2) }} USD</span>
                     </div>
                 </div>
             @endforeach
