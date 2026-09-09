@@ -36,7 +36,7 @@ class UserController extends Controller
             User::create($validated);
         } catch (\Throwable $e) {}
 
-        return redirect()->route('users.index')->with('success', 'Usuario registrado correctamente en la base de datos.');
+        return redirect()->back()->with('success', 'Usuario registrado correctamente en la base de datos.');
     }
 
     public function update(Request $request, $id)
@@ -52,7 +52,7 @@ class UserController extends Controller
             $user->update($validated);
         } catch (\Throwable $e) {}
 
-        return redirect()->route('users.index')->with('success', 'Usuario actualizado con éxito.');
+        return redirect()->back()->with('success', 'Usuario actualizado con éxito.');
     }
 
     public function destroy($id)
@@ -60,6 +60,6 @@ class UserController extends Controller
         try {
             User::findOrFail($id)->delete();
         } catch (\Throwable $e) {}
-        return redirect()->route('users.index')->with('success', 'Usuario eliminado de la base de datos.');
+        return redirect()->back()->with('success', 'Usuario eliminado de la base de datos.');
     }
 }

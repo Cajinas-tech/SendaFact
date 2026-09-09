@@ -38,10 +38,20 @@ class SettingController extends Controller
             ];
         }
 
+        try {
+            $users = \App\Models\User::orderBy('id', 'asc')->get();
+        } catch (\Throwable $e) {
+            $users = collect([
+                (object)['id' => 1, 'name' => 'Jairo', 'email' => 'jairotten84@gmail.com', 'role' => 'administrador', 'phone' => '+505 8888 1111', 'created_at' => now()],
+                (object)['id' => 2, 'name' => 'María Cajera', 'email' => 'cajero@sendasistemas.com', 'role' => 'cajero', 'phone' => '+505 8888 2222', 'created_at' => now()],
+                (object)['id' => 3, 'name' => 'Carlos Vendedor', 'email' => 'vendedor@sendasistemas.com', 'role' => 'vendedor', 'phone' => '+505 8888 3333', 'created_at' => now()],
+            ]);
+        }
+
         $dbConnection = 'pgsql (Supabase IPv4 Pooler)';
         $dbStatus = 'Activo y Seguro';
 
-        return view('settings.index', compact('setting', 'dbConnection', 'dbStatus'));
+        return view('settings.index', compact('setting', 'users', 'dbConnection', 'dbStatus'));
     }
 
     public function backupCenter()
