@@ -9,7 +9,9 @@
     currentProduct: {},
     searchTerm: '',
     createImagePreview: null,
-    editImagePreview: null
+    editImagePreview: null,
+    createImageUrl: '',
+    editImageUrl: ''
 }">
 
     <!-- TARJETA SUPERIOR: CABECERA Y BARRA DE ACCIONES -->
@@ -90,11 +92,11 @@
                 <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
                     @forelse($products as $p)
                         @php
-                            $imgSrc = '/images/products/puerta-aluminio.svg';
-                            if (!empty($p->image_url)) {
-                                $imgSrc = $p->image_url;
-                            } elseif (stripos($p->name, 'ventana') !== false) {
-                                $imgSrc = '/images/products/ventana-aluminio.svg';
+                            $imgSrc = $p->image_url;
+                            $fallbackImg = (stripos($p->name, 'ventana') !== false) ? '/images/products/ventana-aluminio.svg' : '/images/products/puerta-aluminio.svg';
+                            
+                            if (empty($imgSrc) || $imgSrc === 'null' || (!str_starts_with($imgSrc, 'data:image') && !str_starts_with($imgSrc, 'http') && !str_starts_with($imgSrc, '/'))) {
+                                $imgSrc = $fallbackImg;
                             }
                             $catName = $p->category->name ?? ($p->category_name ?? 'GENERAL');
                             $subtitle = $p->subtitle ?? 'UNIDAD • TERMINADO';
@@ -110,7 +112,10 @@
                             <!-- IMAGEN -->
                             <td class="p-4">
                                 <div class="w-12 h-12 rounded-xl bg-slate-50 dark:bg-slate-800/80 p-1.5 border border-slate-200/80 dark:border-slate-700/80 flex items-center justify-center overflow-hidden shadow-2xs">
-                                    <img src="{{ $imgSrc }}" alt="{{ $p->name }}" class="w-full h-full object-contain">
+                                    <img src="{{ $imgSrc }}" 
+                                         alt="{{ $p->name }}" 
+                                         onerror="this.onerror=null; this.src='{{ $fallbackImg }}';"
+                                         class="w-full h-full object-contain">
                                 </div>
                             </td>
 
@@ -163,7 +168,7 @@
                                 <div class="flex items-center justify-center gap-1.5">
                                     <!-- Botón Editar -->
                                     <button type="button" 
-                                            @click="currentProduct = {{ json_encode($p) }}; editImagePreview = null; editModal = true" 
+                                            @click="currentProduct = {{ json_encode($p) }}; editImageUrl = currentProduct.image_url || ''; editImagePreview = currentProduct.image_url || null; editModal = true" 
                                             class="p-1.5 rounded-lg border border-blue-200 dark:border-blue-800/60 bg-blue-50/60 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/60 transition shadow-2xs"
                                             title="Editar producto">
                                         <i data-lucide="edit-3" class="w-4 h-4"></i>
@@ -217,6 +222,7 @@
 
             <form action="{{ route('products.store') }}" method="POST" enctype="multipart/form-data" class="space-y-4">
                 @csrf
+                <input type="hidden" name="image_url" :value="createImageUrl">
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div class="sm:col-span-2">
                         <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">Nombre del Producto</label>
@@ -240,9 +246,8 @@
                             </div>
                             <div class="flex-1 min-w-0">
                                 <input type="file" 
-                                       name="image_file" 
                                        accept="image/png, image/jpeg, image/jpg, image/webp, image/svg+xml"
-                                       @change="const file = $event.target.files[0]; if (file) { const reader = new FileReader(); reader.onload = (e) => createImagePreview = e.target.result; reader.readAsDataURL(file); }"
+                                       @change="const file = $event.target.files[0]; if (file) { compressImageFile(file, 800, (url) => { createImageUrl = url; createImagePreview = url; }); }"
                                        class="w-full text-xs text-slate-500 file:mr-3 file:py-2 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-blue-50 file:text-blue-600 hover:file:bg-blue-100 dark:file:bg-blue-950 dark:file:text-blue-400 cursor-pointer">
                                 <p class="text-[10px] text-slate-400 mt-1">Selecciona una imagen en formato JPG o PNG desde tu dispositivo.</p>
                             </div>
@@ -321,6 +326,7 @@
             <form :action="'/productos/' + currentProduct.id" method="POST" enctype="multipart/form-data" class="space-y-4">
                 @csrf
                 @method('PUT')
+                <input type="hidden" name="image_url" :value="editImageUrl">
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div class="sm:col-span-2">
                         <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">Nombre del Producto</label>
@@ -340,16 +346,15 @@
                                     <img :src="editImagePreview" class="w-full h-full object-contain">
                                 </template>
                                 <template x-if="!editImagePreview">
-                                    <img :src="currentProduct.image_url || '/images/products/puerta-aluminio.svg'" class="w-full h-full object-contain">
+                                    <img :src="currentProduct.image_url || ((currentProduct.name && currentProduct.name.toLowerCase().includes('ventana')) ? '/images/products/ventana-aluminio.svg' : '/images/products/puerta-aluminio.svg')" class="w-full h-full object-contain">
                                 </template>
                             </div>
 
                             <!-- Selector de Archivo -->
                             <div class="flex-1 min-w-0">
                                 <input type="file" 
-                                       name="image_file" 
                                        accept="image/png, image/jpeg, image/jpg, image/webp, image/svg+xml"
-                                       @change="const file = $event.target.files[0]; if (file) { const reader = new FileReader(); reader.onload = (e) => editImagePreview = e.target.result; reader.readAsDataURL(file); }"
+                                       @change="const file = $event.target.files[0]; if (file) { compressImageFile(file, 800, (url) => { editImageUrl = url; editImagePreview = url; }); }"
                                        class="w-full text-xs text-slate-500 file:mr-3 file:py-2 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-blue-50 file:text-blue-600 hover:file:bg-blue-100 dark:file:bg-blue-950 dark:file:text-blue-400 cursor-pointer">
                                 <p class="text-[10px] text-slate-400 mt-1">Selecciona una nueva foto en JPG o PNG para reemplazar la imagen del producto.</p>
                             </div>
@@ -390,4 +395,37 @@
     </div>
 
 </div>
+
+<script>
+function compressImageFile(file, maxWidth, callback) {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const img = new Image();
+        img.onload = function() {
+            const canvas = document.createElement('canvas');
+            let w = img.width;
+            let h = img.height;
+            const max = maxWidth || 800;
+            if (w > max || h > max) {
+                if (w > h) {
+                    h = Math.round((h * max) / w);
+                    w = max;
+                } else {
+                    w = Math.round((w * max) / h);
+                    h = max;
+                }
+            }
+            canvas.width = w;
+            canvas.height = h;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, w, h);
+            const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+            callback(dataUrl);
+        };
+        img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+}
+</script>
 @endsection
