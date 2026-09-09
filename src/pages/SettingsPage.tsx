@@ -200,7 +200,7 @@ export const SettingsPage: React.FC = () => {
   const handleSaveCompany = (e: React.FormEvent) => {
     e.preventDefault();
     storage.saveCompanySettings(company);
-    success('¡Configuración Guardada!', 'Datos comerciales y tasa de cambio actualizados');
+    success('¡Configuración Guardada!', 'Datos comerciales de la empresa actualizados correctamente');
   };
 
   // Save User
@@ -299,7 +299,7 @@ export const SettingsPage: React.FC = () => {
           }`}
         >
           <Building2 className="w-4 h-4" />
-          Datos de la Empresa & Tasa de Cambio
+          Datos de la Empresa
         </button>
       </div>
 
@@ -614,20 +614,6 @@ export const SettingsPage: React.FC = () => {
               onChange={(e) => setCompany({ ...company, address: e.target.value })}
               className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-slate-900 dark:text-white text-sm focus:outline-none focus:border-blue-500"
             />
-          </div>
-
-          <div className="grid grid-cols-2 gap-4 pt-2">
-            <div>
-              <label className="block text-xs font-bold uppercase text-slate-600 dark:text-slate-400 mb-1.5">Tasa Oficial USD a NIO (C$)</label>
-              <input
-                type="number"
-                step="0.01"
-                required
-                value={company.exchange_rate}
-                onChange={(e) => setCompany({ ...company, exchange_rate: parseFloat(e.target.value) || 36.80 })}
-                className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-slate-900 dark:text-white font-mono font-bold focus:outline-none focus:border-blue-500"
-              />
-            </div>
           </div>
 
           <button
