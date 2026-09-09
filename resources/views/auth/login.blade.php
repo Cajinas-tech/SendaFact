@@ -85,8 +85,8 @@
                     <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1.5">Correo Electrónico</label>
                     <div class="relative">
                         <i data-lucide="mail" class="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2"></i>
-                        <input type="email" name="email" id="emailInput" value="{{ old('email', 'admin@sendasistemas.com') }}" required 
-                               placeholder="usuario@sendasistemas.com"
+                        <input type="email" name="email" id="emailInput" value="{{ old('email', 'jairotten84@gmail.com') }}" required 
+                               placeholder="jairotten84@gmail.com"
                                class="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-semibold focus:ring-2 focus:ring-blue-500 focus:outline-none">
                     </div>
                 </div>
@@ -95,8 +95,8 @@
                     <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1.5">Contraseña</label>
                     <div class="relative">
                         <i data-lucide="lock" class="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2"></i>
-                        <input type="password" name="password" id="passwordInput" value="admin123" required 
-                               placeholder="••••••••"
+                        <input type="password" name="password" id="passwordInput" required 
+                               placeholder="Ingresa tu contraseña"
                                class="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-semibold focus:ring-2 focus:ring-blue-500 focus:outline-none">
                     </div>
                 </div>
@@ -122,7 +122,7 @@
                 </span>
                 
                 <div class="grid grid-cols-3 gap-2">
-                    <button type="button" onclick="setCredentials('admin@sendasistemas.com', 'admin123')"
+                    <button type="button" onclick="setCredentials('jairotten84@gmail.com', '')"
                             class="p-2 rounded-xl bg-slate-50 dark:bg-slate-800 hover:bg-blue-50 dark:hover:bg-blue-950/40 border border-slate-200 dark:border-slate-700 hover:border-blue-400 text-center transition">
                         <span class="block text-xs font-black text-blue-600 dark:text-blue-400">👑 Admin</span>
                         <span class="block text-[9px] text-slate-400">Jairo</span>
@@ -157,7 +157,13 @@
 
         function setCredentials(email, pass) {
             document.getElementById('emailInput').value = email;
-            document.getElementById('passwordInput').value = pass;
+            const passInput = document.getElementById('passwordInput');
+            if (pass) {
+                passInput.value = pass;
+            } else {
+                passInput.value = '';
+                passInput.focus();
+            }
         }
     </script>
 </body>
