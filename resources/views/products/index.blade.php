@@ -64,7 +64,7 @@
             </a>
 
             <!-- Botón Nuevo Producto -->
-            <button @click="createImagePreview = null; createModal = true" 
+            <button @click="createImagePreview = null; createImageUrl = ''; createModal = true" 
                     class="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-extrabold tracking-wide uppercase shadow-md shadow-blue-500/25 transition">
                 <i data-lucide="plus" class="w-4 h-4"></i>
                 <span>+ Nuevo Producto</span>
@@ -265,7 +265,7 @@
 
                     <div>
                         <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">SKU / Código</label>
-                        <input type="text" name="sku" required placeholder="#SKU-9859" 
+                        <input type="text" name="sku" placeholder="#SKU-9859 (Opcional)" 
                                class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 font-mono text-xs font-bold">
                     </div>
 
@@ -277,19 +277,19 @@
 
                     <div>
                         <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">Precio Venta ($ USD)</label>
-                        <input type="number" step="0.01" name="price_usd" required placeholder="95.11" 
+                        <input type="number" step="0.01" name="price_usd" placeholder="Auto si se omite" 
                                class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 font-mono text-xs font-bold">
                     </div>
 
                     <div>
                         <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">Costo Unitario (C$)</label>
-                        <input type="number" step="0.01" name="cost_price" required placeholder="2000.00" 
+                        <input type="number" step="0.01" name="cost_price" placeholder="0.00" 
                                class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 font-mono text-xs font-bold">
                     </div>
 
                     <div>
                         <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">Stock Inicial</label>
-                        <input type="number" name="stock" required value="10" 
+                        <input type="number" name="stock" value="10" 
                                class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 font-mono text-xs font-bold">
                     </div>
 

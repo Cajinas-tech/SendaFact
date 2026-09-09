@@ -65,6 +65,12 @@ class PosController extends Controller
             ];
 
             $products = collect([$p1, $p2, $p3]);
+            $sessionProducts = collect(session('custom_products', []))->values();
+            foreach ($sessionProducts as $sp) {
+                if (!$products->contains('id', $sp->id) && !$products->contains('sku', $sp->sku)) {
+                    $products->prepend($sp);
+                }
+            }
             $customers = collect([
                 (object)['id' => 1, 'name' => 'Eduardo Lopez', 'phone' => '444334405'],
                 (object)['id' => 2, 'name' => 'Residencial Las Colinas', 'phone' => '88776655'],
