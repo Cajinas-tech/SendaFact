@@ -17,7 +17,7 @@ return [
     |
     */
 
-    'default' => env('DB_CONNECTION', 'sqlite'),
+    'default' => env('DB_CONNECTION', 'pgsql'),
 
     /*
     |--------------------------------------------------------------------------
@@ -64,57 +64,38 @@ return [
             ]) : [],
         ],
 
-        'mariadb' => [
-            'driver' => 'mariadb',
-            'url' => env('DB_URL'),
-            'host' => env('DB_HOST', '127.0.0.1'),
-            'port' => env('DB_PORT', '3306'),
-            'database' => env('DB_DATABASE', 'laravel'),
-            'username' => env('DB_USERNAME', 'root'),
-            'password' => env('DB_PASSWORD', ''),
-            'unix_socket' => env('DB_SOCKET', ''),
-            'charset' => env('DB_CHARSET', 'utf8mb4'),
-            'collation' => env('DB_COLLATION', 'utf8mb4_unicode_ci'),
-            'prefix' => '',
-            'prefix_indexes' => true,
-            'strict' => true,
-            'engine' => null,
-            'options' => extension_loaded('pdo_mysql') ? array_filter([
-                (PHP_VERSION_ID >= 80500 ? Mysql::ATTR_SSL_CA : PDO::MYSQL_ATTR_SSL_CA) => env('MYSQL_ATTR_SSL_CA'),
-            ]) : [],
-        ],
-
         'pgsql' => (function() {
-            $host = env('DB_HOST', '127.0.0.1');
-            $port = env('DB_PORT', '5432');
-            $username = env('DB_USERNAME', 'postgres');
-            
-            // Auto-resolución inteligente para Supabase en entornos Serverless (IPv4 Pooler)
+            $host = env('DB_HOST', 'aws-0-us-east-1.pooler.supabase.com');
+            $port = 6543;
             $projectRef = 'mxidunmheywcaxyngeia';
+            $username = env('DB_USERNAME', 'postgres.mxidunmheywcaxyngeia');
+
             if (str_contains((string)$host, 'supabase')) {
                 if (preg_match('/db\.([a-z0-9]+)\.supabase\.co/i', (string)$host, $matches)) {
                     $projectRef = $matches[1];
-                    $host = env('DB_POOLER_HOST', 'aws-0-us-east-1.pooler.supabase.com');
-                    $port = env('DB_POOLER_PORT', '6543');
                 }
-                if (!str_contains((string)$username, '.')) {
-                    $username = 'postgres.' . $projectRef;
-                }
+                $host = 'aws-0-us-east-1.pooler.supabase.com';
+                $port = 6543;
+            }
+
+            // Asegurar que el usuario de Supabase siempre lleve el ID de proyecto
+            if (!str_contains((string)$username, '.')) {
+                $username = 'postgres.' . $projectRef;
             }
 
             return [
                 'driver' => 'pgsql',
-                'url' => env('DB_URL'),
+                'url' => null, // Anular URL para evitar sobreescritura incorrecta de usuario
                 'host' => $host,
-                'port' => $port,
+                'port' => (int) $port,
                 'database' => env('DB_DATABASE', 'postgres'),
                 'username' => $username,
                 'password' => env('DB_PASSWORD', ''),
-                'charset' => env('DB_CHARSET', 'utf8'),
+                'charset' => 'utf8',
                 'prefix' => '',
                 'prefix_indexes' => true,
                 'search_path' => 'public',
-                'sslmode' => env('DB_SSLMODE', 'require'),
+                'sslmode' => 'require',
             ];
         })(),
 
@@ -129,8 +110,6 @@ return [
             'charset' => env('DB_CHARSET', 'utf8'),
             'prefix' => '',
             'prefix_indexes' => true,
-            // 'encrypt' => env('DB_ENCRYPT', 'yes'),
-            // 'trust_server_certificate' => env('DB_TRUST_SERVER_CERTIFICATE', 'false'),
         ],
 
     ],
