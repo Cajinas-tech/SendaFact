@@ -220,11 +220,12 @@
                         <tr class="hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition">
                             <td class="p-4 font-bold text-slate-900 dark:text-white flex items-center gap-3">
                                 @php
-                                    $listImg = $product->image_url ?? ((stripos($product->name, 'ventana') !== false) ? '/images/products/ventana-aluminio.svg' : '/images/products/puerta-aluminio.svg');
+                                    $listFallback = (stripos($product->name, 'ventana') !== false) ? '/images/products/ventana-aluminio.svg' : '/images/products/puerta-aluminio.svg';
+                                    $listImg = $product->image_url ?: $listFallback;
                                 @endphp
                                 <img src="{{ $listImg }}" 
                                      alt="{{ $product->name }}" 
-                                     onerror="this.onerror=null; this.src='/images/products/puerta-aluminio.svg';"
+                                     onerror="this.onerror=null; this.src='{{ $listFallback }}';"
                                      class="w-9 h-9 object-contain rounded-lg bg-slate-100 dark:bg-slate-800 p-1">
                                 <div>
                                     <p>{{ $product->name }}</p>
