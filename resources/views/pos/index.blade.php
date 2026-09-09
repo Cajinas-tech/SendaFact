@@ -14,8 +14,9 @@
             <div class="glass-card rounded-2xl p-4 border border-slate-200/80 dark:border-slate-800 flex flex-col sm:flex-row gap-3">
                 <div class="relative flex-1">
                     <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2"></i>
-                    <input type="text" x-model="search" placeholder="Escanear código de barra o buscar por nombre/SKU..."
-                           class="w-full pl-11 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs sm:text-sm font-medium focus:ring-2 focus:ring-blue-500">
+                    <input type="text" id="posSearchInput" x-model="search" placeholder="Escanear código de barra o buscar por nombre/SKU..."
+                           class="w-full pl-11 pr-14 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs sm:text-sm font-medium focus:ring-2 focus:ring-blue-500">
+                    <span class="absolute right-3 top-1/2 -translate-y-1/2 px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-slate-100 dark:bg-slate-700 text-slate-500">F2</span>
                 </div>
 
                 <!-- Category filter buttons -->
@@ -70,8 +71,10 @@
                         <i data-lucide="shopping-bag" class="w-5 h-5 text-blue-600"></i>
                         <h3 class="text-base font-black text-slate-900 dark:text-white uppercase">Orden Actual</h3>
                     </div>
-                    <button @click="clearCart()" class="text-xs font-bold text-rose-500 hover:text-rose-700 flex items-center gap-1">
-                        <i data-lucide="trash-2" class="w-3.5 h-3.5"></i> Limpiar
+                    <button @click="clearCart()" class="text-xs font-bold text-rose-500 hover:text-rose-700 flex items-center gap-1.5 px-2 py-1 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-950/40 transition">
+                        <i data-lucide="trash-2" class="w-3.5 h-3.5"></i> 
+                        <span>Limpiar</span>
+                        <span class="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-rose-100 dark:bg-rose-900/60 text-rose-700 dark:text-rose-300">F4</span>
                     </button>
                 </div>
 
@@ -165,6 +168,7 @@
                         class="w-full py-4 rounded-2xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-black text-sm tracking-wider uppercase shadow-lg shadow-emerald-500/25 transition flex items-center justify-center gap-2">
                     <i data-lucide="check-circle" class="w-5 h-5"></i>
                     <span x-text="processing ? 'PROCESANDO...' : 'COBRAR / EMITIR TICKET'"></span>
+                    <span class="px-2 py-0.5 rounded text-[11px] font-mono font-black bg-emerald-800/60 text-emerald-100 border border-emerald-400/40">F12</span>
                 </button>
 
             </div>
@@ -214,6 +218,87 @@
             lastTicketNumber: '',
             lastSaleId: null,
             lastTotalCordobas: 0,
+
+            init() {
+                // Hardware Barcode Scanner Listener (< 40ms inter-key duration)
+                let barcodeBuffer = '';
+                let lastKeyTime = Date.now();
+
+                window.addEventListener('keydown', (e) => {
+                    // Hotkey F12: Cobrar
+                    if (e.key === 'F12') {
+                        e.preventDefault();
+                        if (this.cart.length > 0 && !this.processing) {
+                            this.processCheckout();
+                        }
+                        return;
+                    }
+
+                    // Hotkey F2: Enfocar buscador
+                    if (e.key === 'F2') {
+                        e.preventDefault();
+                        const searchInput = document.getElementById('posSearchInput');
+                        if (searchInput) searchInput.focus();
+                        return;
+                    }
+
+                    // Hotkey F4: Limpiar carrito
+                    if (e.key === 'F4') {
+                        e.preventDefault();
+                        this.clearCart();
+                        return;
+                    }
+
+                    const isInputFocused = document.activeElement && 
+                        (document.activeElement.tagName === 'INPUT' || 
+                         document.activeElement.tagName === 'SELECT' || 
+                         document.activeElement.tagName === 'TEXTAREA');
+
+                    const currentTime = Date.now();
+                    if (currentTime - lastKeyTime > 40) {
+                        barcodeBuffer = '';
+                    }
+                    lastKeyTime = currentTime;
+
+                    if (e.key === 'Enter') {
+                        if (barcodeBuffer.length >= 2) {
+                            this.findAndAddProductByBarcode(barcodeBuffer.trim());
+                            barcodeBuffer = '';
+                        }
+                        return;
+                    }
+
+                    if (e.key.length === 1 && !isInputFocused) {
+                        barcodeBuffer += e.key;
+                    }
+                });
+            },
+
+            findAndAddProductByBarcode(barcode) {
+                const prod = this.products.find(p => 
+                    (p.barcode && String(p.barcode).trim().toLowerCase() === barcode.toLowerCase()) || 
+                    (p.sku && String(p.sku).trim().toLowerCase() === barcode.toLowerCase()) ||
+                    (p.sku && String(p.sku).replace('#', '').trim().toLowerCase() === barcode.toLowerCase())
+                );
+                if (prod) {
+                    this.addToCart(prod);
+                    this.playBeep();
+                }
+            },
+
+            playBeep() {
+                try {
+                    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+                    osc.frequency.value = 1046; // C6 Note
+                    gain.gain.value = 0.15;
+                    osc.start();
+                    osc.stop(ctx.currentTime + 0.08);
+                } catch(e) {}
+            },
 
             get filteredProducts() {
                 return this.products.filter(p => {

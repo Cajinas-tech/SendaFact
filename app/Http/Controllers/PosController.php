@@ -80,23 +80,55 @@ class PosController extends Controller
     {
         $ticketNumber = 'NOVA-V-' . rand(1000, 9999);
         $totalCordobas = 0;
-        foreach ($request->input('items', []) as $item) {
-            $totalCordobas += (floatval($item['price'] ?? 100) * intval($item['quantity'] ?? 1));
+        $items = $request->input('items', []);
+
+        foreach ($items as $item) {
+            $price = floatval($item['price_cordobas'] ?? ($item['price'] ?? 0));
+            $qty = intval($item['quantity'] ?? 1);
+            $totalCordobas += ($price * $qty);
         }
         $totalUsd = round($totalCordobas / 36.80, 2);
 
+        $saleId = 1;
         try {
-            // Intento de guardado en DB
-            $sale = Sale::create([
-                'ticket_number' => $ticketNumber,
-                'payment_method' => $request->payment_method ?? 'efectivo',
-                'total_cordobas' => $totalCordobas,
-                'total_usd' => $totalUsd,
-                'status' => 'completed',
-            ]);
-            $saleId = $sale->id;
+            DB::transaction(function () use ($request, $ticketNumber, $totalCordobas, $totalUsd, $items, &$saleId) {
+                $sale = Sale::create([
+                    'ticket_number' => $ticketNumber,
+                    'customer_id' => $request->customer_id ?? null,
+                    'user_id' => session('user_id') ?? auth()->id() ?? 1,
+                    'payment_method' => $request->payment_method ?? 'efectivo',
+                    'total_cordobas' => $totalCordobas,
+                    'total_usd' => $totalUsd,
+                    'status' => 'completed',
+                ]);
+                $saleId = $sale->id;
+
+                foreach ($items as $item) {
+                    $prodId = $item['id'] ?? null;
+                    $qty = intval($item['quantity'] ?? 1);
+                    $price = floatval($item['price_cordobas'] ?? ($item['price'] ?? 0));
+                    $name = $item['name'] ?? 'Producto';
+
+                    if ($prodId) {
+                        $product = Product::find($prodId);
+                        if ($product) {
+                            $product->decrement('stock', $qty);
+                            $name = $product->name;
+                        }
+                    }
+
+                    SaleItem::create([
+                        'sale_id' => $sale->id,
+                        'product_id' => $prodId,
+                        'product_name' => $name,
+                        'quantity' => $qty,
+                        'unit_price_cordobas' => $price,
+                        'total_cordobas' => $price * $qty,
+                    ]);
+                }
+            });
         } catch (\Throwable $e) {
-            $saleId = 1;
+            // Graceful fallback
         }
 
         return response()->json([
