@@ -62,21 +62,20 @@ class ProductController extends Controller
     public function store(Request $request)
     {
         try {
-            $validated = $request->validate([
-                'name' => 'required|string|max:255',
-                'category_id' => 'required|exists:categories,id',
-                'sku' => 'required|string',
-                'cost_price' => 'required|numeric|min:0',
-                'price_cordobas' => 'required|numeric|min:0',
-                'price_usd' => 'required|numeric|min:0',
-                'stock' => 'required|integer|min:0',
-                'min_stock' => 'nullable|integer|min:0',
-                'dimensions' => 'nullable|string',
-                'subtitle' => 'nullable|string',
-                'description' => 'nullable|string',
-            ]);
+            $data = $request->except(['_token', 'image_file']);
+            
+            if ($request->hasFile('image_file')) {
+                $file = $request->file('image_file');
+                $mime = $file->getMimeType();
+                $base64 = base64_encode(file_get_contents($file->getRealPath()));
+                $data['image_url'] = "data:{$mime};base64,{$base64}";
+            }
 
-            Product::create($validated);
+            if (empty($data['price_usd']) && !empty($data['price_cordobas'])) {
+                $data['price_usd'] = round($data['price_cordobas'] / 36.80, 2);
+            }
+
+            Product::create($data);
         } catch (\Throwable $e) {}
 
         return redirect()->route('products.index')->with('success', 'Producto registrado exitosamente.');
@@ -86,7 +85,20 @@ class ProductController extends Controller
     {
         try {
             $product = Product::findOrFail($id);
-            $product->update($request->all());
+            $data = $request->except(['_token', '_method', 'image_file']);
+
+            if ($request->hasFile('image_file')) {
+                $file = $request->file('image_file');
+                $mime = $file->getMimeType();
+                $base64 = base64_encode(file_get_contents($file->getRealPath()));
+                $data['image_url'] = "data:{$mime};base64,{$base64}";
+            }
+
+            if (empty($data['price_usd']) && !empty($data['price_cordobas'])) {
+                $data['price_usd'] = round($data['price_cordobas'] / 36.80, 2);
+            }
+
+            $product->update($data);
         } catch (\Throwable $e) {}
 
         return redirect()->route('products.index')->with('success', 'Producto actualizado.');

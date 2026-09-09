@@ -7,7 +7,9 @@
     createModal: false, 
     editModal: false, 
     currentProduct: {},
-    searchTerm: '' 
+    searchTerm: '',
+    createImagePreview: null,
+    editImagePreview: null
 }">
 
     <!-- TARJETA SUPERIOR: CABECERA Y BARRA DE ACCIONES -->
@@ -60,7 +62,7 @@
             </a>
 
             <!-- Botón Nuevo Producto -->
-            <button @click="createModal = true" 
+            <button @click="createImagePreview = null; createModal = true" 
                     class="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-extrabold tracking-wide uppercase shadow-md shadow-blue-500/25 transition">
                 <i data-lucide="plus" class="w-4 h-4"></i>
                 <span>+ Nuevo Producto</span>
@@ -161,7 +163,7 @@
                                 <div class="flex items-center justify-center gap-1.5">
                                     <!-- Botón Editar -->
                                     <button type="button" 
-                                            @click="currentProduct = {{ json_encode($p) }}; editModal = true" 
+                                            @click="currentProduct = {{ json_encode($p) }}; editImagePreview = null; editModal = true" 
                                             class="p-1.5 rounded-lg border border-blue-200 dark:border-blue-800/60 bg-blue-50/60 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/60 transition shadow-2xs"
                                             title="Editar producto">
                                         <i data-lucide="edit-3" class="w-4 h-4"></i>
@@ -213,13 +215,38 @@
                 </button>
             </div>
 
-            <form action="{{ route('products.store') }}" method="POST" class="space-y-4">
+            <form action="{{ route('products.store') }}" method="POST" enctype="multipart/form-data" class="space-y-4">
                 @csrf
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div class="sm:col-span-2">
                         <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">Nombre del Producto</label>
                         <input type="text" name="name" required placeholder="Ej. PUERTA DE ALUMINIO-VIDRIO" 
                                class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-semibold">
+                    </div>
+
+                    <!-- SUBIR IMAGEN DEL PRODUCTO -->
+                    <div class="sm:col-span-2">
+                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">
+                            Imagen del Producto (JPG, PNG, WEBP)
+                        </label>
+                        <div class="flex items-center gap-3.5 p-3 rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/50">
+                            <div class="w-14 h-14 rounded-xl bg-white dark:bg-slate-800 p-1 border border-slate-200 dark:border-slate-700 flex items-center justify-center overflow-hidden shrink-0 shadow-2xs">
+                                <template x-if="createImagePreview">
+                                    <img :src="createImagePreview" class="w-full h-full object-contain">
+                                </template>
+                                <template x-if="!createImagePreview">
+                                    <i data-lucide="image" class="w-6 h-6 text-slate-300"></i>
+                                </template>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <input type="file" 
+                                       name="image_file" 
+                                       accept="image/png, image/jpeg, image/jpg, image/webp, image/svg+xml"
+                                       @change="const file = $event.target.files[0]; if (file) { const reader = new FileReader(); reader.onload = (e) => createImagePreview = e.target.result; reader.readAsDataURL(file); }"
+                                       class="w-full text-xs text-slate-500 file:mr-3 file:py-2 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-blue-50 file:text-blue-600 hover:file:bg-blue-100 dark:file:bg-blue-950 dark:file:text-blue-400 cursor-pointer">
+                                <p class="text-[10px] text-slate-400 mt-1">Selecciona una imagen en formato JPG o PNG desde tu dispositivo.</p>
+                            </div>
+                        </div>
                     </div>
 
                     <div>
@@ -291,7 +318,7 @@
                 </button>
             </div>
 
-            <form :action="'/productos/' + currentProduct.id" method="POST" class="space-y-4">
+            <form :action="'/productos/' + currentProduct.id" method="POST" enctype="multipart/form-data" class="space-y-4">
                 @csrf
                 @method('PUT')
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -299,6 +326,34 @@
                         <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">Nombre del Producto</label>
                         <input type="text" name="name" :value="currentProduct.name" required
                                class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-semibold">
+                    </div>
+
+                    <!-- OPCIÓN DE AGREGAR / CAMBIAR IMAGEN (JPG, PNG) -->
+                    <div class="sm:col-span-2">
+                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">
+                            Foto o Imagen del Producto (JPG, PNG, WEBP)
+                        </label>
+                        <div class="flex items-center gap-3.5 p-3 rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/50">
+                            <!-- Vista Previa de la Imagen Actual / Nueva -->
+                            <div class="w-16 h-16 rounded-xl bg-white dark:bg-slate-800 p-1 border border-slate-200 dark:border-slate-700 flex items-center justify-center overflow-hidden shrink-0 shadow-2xs">
+                                <template x-if="editImagePreview">
+                                    <img :src="editImagePreview" class="w-full h-full object-contain">
+                                </template>
+                                <template x-if="!editImagePreview">
+                                    <img :src="currentProduct.image_url || '/images/products/puerta-aluminio.svg'" class="w-full h-full object-contain">
+                                </template>
+                            </div>
+
+                            <!-- Selector de Archivo -->
+                            <div class="flex-1 min-w-0">
+                                <input type="file" 
+                                       name="image_file" 
+                                       accept="image/png, image/jpeg, image/jpg, image/webp, image/svg+xml"
+                                       @change="const file = $event.target.files[0]; if (file) { const reader = new FileReader(); reader.onload = (e) => editImagePreview = e.target.result; reader.readAsDataURL(file); }"
+                                       class="w-full text-xs text-slate-500 file:mr-3 file:py-2 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-blue-50 file:text-blue-600 hover:file:bg-blue-100 dark:file:bg-blue-950 dark:file:text-blue-400 cursor-pointer">
+                                <p class="text-[10px] text-slate-400 mt-1">Selecciona una nueva foto en JPG o PNG para reemplazar la imagen del producto.</p>
+                            </div>
+                        </div>
                     </div>
 
                     <div>
