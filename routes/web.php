@@ -13,7 +13,7 @@ use App\Http\Controllers\ProductController;
 use App\Http\Controllers\QuoteController;
 use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\SettingController;
-use Illuminate\Support\Facades\Auth;
+use App\Http\Middleware\SendaAuth;
 
 // Autenticación (Login & Logout)
 Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
@@ -21,16 +21,8 @@ Route::post('/login', [AuthController::class, 'login'])->name('login.post');
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 Route::get('/logout', [AuthController::class, 'logout']);
 
-// Middleware de Autenticación Híbrida (Auth + Sesión persistente para Serverless)
-$authMiddleware = function ($request, $next) {
-    if (!Auth::check() && !session('is_authenticated')) {
-        return redirect()->route('login');
-    }
-    return $next($request);
-};
-
-// Rutas protegidas del Sistema SendaFact
-Route::middleware([$authMiddleware])->group(function () {
+// Rutas protegidas del Sistema SendaFact con Middleware de Sesión Dedicado
+Route::middleware([SendaAuth::class])->group(function () {
     
     // Panel Central / Dashboard
     Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
