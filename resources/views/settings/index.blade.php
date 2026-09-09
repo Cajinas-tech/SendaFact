@@ -1,12 +1,36 @@
 @extends('layouts.app')
 
-@section('title_badge', 'AJUSTE DEL SISTEMA Y RESPALDOS')
+@section('title_badge', 'AJUSTE DEL SISTEMA')
 
 @section('content')
-<div class="space-y-8" x-data="{ restoreModal: false, importModal: false, createUserModal: false }">
+<div class="space-y-6" x-data="{ 
+    activeTab: new URLSearchParams(window.location.search).get('tab') || 'backup', 
+    restoreModal: false, 
+    importModal: false, 
+    createUserModal: false 
+}">
 
-    <!-- CENTRO DE COPIAS Y RESPALDOS (IMAGE 2 DESIGN) -->
-    <div class="space-y-4">
+    <!-- PESTAÑAS INDEPENDIENTES DE AJUSTE DEL SISTEMA -->
+    <div class="flex flex-wrap items-center gap-3 bg-white dark:bg-[#0f172a] p-2 rounded-2xl border border-slate-200/90 dark:border-slate-800 shadow-xs">
+        <button type="button" 
+                @click="activeTab = 'backup'; const url = new URL(window.location); url.searchParams.set('tab', 'backup'); window.history.replaceState({}, '', url);" 
+                :class="activeTab === 'backup' ? 'bg-blue-600 text-white shadow-md shadow-blue-500/25' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/60 hover:text-slate-900 dark:hover:text-white'"
+                class="flex items-center gap-2.5 px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition duration-200">
+            <i data-lucide="archive" class="w-4 h-4"></i>
+            <span>Centro de Copias y Respaldos</span>
+        </button>
+
+        <button type="button" 
+                @click="activeTab = 'users'; const url = new URL(window.location); url.searchParams.set('tab', 'users'); window.history.replaceState({}, '', url);" 
+                :class="activeTab === 'users' ? 'bg-blue-600 text-white shadow-md shadow-blue-500/25' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/60 hover:text-slate-900 dark:hover:text-white'"
+                class="flex items-center gap-2.5 px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition duration-200">
+            <i data-lucide="users" class="w-4 h-4"></i>
+            <span>Gestión de Usuarios y Roles</span>
+        </button>
+    </div>
+
+    <!-- VISTA INDEPENDIENTE 1: CENTRO DE COPIAS Y RESPALDOS -->
+    <div x-show="activeTab === 'backup'" x-cloak class="space-y-4">
         <div class="flex items-start gap-3">
             <div class="w-10 h-10 rounded-2xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0 border border-indigo-100 dark:border-indigo-900/50">
                 <i data-lucide="archive" class="w-5 h-5"></i>
@@ -130,15 +154,16 @@
         </div>
     </div>
 
-    <!-- GESTIÓN DE USUARIOS Y ROLES INTEGRADA EN AJUSTES -->
-    <div class="glass-card rounded-3xl p-6 sm:p-8 border border-slate-200/90 dark:border-slate-800 shadow-xs space-y-6">
-        <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4">
-            <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-2xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0 border border-indigo-100 dark:border-indigo-900/50">
-                    <i data-lucide="users" class="w-5 h-5"></i>
-                </div>
-                <div>
-                    <h3 class="text-base font-black text-slate-900 dark:text-white uppercase tracking-tight">Gestión de Usuarios y Roles</h3>
+    <!-- VISTA INDEPENDIENTE 2: GESTIÓN DE USUARIOS Y ROLES -->
+    <div x-show="activeTab === 'users'" x-cloak class="space-y-6">
+        <div class="glass-card rounded-3xl p-6 sm:p-8 border border-slate-200/90 dark:border-slate-800 shadow-xs space-y-6">
+            <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-2xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0 border border-indigo-100 dark:border-indigo-900/50">
+                        <i data-lucide="users" class="w-5 h-5"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-base font-black text-slate-900 dark:text-white uppercase tracking-tight">Gestión de Usuarios y Roles</h3>
                     <p class="text-xs text-slate-400">Control de cuentas de acceso, permisos y roles (Administrador, Cajero, Vendedor).</p>
                 </div>
             </div>
@@ -219,6 +244,7 @@
                 </tbody>
             </table>
         </div>
+    </div>
     </div>
 
     <!-- MODAL REGISTRAR NUEVO USUARIO -->
