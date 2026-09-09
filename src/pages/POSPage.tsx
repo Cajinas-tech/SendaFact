@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { Search, ShoppingBag, Trash2, CheckCircle, CreditCard, Banknote, RefreshCw } from 'lucide-react';
+import { Search, ShoppingBag, Trash2, CheckCircle, CreditCard, Banknote, RefreshCw, Zap } from 'lucide-react';
 import ProductCard from '../components/POS/ProductCard';
 import CartItem from '../components/POS/CartItem';
 import TicketModal from '../components/POS/TicketModal';
 import { storage } from '../lib/storage';
 import { Product, Category, Customer, Sale } from '../types';
+import { useToast } from '../components/UI/Toast';
 
 export default function POSPage() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -21,6 +22,7 @@ export default function POSPage() {
   const [ticketModalOpen, setTicketModalOpen] = useState(false);
   const [lastSaleData, setLastSaleData] = useState({ ticketNumber: '', saleId: 0, totalCordobas: 0 });
 
+  const { success, warning, error, info } = useToast();
   const searchInputRef = useRef<HTMLInputElement>(null);
   const settings = storage.getSettings();
   const exchangeRate = settings.exchange_rate || 36.80;
@@ -51,6 +53,10 @@ export default function POSPage() {
     setCart((currentCart) => {
       const existing = currentCart.find((item) => item.id === product.id);
       if (existing) {
+        if (existing.quantity >= product.stock) {
+          warning('Stock límite alcanzado', `Solo hay ${product.stock} unidades de ${product.name}`);
+          return currentCart;
+        }
         return currentCart.map((item) =>
           item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item
         );
@@ -67,14 +73,22 @@ export default function POSPage() {
         },
       ];
     });
-  }, [exchangeRate]);
+  }, [exchangeRate, warning]);
 
   // Modificadores de cantidad
   const incrementQuantity = (id: number) => {
+    const prod = products.find(p => p.id === id);
     setCart((currentCart) =>
-      currentCart.map((item) =>
-        item.id === id ? { ...item, quantity: item.quantity + 1 } : item
-      )
+      currentCart.map((item) => {
+        if (item.id === id) {
+          if (prod && item.quantity >= prod.stock) {
+            warning('Stock máximo alcanzado', `No hay más stock disponible de ${item.name}`);
+            return item;
+          }
+          return { ...item, quantity: item.quantity + 1 };
+        }
+        return item;
+      })
     );
   };
 
@@ -96,7 +110,12 @@ export default function POSPage() {
     setCart((currentCart) => currentCart.filter((item) => item.id !== id));
   };
 
-  const clearCart = () => setCart([]);
+  const clearCart = () => {
+    if (cart.length > 0) {
+      setCart([]);
+      info('Orden limpiada', 'Se vaciaron los productos de la orden actual');
+    }
+  };
 
   // Buscar y agregar por código de barras
   const findAndAddByBarcode = useCallback((barcode: string) => {
@@ -111,8 +130,11 @@ export default function POSPage() {
     if (found) {
       addToCart(found);
       playBeep();
+      success('Código Escaneado', `${found.name} añadido a la orden`);
+    } else {
+      warning('Código no encontrado', `No existe producto con código: ${barcode}`);
     }
-  }, [products, addToCart, playBeep]);
+  }, [products, addToCart, playBeep, success, warning]);
 
   // Procesar Cobro
   const handleCheckout = async () => {
@@ -202,12 +224,13 @@ export default function POSPage() {
         totalCordobas: totalCordobas
       });
       setTicketModalOpen(true);
+      success('¡Venta realizada con éxito!', `Ticket ${ticketNumber} • Total: C$ ${totalCordobas.toFixed(2)}`);
       setCart([]);
       setSelectedCustomerId('');
       setPaymentMethod('efectivo');
 
     } catch (e) {
-      alert('Error al procesar la venta.');
+      error('Error al procesar la venta', 'Por favor verifica la caja y los productos seleccionados');
     } finally {
       setIsProcessing(false);
     }
@@ -296,14 +319,14 @@ export default function POSPage() {
   }, [subtotal, exchangeRate]);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-fade-in">
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         
         {/* PANEL IZQUIERDO: CATÁLOGO Y BUSCADOR (8 Cols) */}
         <div className="lg:col-span-7 xl:col-span-8 space-y-4">
           
           {/* Buscador & Filtro de Categorías */}
-          <div className="glass-card rounded-2xl p-4 border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-[#0f172a] flex flex-col sm:flex-row gap-3">
+          <div className="glass-card rounded-2xl p-4 border border-slate-200/80 dark:border-slate-800 flex flex-col sm:flex-row gap-3">
             <div className="relative flex-1">
               <Search className="w-4 h-4 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2" />
               <input
@@ -312,9 +335,9 @@ export default function POSPage() {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Escanear código de barra o buscar por nombre/SKU..."
-                className="w-full pl-11 pr-14 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs sm:text-sm font-medium focus:ring-2 focus:ring-blue-500 transition outline-none"
+                className="w-full pl-11 pr-14 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs sm:text-sm font-medium focus:ring-2 focus:ring-blue-500 transition outline-none"
               />
-              <span className="absolute right-3 top-1/2 -translate-y-1/2 px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-slate-100 dark:bg-slate-700 text-slate-500">
+              <span className="absolute right-3 top-1/2 -translate-y-1/2 px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-400">
                 F2
               </span>
             </div>
@@ -371,7 +394,7 @@ export default function POSPage() {
 
         {/* PANEL DERECHO: CARRITO Y COBRO (4 Cols) */}
         <div className="lg:col-span-5 xl:col-span-4">
-          <div className="glass-card rounded-3xl p-5 sm:p-6 border border-slate-200/90 dark:border-slate-800 shadow-xl space-y-5 bg-white dark:bg-[#0f172a]">
+          <div className="glass-card rounded-3xl p-5 sm:p-6 border border-slate-200/90 dark:border-slate-800 shadow-xl space-y-5">
             
             {/* Cabecera del Carrito */}
             <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
@@ -385,7 +408,7 @@ export default function POSPage() {
                 type="button"
                 onClick={clearCart}
                 disabled={cart.length === 0}
-                className="text-xs font-bold text-rose-500 hover:text-rose-700 disabled:opacity-40 flex items-center gap-1.5 px-2 py-1 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-950/40 transition"
+                className="text-xs font-bold text-rose-500 hover:text-rose-700 disabled:opacity-40 flex items-center gap-1.5 px-2 py-1 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-950/40 transition cursor-pointer"
               >
                 <Trash2 className="w-3.5 h-3.5" />
                 <span>Limpiar</span>
@@ -403,7 +426,7 @@ export default function POSPage() {
               <select
                 value={selectedCustomerId}
                 onChange={(e) => setSelectedCustomerId(e.target.value)}
-                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-bold text-slate-700 dark:text-slate-300 outline-none"
+                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs font-bold text-slate-700 dark:text-slate-300 outline-none"
               >
                 <option value="">Cliente Ocasional / Público General</option>
                 {customers.map((c) => (
@@ -418,7 +441,7 @@ export default function POSPage() {
             <div className="space-y-2.5 max-h-56 overflow-y-auto pr-1">
               {cart.length === 0 ? (
                 <div className="py-8 text-center text-slate-400 text-xs space-y-1">
-                  <ShoppingBag className="w-8 h-8 mx-auto text-slate-300 dark:text-slate-600" />
+                  <ShoppingBag className="w-8 h-8 mx-auto text-slate-300 dark:text-slate-600 animate-float" />
                   <p className="font-bold">El carrito está vacío</p>
                   <p className="text-[10px]">Haz clic en un producto o escanéalo con el lector</p>
                 </div>
@@ -444,7 +467,7 @@ export default function POSPage() {
                 <button
                   type="button"
                   onClick={() => setPaymentMethod('efectivo')}
-                  className={`py-2 px-3 rounded-xl border text-xs font-black flex items-center justify-center gap-1.5 transition ${
+                  className={`py-2 px-3 rounded-xl border text-xs font-black flex items-center justify-center gap-1.5 transition cursor-pointer ${
                     paymentMethod === 'efectivo'
                       ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 shadow-2xs'
                       : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400'
@@ -456,7 +479,7 @@ export default function POSPage() {
                 <button
                   type="button"
                   onClick={() => setPaymentMethod('tarjeta')}
-                  className={`py-2 px-3 rounded-xl border text-xs font-black flex items-center justify-center gap-1.5 transition ${
+                  className={`py-2 px-3 rounded-xl border text-xs font-black flex items-center justify-center gap-1.5 transition cursor-pointer ${
                     paymentMethod === 'tarjeta'
                       ? 'border-blue-500 bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 shadow-2xs'
                       : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400'
@@ -497,7 +520,7 @@ export default function POSPage() {
               type="button"
               onClick={handleCheckout}
               disabled={cart.length === 0 || isProcessing}
-              className="w-full py-4 rounded-2xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-black text-sm tracking-wider uppercase shadow-lg shadow-emerald-500/25 transition flex items-center justify-center gap-2 cursor-pointer"
+              className="w-full py-4 rounded-2xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-black text-sm tracking-wider uppercase shadow-lg shadow-emerald-500/25 transition flex items-center justify-center gap-2 cursor-pointer active:scale-[0.99]"
             >
               {isProcessing ? (
                 <>

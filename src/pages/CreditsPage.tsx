@@ -6,12 +6,14 @@ import {
 } from 'lucide-react';
 import { storage } from '../lib/storage';
 import { CreditAccount, Customer } from '../types';
+import { useToast } from '../components/UI/Toast';
 
 export const CreditsPage: React.FC = () => {
   const [credits, setCredits] = useState<CreditAccount[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'paid'>('pending');
+  const { success } = useToast();
   
   // Abono Modal
   const [selectedCredit, setSelectedCredit] = useState<CreditAccount | null>(null);
@@ -80,6 +82,10 @@ export const CreditsPage: React.FC = () => {
     setPaymentAmount('');
     setNotes('');
     loadData();
+    success(
+      isFullPayment ? '¡Deuda Cancelada Totalmente!' : '¡Abono Aplicado con Éxito!',
+      `C$ ${amount.toFixed(2)} aplicados a la cuenta de ${selectedCredit.customer_name}`
+    );
   };
 
   const filteredCredits = credits.filter(c => {

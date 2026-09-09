@@ -5,12 +5,14 @@ import {
 } from 'lucide-react';
 import { storage } from '../lib/storage';
 import { Customer } from '../types';
+import { useToast } from '../components/UI/Toast';
 
 export const CustomersPage: React.FC = () => {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
+  const { success } = useToast();
 
   // Form states
   const [name, setName] = useState('');
@@ -42,7 +44,7 @@ export const CustomersPage: React.FC = () => {
   const openEditModal = (customer: Customer) => {
     setEditingCustomer(customer);
     setName(customer.name);
-    setIdentification(customer.identification || '');
+    setIdentification(customer.document_number || (customer as any).identification || '');
     setPhone(customer.phone || '');
     setEmail(customer.email || '');
     setAddress(customer.address || '');
@@ -53,9 +55,9 @@ export const CustomersPage: React.FC = () => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const newCustomer: Customer = {
-      id: editingCustomer ? editingCustomer.id : 'cust-' + Date.now().toString().slice(-6),
+      id: editingCustomer ? editingCustomer.id : (Date.now() as any),
       name,
-      identification,
+      document_number: identification,
       phone,
       email,
       address,
@@ -67,6 +69,10 @@ export const CustomersPage: React.FC = () => {
     storage.saveCustomer(newCustomer);
     setShowModal(false);
     loadData();
+    success(
+      editingCustomer ? '¡Cliente Actualizado!' : '¡Cliente Registrado con Éxito!',
+      `${newCustomer.name} - Límite: C$ ${newCustomer.credit_limit.toFixed(2)}`
+    );
   };
 
   const filteredCustomers = customers.filter(c => 

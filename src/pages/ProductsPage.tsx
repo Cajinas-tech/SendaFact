@@ -12,11 +12,13 @@ import {
 } from 'lucide-react';
 import { storage, compressImageFile } from '../lib/storage';
 import { Product, Category } from '../types';
+import { useToast } from '../components/UI/Toast';
 
 export default function ProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
+  const { success, warning, error, info } = useToast();
 
   // Modales
   const [createModal, setCreateModal] = useState(false);
@@ -137,6 +139,7 @@ export default function ProductsPage() {
     storage.setProducts(updated);
     setProducts(updated);
     setCreateModal(false);
+    success('¡Producto Registrado!', `${newProduct.name} se agregó al inventario correctamente`);
   };
 
   // Actualizar Producto Existente
@@ -169,6 +172,7 @@ export default function ProductsPage() {
     storage.setProducts(updated);
     setProducts(updated);
     setEditModal(false);
+    success('¡Producto Actualizado!', `${formData.name.toUpperCase()} se modificó con éxito`);
   };
 
   // Eliminar Producto
@@ -177,11 +181,13 @@ export default function ProductsPage() {
       const updated = products.filter(p => p.id !== id);
       storage.setProducts(updated);
       setProducts(updated);
+      warning('Producto Eliminado', `${name} fue retirado del catálogo`);
     }
   };
 
   // Exportar CSV
   const handleExportCSV = () => {
+    info('Exportación Iniciada', 'Generando y descargando archivo CSV...');
     const headers = ['ID,SKU,NOMBRE,CATEGORIA,PRECIO_C$,PRECIO_USD,COSTO_C$,STOCK,SUBTITULO'];
     const rows = products.map(p => {
       const cat = categories.find(c => c.id === p.category_id)?.name || 'GENERAL';

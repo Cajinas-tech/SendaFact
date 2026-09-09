@@ -5,11 +5,13 @@ import {
 } from 'lucide-react';
 import { storage } from '../lib/storage';
 import { CashRegister, Movement, Sale } from '../types';
+import { useToast } from '../components/UI/Toast';
 
 export const CashPage: React.FC = () => {
   const [activeRegister, setActiveRegister] = useState<CashRegister | null>(null);
   const [registers, setRegisters] = useState<CashRegister[]>([]);
   const [todaySales, setTodaySales] = useState<Sale[]>([]);
+  const { success, warning, info } = useToast();
   
   // Modals
   const [showOpenModal, setShowOpenModal] = useState(false);
@@ -47,6 +49,7 @@ export const CashPage: React.FC = () => {
     setShowOpenModal(false);
     setNotes('');
     loadData();
+    success('¡Turno de Caja Aperturado!', `Fondo inicial: C$ ${amount.toFixed(2)}`);
   };
 
   const handleCloseRegister = (e: React.FormEvent) => {
@@ -55,6 +58,7 @@ export const CashPage: React.FC = () => {
     storage.closeCashRegister(activeRegister.id);
     setShowCloseModal(false);
     loadData();
+    warning('¡Turno de Caja Cerrado!', 'Arqueo completado y guardado');
   };
 
   const handleCashMovement = (e: React.FormEvent) => {
@@ -89,6 +93,10 @@ export const CashPage: React.FC = () => {
     setMovementAmount('');
     setMovementReason('');
     loadData();
+    info(
+      movementType === 'in' ? 'Ingreso Registrado' : 'Egreso Registrado',
+      `C$ ${amount.toFixed(2)} - ${movementReason || 'Ajuste de caja'}`
+    );
   };
 
   // Calculations

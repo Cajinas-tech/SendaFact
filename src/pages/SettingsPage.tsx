@@ -6,9 +6,11 @@ import {
 } from 'lucide-react';
 import { storage } from '../lib/storage';
 import { User, CompanySetting } from '../types';
+import { useToast } from '../components/UI/Toast';
 
 export const SettingsPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'backup' | 'users' | 'company'>('backup');
+  const { success, warning, error, info } = useToast();
   
   // Company settings
   const [company, setCompany] = useState<CompanySetting>({
@@ -18,7 +20,8 @@ export const SettingsPage: React.FC = () => {
     phone: '+505 8888-8888',
     email: 'contacto@sendafact.com',
     exchange_rate: 36.80,
-    tax_rate: 15
+    main_currency: 'C$',
+    secondary_currency: 'USD'
   });
 
   // Users state
@@ -27,7 +30,7 @@ export const SettingsPage: React.FC = () => {
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [userName, setUserName] = useState('');
   const [userEmail, setUserEmail] = useState('');
-  const [userRole, setUserRole] = useState<'admin' | 'cashier' | 'supervisor'>('cashier');
+  const [userRole, setUserRole] = useState<'admin' | 'cajero' | 'vendedor'>('cajero');
   const [userPassword, setUserPassword] = useState('');
 
   // Backup message
@@ -47,8 +50,7 @@ export const SettingsPage: React.FC = () => {
   const handleSaveCompany = (e: React.FormEvent) => {
     e.preventDefault();
     storage.saveCompanySettings(company);
-    setBackupMsg('¡Configuración de empresa guardada con éxito!');
-    setTimeout(() => setBackupMsg(''), 4000);
+    success('¡Configuración Guardada!', 'Datos comerciales y tasa de cambio actualizados');
   };
 
   // Export JSON backup
@@ -61,8 +63,7 @@ export const SettingsPage: React.FC = () => {
     a.download = `sendafact_backup_${new Date().toISOString().slice(0, 10)}.json`;
     a.click();
     URL.revokeObjectURL(url);
-    setBackupMsg('¡Respaldo JSON descargado correctamente!');
-    setTimeout(() => setBackupMsg(''), 4000);
+    success('¡Copia de Seguridad Descargada!', 'Archivo JSON generado con éxito');
   };
 
   // Import JSON backup
@@ -74,10 +75,10 @@ export const SettingsPage: React.FC = () => {
     reader.onload = (event) => {
       const content = event.target?.result as string;
       if (storage.importAllDataJSON(content)) {
-        setBackupMsg('¡Base de datos restaurada con éxito!');
+        success('¡Base de Datos Restaurada!', 'Todos los registros han sido actualizados');
         loadData();
       } else {
-        alert('Error: Formato de archivo de respaldo inválido.');
+        error('Error al Restaurar', 'El archivo JSON de respaldo es inválido');
       }
     };
     reader.readAsText(file);
@@ -88,8 +89,7 @@ export const SettingsPage: React.FC = () => {
     if (confirm('¿Está seguro de restablecer la base de datos a los valores predeterminados? Se perderán ventas actuales.')) {
       storage.resetAllData();
       loadData();
-      setBackupMsg('¡Sistema restablecido a valores por defecto!');
-      setTimeout(() => setBackupMsg(''), 4000);
+      warning('¡Sistema Restablecido!', 'Base de datos devuelta a valores iniciales');
     }
   };
 

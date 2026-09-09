@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { storage } from '../lib/storage';
 import { Movement, Product } from '../types';
+import { useToast } from '../components/UI/Toast';
 
 export const MovementsPage: React.FC = () => {
   const [movements, setMovements] = useState<Movement[]>([]);
@@ -13,6 +14,7 @@ export const MovementsPage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState<'all' | 'in' | 'out' | 'adjust'>('all');
   const [showModal, setShowModal] = useState(false);
+  const { success, info } = useToast();
 
   // New movement form
   const [selectedProductId, setSelectedProductId] = useState('');
@@ -68,9 +70,14 @@ export const MovementsPage: React.FC = () => {
     setQuantity('1');
     setReason('');
     loadData();
+    success(
+      '¡Movimiento Registrado!',
+      `${movementType === 'in' ? 'Entrada de' : movementType === 'out' ? 'Salida de' : 'Ajuste a'} ${qty} unid. de ${prod.name}`
+    );
   };
 
   const exportCSV = () => {
+    info('Exportación Iniciada', 'Descargando kardex de movimientos...');
     const headers = ['ID,Fecha,Producto,Tipo,Cantidad,Motivo,Usuario'];
     const rows = filteredMovements.map(m => 
       `"${m.id}","${new Date(m.created_at).toLocaleString()}","${m.product_name}","${m.type === 'in' ? 'Entrada' : m.type === 'out' ? 'Salida' : 'Ajuste'}","${m.quantity}","${m.reason}","${m.user}"`
