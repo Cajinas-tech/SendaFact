@@ -43,14 +43,16 @@
         
         <!-- Brand Header -->
         <div class="text-center space-y-3">
-            <div class="w-16 h-16 rounded-2xl bg-[#090d16] flex items-center justify-center shadow-xl p-2 mx-auto overflow-hidden">
-                <img src="/images/logo/senda-logo.svg" alt="Senda Logo" class="w-full h-full object-contain">
+            <div class="w-20 h-20 rounded-3xl bg-[#070b14] flex items-center justify-center shadow-2xl shadow-blue-950/50 p-2 mx-auto overflow-hidden border border-slate-800/80">
+                <img src="/images/logo/senda-logo.png" alt="Senda Sistemas" class="w-full h-full object-contain">
             </div>
             <div>
-                <h1 class="text-2xl font-black tracking-tight text-slate-900 dark:text-white uppercase">
-                    SENDA <span class="text-blue-600">SISTEMAS</span>
+                <h1 class="text-2xl font-black tracking-tight uppercase flex items-center justify-center gap-1.5">
+                    <span class="text-blue-500 font-extrabold tracking-wider">SENDA</span> 
+                    <span class="text-amber-400 font-extrabold tracking-wider">SISTEMAS</span>
                 </h1>
-                <span class="inline-block mt-1 text-[11px] font-bold px-3 py-0.5 rounded-full bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800/40">
+                <div class="h-0.5 w-32 mx-auto bg-gradient-to-r from-blue-500 via-amber-400 to-amber-500 rounded-full my-1.5"></div>
+                <span class="inline-block text-[11px] font-bold px-3 py-0.5 rounded-full bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800/40">
                     SISTEMA V3.0 (LARAVEL + SUPABASE)
                 </span>
             </div>

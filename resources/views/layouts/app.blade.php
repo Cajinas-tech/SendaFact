@@ -84,16 +84,19 @@
             <!-- Sidebar Top: Brand Logo -->
             <div class="p-4 border-b border-slate-100 dark:border-slate-800/60">
                 <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 rounded-xl bg-[#090d16] flex items-center justify-center shadow-md p-1 shrink-0 overflow-hidden">
-                        <img src="/images/logo/senda-logo.svg" alt="Senda Logo" class="w-full h-full object-contain">
+                    <div class="w-12 h-12 rounded-2xl bg-[#070b14] flex items-center justify-center shadow-lg shadow-blue-950/40 p-1 shrink-0 overflow-hidden border border-slate-800/80">
+                        <img src="/images/logo/senda-logo.png" alt="Senda Sistemas" class="w-full h-full object-contain">
                     </div>
                     <div x-show="!sidebarCollapsed" class="overflow-hidden">
-                        <h1 class="font-extrabold text-base tracking-tight text-slate-900 dark:text-white uppercase leading-none">
-                            SENDA <span class="text-blue-600">SISTEMAS</span>
+                        <h1 class="font-black text-sm tracking-tight uppercase leading-tight flex items-center gap-1">
+                            <span class="text-blue-500 font-extrabold tracking-wider">SENDA</span> 
+                            <span class="text-amber-400 font-extrabold tracking-wider">SISTEMAS</span>
                         </h1>
-                        <div class="inline-block mt-1">
-                            <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800/40">
-                                SISTEMA V3.0 (LARAVEL)
+                        <!-- Blue and Gold Brand Accent Line -->
+                        <div class="h-0.5 w-full bg-gradient-to-r from-blue-500 via-amber-400 to-amber-500 rounded-full my-1"></div>
+                        <div class="inline-block">
+                            <span class="text-[9px] font-extrabold px-2 py-0.5 rounded-full bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800/40 uppercase">
+                                SISTEMA V3.0 (POS)
                             </span>
                         </div>
                     </div>
