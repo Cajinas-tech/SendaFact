@@ -6,6 +6,7 @@ const STORAGE_KEYS = {
   CUSTOMERS: 'sendafact_customers_v3',
   SALES: 'sendafact_sales_v3',
   CASH_REGISTER: 'sendafact_cash_v3',
+  CASH_REGISTERS: 'sendafact_cash_registers_list_v3',
   MOVEMENTS: 'sendafact_movements_v3',
   CREDITS: 'sendafact_credits_v3',
   USERS: 'sendafact_users_v3',
@@ -71,12 +72,12 @@ const DEFAULT_PRODUCTS: Product[] = [
   {
     id: 3,
     category_id: 3,
-    sku: 'YOG001',
-    barcode: '740100020001',
-    name: 'Yogurt Natural 500ml',
-    subtitle: 'Lácteos • SKU: YOG001',
-    description: 'Yogurt probiótico sin azúcar 500ml',
-    dimensions: '500 ml',
+    sku: 'LAC001',
+    barcode: '740100010001',
+    name: 'Leche Entera Pasteurizada 1L',
+    subtitle: 'Lácteos • SKU: LAC001',
+    description: 'Leche entera fresca enriquecida con vitaminas A y D 1 Litro',
+    dimensions: '1 Litro',
     cost_price: 25.00,
     price_cordobas: 40.00,
     price_usd: 1.09,
@@ -107,6 +108,27 @@ const DEFAULT_PRODUCTS: Product[] = [
     is_finished_good: true,
     status: 'active',
     expiry_date: '2026-10-20',
+    created_at: '2026-09-01T10:00:00Z',
+    updated_at: '2026-09-05T12:00:00Z'
+  },
+  {
+    id: 5,
+    category_id: 5,
+    sku: 'FER001',
+    barcode: '740100030003',
+    name: 'Tornillos Galvanizados 2"',
+    subtitle: 'Ferretería • SKU: FER001',
+    description: 'Caja de 100 unidades de tornillos para ensamble',
+    dimensions: '2 pulgadas',
+    cost_price: 80.00,
+    price_cordobas: 130.00,
+    price_usd: 3.53,
+    stock: 55,
+    min_stock: 10,
+    image_url: null,
+    is_finished_good: true,
+    status: 'active',
+    expiry_date: '2028-12-31',
     created_at: '2026-09-01T10:00:00Z',
     updated_at: '2026-09-05T12:00:00Z'
   }
@@ -208,114 +230,227 @@ const DEFAULT_MOVEMENTS: Movement[] = [
 ];
 
 export const storage = {
+  // PRODUCTS
   getProducts(): Product[] {
     const raw = localStorage.getItem(STORAGE_KEYS.PRODUCTS);
     if (!raw) {
       this.setProducts(DEFAULT_PRODUCTS);
       return DEFAULT_PRODUCTS;
     }
-    try { return JSON.parse(raw); } catch (e) { return DEFAULT_PRODUCTS; }
+    try { return JSON.parse(raw) || DEFAULT_PRODUCTS; } catch (e) { return DEFAULT_PRODUCTS; }
   },
   setProducts(products: Product[]) {
     localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify(products));
   },
+  saveProduct(product: Product) {
+    const prods = this.getProducts();
+    const idx = prods.findIndex(p => p.id === product.id);
+    if (idx >= 0) {
+      prods[idx] = product;
+    } else {
+      prods.unshift(product);
+    }
+    this.setProducts(prods);
+  },
+  deleteProduct(id: number) {
+    const prods = this.getProducts().filter(p => p.id !== id);
+    this.setProducts(prods);
+  },
 
+  // CATEGORIES
   getCategories(): Category[] {
     const raw = localStorage.getItem(STORAGE_KEYS.CATEGORIES);
     if (!raw) {
       this.setCategories(DEFAULT_CATEGORIES);
       return DEFAULT_CATEGORIES;
     }
-    try { return JSON.parse(raw); } catch (e) { return DEFAULT_CATEGORIES; }
+    try { return JSON.parse(raw) || DEFAULT_CATEGORIES; } catch (e) { return DEFAULT_CATEGORIES; }
   },
   setCategories(categories: Category[]) {
     localStorage.setItem(STORAGE_KEYS.CATEGORIES, JSON.stringify(categories));
   },
 
+  // CUSTOMERS
   getCustomers(): Customer[] {
     const raw = localStorage.getItem(STORAGE_KEYS.CUSTOMERS);
     if (!raw) {
       this.setCustomers(DEFAULT_CUSTOMERS);
       return DEFAULT_CUSTOMERS;
     }
-    try { return JSON.parse(raw); } catch (e) { return DEFAULT_CUSTOMERS; }
+    try { return JSON.parse(raw) || DEFAULT_CUSTOMERS; } catch (e) { return DEFAULT_CUSTOMERS; }
   },
   setCustomers(customers: Customer[]) {
     localStorage.setItem(STORAGE_KEYS.CUSTOMERS, JSON.stringify(customers));
   },
+  saveCustomer(customer: any) {
+    const list = this.getCustomers();
+    const idx = list.findIndex(c => String(c.id) === String(customer.id));
+    if (idx >= 0) list[idx] = customer;
+    else list.unshift(customer);
+    this.setCustomers(list);
+  },
 
+  // SALES
   getSales(): Sale[] {
     const raw = localStorage.getItem(STORAGE_KEYS.SALES);
     if (!raw) {
       this.setSales(DEFAULT_SALES);
       return DEFAULT_SALES;
     }
-    try { return JSON.parse(raw); } catch (e) { return DEFAULT_SALES; }
+    try { return JSON.parse(raw) || DEFAULT_SALES; } catch (e) { return DEFAULT_SALES; }
   },
   setSales(sales: Sale[]) {
     localStorage.setItem(STORAGE_KEYS.SALES, JSON.stringify(sales));
   },
 
+  // CASH REGISTER
   getCashRegister(): CashRegister {
     const raw = localStorage.getItem(STORAGE_KEYS.CASH_REGISTER);
     if (!raw) {
       this.setCashRegister(DEFAULT_CASH);
       return DEFAULT_CASH;
     }
-    try { return JSON.parse(raw); } catch (e) { return DEFAULT_CASH; }
+    try { return JSON.parse(raw) || DEFAULT_CASH; } catch (e) { return DEFAULT_CASH; }
+  },
+  getActiveCashRegister(): any {
+    const cash = this.getCashRegister();
+    if (cash && cash.status === 'open') {
+      return {
+        ...cash,
+        user: cash.user_name || 'Jairo Cajina',
+        current_cash: cash.opening_amount + (cash.cash_sales || 0),
+        initial_cash: cash.opening_amount || 1000
+      };
+    }
+    return null;
+  },
+  getCashRegisters(): any[] {
+    const current = this.getCashRegister();
+    return [
+      {
+        ...current,
+        user: current.user_name || 'Jairo Cajina',
+        current_cash: current.opening_amount + (current.cash_sales || 0),
+        initial_cash: current.opening_amount || 1000,
+        total_sales_cash: current.cash_sales || 0
+      }
+    ];
+  },
+  openCashRegister(amount: number, notes?: string): any {
+    const u = this.getCurrentUser();
+    const newReg: CashRegister = {
+      id: Date.now(),
+      user_id: u.id,
+      user_name: u.name,
+      status: 'open',
+      opening_amount: amount,
+      total_sales_cordobas: 0,
+      cash_sales: 0,
+      card_sales: 0,
+      opened_at: new Date().toISOString(),
+      notes: notes || 'Turno aperturado'
+    };
+    this.setCashRegister(newReg);
+    return this.getActiveCashRegister();
+  },
+  closeCashRegister(id: any) {
+    const current = this.getCashRegister();
+    const updated = {
+      ...current,
+      status: 'closed' as const,
+      closed_at: new Date().toISOString()
+    };
+    this.setCashRegister(updated);
+  },
+  saveCashRegister(cash: any) {
+    this.setCashRegister(cash);
   },
   setCashRegister(cash: CashRegister) {
     localStorage.setItem(STORAGE_KEYS.CASH_REGISTER, JSON.stringify(cash));
   },
 
+  // MOVEMENTS
   getMovements(): Movement[] {
     const raw = localStorage.getItem(STORAGE_KEYS.MOVEMENTS);
     if (!raw) {
       this.setMovements(DEFAULT_MOVEMENTS);
       return DEFAULT_MOVEMENTS;
     }
-    try { return JSON.parse(raw); } catch (e) { return DEFAULT_MOVEMENTS; }
+    try { return JSON.parse(raw) || DEFAULT_MOVEMENTS; } catch (e) { return DEFAULT_MOVEMENTS; }
   },
   setMovements(movements: Movement[]) {
     localStorage.setItem(STORAGE_KEYS.MOVEMENTS, JSON.stringify(movements));
   },
+  saveMovement(movement: any) {
+    const movs = this.getMovements();
+    movs.unshift(movement);
+    this.setMovements(movs);
+  },
 
+  // CREDITS
   getCredits(): CreditAccount[] {
     const raw = localStorage.getItem(STORAGE_KEYS.CREDITS);
     if (!raw) {
       this.setCredits(DEFAULT_CREDITS);
       return DEFAULT_CREDITS;
     }
-    try { return JSON.parse(raw); } catch (e) { return DEFAULT_CREDITS; }
+    try { return JSON.parse(raw) || DEFAULT_CREDITS; } catch (e) { return DEFAULT_CREDITS; }
   },
   setCredits(credits: CreditAccount[]) {
     localStorage.setItem(STORAGE_KEYS.CREDITS, JSON.stringify(credits));
   },
+  saveCredit(credit: any) {
+    const credits = this.getCredits();
+    const idx = credits.findIndex(c => String(c.id) === String(credit.id));
+    if (idx >= 0) credits[idx] = credit;
+    else credits.unshift(credit);
+    this.setCredits(credits);
+  },
 
+  // USERS
   getUsers(): User[] {
     const raw = localStorage.getItem(STORAGE_KEYS.USERS);
     if (!raw) {
       this.setUsers(DEFAULT_USERS);
       return DEFAULT_USERS;
     }
-    try { return JSON.parse(raw); } catch (e) { return DEFAULT_USERS; }
+    try { return JSON.parse(raw) || DEFAULT_USERS; } catch (e) { return DEFAULT_USERS; }
   },
   setUsers(users: User[]) {
     localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(users));
   },
+  saveUser(user: any) {
+    const users = this.getUsers();
+    const idx = users.findIndex(u => String(u.id) === String(user.id));
+    if (idx >= 0) users[idx] = user;
+    else users.unshift(user);
+    this.setUsers(users);
+  },
+  deleteUser(id: any) {
+    const users = this.getUsers().filter(u => String(u.id) !== String(id));
+    this.setUsers(users);
+  },
 
+  // SETTINGS
   getSettings(): CompanySetting {
     const raw = localStorage.getItem(STORAGE_KEYS.SETTINGS);
     if (!raw) {
       this.setSettings(DEFAULT_SETTINGS);
       return DEFAULT_SETTINGS;
     }
-    try { return JSON.parse(raw); } catch (e) { return DEFAULT_SETTINGS; }
+    try { return JSON.parse(raw) || DEFAULT_SETTINGS; } catch (e) { return DEFAULT_SETTINGS; }
+  },
+  getCompanySettings(): any {
+    return this.getSettings();
+  },
+  saveCompanySettings(settings: any) {
+    this.setSettings(settings);
   },
   setSettings(settings: CompanySetting) {
     localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(settings));
   },
 
+  // AUTH
   getCurrentUser(): User {
     const raw = localStorage.getItem(STORAGE_KEYS.CURRENT_USER);
     if (!raw) {
@@ -323,11 +458,30 @@ export const storage = {
       this.setCurrentUser(u);
       return u;
     }
-    try { return JSON.parse(raw); } catch (e) { return DEFAULT_USERS[0]; }
+    try { return JSON.parse(raw) || DEFAULT_USERS[0]; } catch (e) { return DEFAULT_USERS[0]; }
   },
   setCurrentUser(user: User | null) {
     if (!user) localStorage.removeItem(STORAGE_KEYS.CURRENT_USER);
     else localStorage.setItem(STORAGE_KEYS.CURRENT_USER, JSON.stringify(user));
+  },
+
+  // BACKUP EXPORT & IMPORT
+  exportAllDataJSON(): string {
+    return this.exportFullBackupJSON();
+  },
+  importAllDataJSON(jsonStr: string): boolean {
+    return this.importFullBackupJSON(jsonStr);
+  },
+  resetAllData() {
+    this.setProducts(DEFAULT_PRODUCTS);
+    this.setCategories(DEFAULT_CATEGORIES);
+    this.setCustomers(DEFAULT_CUSTOMERS);
+    this.setSales(DEFAULT_SALES);
+    this.setCashRegister(DEFAULT_CASH);
+    this.setMovements(DEFAULT_MOVEMENTS);
+    this.setCredits(DEFAULT_CREDITS);
+    this.setSettings(DEFAULT_SETTINGS);
+    this.setUsers(DEFAULT_USERS);
   },
 
   exportFullBackupJSON(): string {
