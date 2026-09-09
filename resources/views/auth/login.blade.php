@@ -79,7 +79,7 @@
             @endif
 
             <!-- Form -->
-            <form action="{{ route('login.post') }}" method="POST" class="space-y-4" id="loginForm">
+            <form action="/login" method="POST" class="space-y-4" id="loginForm">
                 @csrf
                 <div>
                     <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1.5">Correo Electrónico</label>
