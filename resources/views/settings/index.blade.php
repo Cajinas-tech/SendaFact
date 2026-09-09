@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title_badge', 'AJUSTE DEL SISTEMA Y CONEXIÃ“N SUPABASE')
+@section('title_badge', 'AJUSTE DEL SISTEMA Y CONEXIÓN SUPABASE')
 
 @section('content')
 <div class="max-w-4xl space-y-6">
@@ -12,19 +12,19 @@
                 <i data-lucide="database" class="w-6 h-6"></i>
             </div>
             <div>
-                <h3 class="text-base font-black text-slate-900 dark:text-white uppercase">ConexiÃ³n a Base de Datos Supabase (PostgreSQL)</h3>
+                <h3 class="text-base font-black text-slate-900 dark:text-white uppercase">Conexión a Base de Datos Supabase (PostgreSQL)</h3>
                 <p class="text-xs text-slate-400">Driver activo: <strong class="text-slate-800 dark:text-white font-mono">{{ $dbConnection }}</strong></p>
             </div>
         </div>
 
         <div class="p-4 rounded-2xl bg-slate-900 text-slate-100 font-mono text-xs space-y-1.5 overflow-x-auto">
-            <p class="text-emerald-400 font-bold"># Para conectar con tu proyecto Supabase, agrega tus credenciales en el archivo .env:</p>
+            <p class="text-emerald-400 font-bold"># Para conectar con tu proyecto Supabase IPv4 Pooler:</p>
             <p>DB_CONNECTION=pgsql</p>
-            <p>DB_HOST=db.xxxxxxxxxxxx.supabase.co</p>
-            <p>DB_PORT=5432</p>
+            <p>DB_HOST=aws-0-us-east-1.pooler.supabase.com</p>
+            <p>DB_PORT=6543</p>
             <p>DB_DATABASE=postgres</p>
-            <p>DB_USERNAME=postgres</p>
-            <p>DB_PASSWORD=tu_contraseÃ±a_supabase</p>
+            <p>DB_USERNAME=postgres.mxidunmheywcaxyngeia</p>
+            <p>DB_PASSWORD=tu_contraseña_supabase</p>
             <p>DB_SSLMODE=require</p>
         </div>
 
@@ -32,14 +32,14 @@
             <button onclick="testDatabase()" 
                     class="px-5 py-2.5 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-black text-xs uppercase tracking-wider shadow-md shadow-blue-500/25 transition flex items-center gap-2">
                 <i data-lucide="refresh-cw" class="w-4 h-4"></i>
-                <span>PROBAR CONEXIÃ“N DE BASE DE DATOS</span>
+                <span>PROBAR CONEXIÓN DE BASE DE DATOS</span>
             </button>
         </div>
     </div>
 
     <!-- Company Settings Form -->
     <div class="glass-card rounded-3xl p-6 sm:p-8 border border-slate-200/90 dark:border-slate-800 shadow-xs space-y-6">
-        <h3 class="text-base font-black text-slate-900 dark:text-white uppercase">Datos de la Empresa & Moneda</h3>
+        <h3 class="text-base font-black text-slate-900 dark:text-white uppercase">Datos de la Empresa & Moneda Oficial (Nicaragua)</h3>
 
         <form action="{{ route('settings.update') }}" method="POST" class="space-y-4">
             @csrf
@@ -51,37 +51,37 @@
                 </div>
 
                 <div>
-                    <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">Tagline / SubtÃ­tulo</label>
+                    <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">Eslogan / Subtítulo</label>
                     <input type="text" name="tagline" value="{{ $setting->tagline }}"
                            class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs">
                 </div>
 
                 <div>
-                    <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">NÃºmero RUC / CÃ©dula</label>
+                    <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">Número RUC / Cédula</label>
                     <input type="text" name="ruc" value="{{ $setting->ruc }}"
                            class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 font-mono text-xs font-bold">
                 </div>
 
                 <div>
-                    <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">TelÃ©fono / WhatsApp</label>
+                    <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">Teléfono / WhatsApp</label>
                     <input type="text" name="phone" value="{{ $setting->phone }}"
                            class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs">
                 </div>
 
                 <div>
-                    <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">Tasa de Cambio (1 USD = C$ NIO)</label>
+                    <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">Tasa Oficial de Cambio (1 USD = C$ Córdobas)</label>
                     <input type="number" step="0.0001" name="exchange_rate" value="{{ $setting->exchange_rate }}" required
                            class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 font-mono text-base font-bold text-blue-600">
                 </div>
 
                 <div>
-                    <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">Impuesto IVA (%)</label>
+                    <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">Impuesto IVA Nicaragua (%)</label>
                     <input type="number" step="0.01" name="tax_rate" value="{{ $setting->tax_rate }}" required
                            class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 font-mono text-xs font-bold">
                 </div>
 
                 <div class="sm:col-span-2">
-                    <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">DirecciÃ³n FÃ­sica</label>
+                    <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">Dirección Física (Managua / Departamentos)</label>
                     <input type="text" name="address" value="{{ $setting->address }}"
                            class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs">
                 </div>
@@ -111,7 +111,7 @@
             const data = await res.json();
             alert(data.message);
         } catch (e) {
-            alert('Error de conexiÃ³n a la base de datos');
+            alert('Error de conexión a la base de datos');
         }
     }
 </script>

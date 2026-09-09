@@ -1,13 +1,13 @@
 @extends('layouts.app')
 
-@section('title_badge', 'GESTIÃ“N DE PRODUCTOS E INVENTARIO')
+@section('title_badge', 'GESTIÓN DE PRODUCTOS E INVENTARIO')
 
 @section('content')
 <div class="space-y-6" x-data="{ createModal: false }">
     <div class="flex items-center justify-between">
         <div>
             <h2 class="text-xl font-black text-slate-900 dark:text-white uppercase tracking-tight">Inventario de Productos</h2>
-            <p class="text-xs text-slate-400 mt-0.5">Administra tu catÃ¡logo de productos, precios y existencias.</p>
+            <p class="text-xs text-slate-400 mt-0.5">Administra tu catálogo de productos, precios en Córdobas (C$) y existencias.</p>
         </div>
         <button @click="createModal = true" 
                 class="flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs tracking-wider uppercase shadow-md shadow-blue-500/25 transition">
@@ -23,10 +23,10 @@
                     <tr>
                         <th class="p-4">Producto</th>
                         <th class="p-4">SKU / Medidas</th>
-                        <th class="p-4">CategorÃ­a</th>
-                        <th class="p-4 text-right">Costo</th>
+                        <th class="p-4">Categoría</th>
+                        <th class="p-4 text-right">Costo (C$)</th>
                         <th class="p-4 text-right">Precio Venta (C$)</th>
-                        <th class="p-4 text-right">Precio Venta ($)</th>
+                        <th class="p-4 text-right">Precio Venta ($ USD)</th>
                         <th class="p-4 text-center">Stock</th>
                         <th class="p-4 text-center">Acciones</th>
                     </tr>
@@ -38,12 +38,12 @@
                                 <img src="{{ $p->image_url ?? '/images/products/puerta-aluminio.svg' }}" class="w-10 h-10 object-contain rounded-xl bg-slate-100 dark:bg-slate-800 p-1 border border-slate-200 dark:border-slate-700">
                                 <div>
                                     <p class="font-black text-xs uppercase">{{ $p->name }}</p>
-                                    <span class="text-[11px] text-slate-400 font-normal">{{ $p->subtitle }}</span>
+                                    <span class="text-[11px] text-slate-400 font-normal">{{ $p->subtitle ?? '' }}</span>
                                 </div>
                             </td>
                             <td class="p-4 font-mono font-bold text-blue-600 dark:text-blue-400">
                                 {{ $p->sku }}
-                                @if($p->dimensions)
+                                @if(!empty($p->dimensions))
                                     <span class="block text-[10px] text-slate-400 font-normal">{{ $p->dimensions }}</span>
                                 @endif
                             </td>
@@ -53,21 +53,21 @@
                                 </span>
                             </td>
                             <td class="p-4 text-right font-mono font-semibold text-slate-500">
-                                C${{ number_format($p->cost_price, 2) }}
+                                C${{ number_format($p->cost_price ?? 0, 2) }}
                             </td>
                             <td class="p-4 text-right font-mono font-black text-blue-600 dark:text-blue-400">
-                                C${{ number_format($p->price_cordobas, 2) }}
+                                C${{ number_format($p->price_cordobas ?? 0, 2) }}
                             </td>
                             <td class="p-4 text-right font-mono font-bold text-slate-700 dark:text-slate-300">
-                                ${{ number_format($p->price_usd, 2) }}
+                                ${{ number_format($p->price_usd ?? 0, 2) }}
                             </td>
                             <td class="p-4 text-center">
-                                <span class="px-2.5 py-1 rounded-full text-[11px] font-black {{ $p->stock <= $p->min_stock ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700' }}">
-                                    {{ $p->stock }} unid.
+                                <span class="px-2.5 py-1 rounded-full text-[11px] font-black {{ ($p->stock ?? 0) <= ($p->min_stock ?? 2) ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700' }}">
+                                    {{ $p->stock ?? 0 }} unid.
                                 </span>
                             </td>
                             <td class="p-4 text-center">
-                                <form action="{{ route('products.destroy', $p->id) }}" method="POST" onsubmit="return confirm('Â¿Eliminar producto?')">
+                                <form action="{{ route('products.destroy', $p->id) }}" method="POST" onsubmit="return confirm('¿Eliminar producto?')">
                                     @csrf
                                     @method('DELETE')
                                     <button type="submit" class="p-1.5 rounded-lg text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition">
@@ -102,7 +102,7 @@
                     </div>
 
                     <div>
-                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">CategorÃ­a</label>
+                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">Categoría</label>
                         <select name="category_id" required class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-bold">
                             @foreach($categories as $cat)
                                 <option value="{{ $cat->id }}">{{ $cat->name }}</option>
@@ -111,13 +111,13 @@
                     </div>
 
                     <div>
-                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">SKU / CÃ³digo</label>
+                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">SKU / Código</label>
                         <input type="text" name="sku" required placeholder="Ej. #SKU-9901" 
                                class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 font-mono text-xs font-bold">
                     </div>
 
                     <div>
-                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">Precio Venta (C$)</label>
+                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">Precio Venta (C$ Córdobas)</label>
                         <input type="number" step="0.01" name="price_cordobas" required placeholder="3500.00" 
                                class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 font-mono text-xs font-bold">
                     </div>

@@ -22,7 +22,7 @@
                         Abierta por <strong>{{ $current->user->name ?? 'Jairo' }}</strong> el {{ isset($current->opened_at) ? (is_string($current->opened_at) ? \Carbon\Carbon::parse($current->opened_at)->format('d/m/Y h:i A') : $current->opened_at->format('d/m/Y h:i A')) : 'Hoy' }} con un fondo inicial de <strong>C${{ number_format($current->opening_amount ?? 0, 2) }}</strong>
                     </p>
                 @else
-                    <p class="text-xs text-rose-500 font-semibold mt-1">No hay una sesiÃ³n de caja activa. Debes abrir caja para facturar en efectivo.</p>
+                    <p class="text-xs text-rose-500 font-semibold mt-1">No hay una sesión de caja activa. Debes abrir caja para facturar en efectivo.</p>
                 @endif
             </div>
         </div>
