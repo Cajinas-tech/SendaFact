@@ -90,16 +90,15 @@ return [
             $username = env('DB_USERNAME', 'postgres');
             
             // Auto-resolución inteligente para Supabase en entornos Serverless (IPv4 Pooler)
-            if (str_contains((string)$host, 'supabase.co')) {
+            $projectRef = 'mxidunmheywcaxyngeia';
+            if (str_contains((string)$host, 'supabase')) {
                 if (preg_match('/db\.([a-z0-9]+)\.supabase\.co/i', (string)$host, $matches)) {
                     $projectRef = $matches[1];
-                    // Si el usuario no tiene el formato postgres.[ref], añadirlo automáticamente
-                    if (!str_contains((string)$username, '.')) {
-                        $username = 'postgres.' . $projectRef;
-                    }
-                    // Usar pooler IPv4 compatible con Vercel
                     $host = env('DB_POOLER_HOST', 'aws-0-us-east-1.pooler.supabase.com');
                     $port = env('DB_POOLER_PORT', '6543');
+                }
+                if (!str_contains((string)$username, '.')) {
+                    $username = 'postgres.' . $projectRef;
                 }
             }
 
