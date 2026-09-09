@@ -42,7 +42,9 @@
                         
                         <div class="space-y-2">
                             <div class="h-24 flex items-center justify-center bg-slate-50 dark:bg-slate-900/50 rounded-xl p-2">
-                                <img :src="prod.image_url || '/images/products/puerta-aluminio.svg'" class="max-h-full max-w-full object-contain group-hover:scale-105 transition duration-200">
+                                <img :src="prod.image_url || ((prod.name && prod.name.toLowerCase().includes('ventana')) ? '/images/products/ventana-aluminio.svg' : '/images/products/puerta-aluminio.svg')" 
+                                     onerror="this.onerror=null; this.src='/images/products/puerta-aluminio.svg';"
+                                     class="max-h-full max-w-full object-contain group-hover:scale-105 transition duration-200">
                             </div>
                             <span class="inline-block px-2 py-0.5 rounded text-[10px] font-bold font-mono bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400" x-text="prod.sku"></span>
                             <h4 class="font-black text-xs text-slate-900 dark:text-white uppercase line-clamp-2 leading-tight" x-text="prod.name"></h4>

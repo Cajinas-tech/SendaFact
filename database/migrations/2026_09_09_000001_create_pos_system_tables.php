@@ -59,7 +59,7 @@ return new class extends Migration
             $table->decimal('price_usd', 12, 2)->default(0);
             $table->integer('stock')->default(0);
             $table->integer('min_stock')->default(5);
-            $table->string('image_url')->nullable();
+            $table->text('image_url')->nullable();
             $table->boolean('is_finished_good')->default(true);
             $table->date('expiry_date')->nullable();
             $table->string('status')->default('active');

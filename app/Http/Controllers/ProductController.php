@@ -62,6 +62,10 @@ class ProductController extends Controller
     public function store(Request $request)
     {
         try {
+            try {
+                \Illuminate\Support\Facades\DB::statement("ALTER TABLE products ALTER COLUMN image_url TYPE text");
+            } catch (\Throwable $ex) {}
+
             $data = $request->except(['_token', 'image_file']);
             
             if ($request->hasFile('image_file')) {
@@ -84,6 +88,10 @@ class ProductController extends Controller
     public function update(Request $request, $id)
     {
         try {
+            try {
+                \Illuminate\Support\Facades\DB::statement("ALTER TABLE products ALTER COLUMN image_url TYPE text");
+            } catch (\Throwable $ex) {}
+
             $product = Product::findOrFail($id);
             $data = $request->except(['_token', '_method', 'image_file']);
 

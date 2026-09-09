@@ -119,8 +119,25 @@
 
                     <!-- Visual Illustration / Photo -->
                     <div class="w-full h-48 flex items-center justify-center p-2 group-hover:scale-105 transition-transform duration-300">
-                        @if($product->image_url)
-                            <img src="{{ $product->image_url }}" alt="{{ $product->name }}" class="max-h-full max-w-full object-contain drop-shadow-md">
+                        @php
+                            $pImg = $product->image_url;
+                            $fallbackSvg = (stripos($product->name, 'ventana') !== false) ? '/images/products/ventana-aluminio.svg' : '/images/products/puerta-aluminio.svg';
+                            
+                            if (empty($pImg) || $pImg === 'null' || (!str_starts_with($pImg, 'data:image') && !str_starts_with($pImg, 'http') && !str_starts_with($pImg, '/'))) {
+                                if (stripos($product->name, 'puerta') !== false) {
+                                    $pImg = '/images/products/puerta-aluminio.svg';
+                                } elseif (stripos($product->name, 'ventana') !== false) {
+                                    $pImg = '/images/products/ventana-aluminio.svg';
+                                } else {
+                                    $pImg = null;
+                                }
+                            }
+                        @endphp
+                        @if(!empty($pImg))
+                            <img src="{{ $pImg }}" 
+                                 alt="{{ $product->name }}" 
+                                 onerror="this.onerror=null; this.src='{{ $fallbackSvg }}';"
+                                 class="max-h-full max-w-full object-contain drop-shadow-md">
                         @else
                             <div class="w-32 h-32 rounded-2xl bg-blue-50 dark:bg-slate-800 flex items-center justify-center text-blue-500">
                                 <i data-lucide="package" class="w-16 h-16"></i>
@@ -202,7 +219,13 @@
                     @foreach($products as $product)
                         <tr class="hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition">
                             <td class="p-4 font-bold text-slate-900 dark:text-white flex items-center gap-3">
-                                <img src="{{ $product->image_url ?? '/images/products/puerta-aluminio.svg' }}" class="w-9 h-9 object-contain rounded-lg bg-slate-100 dark:bg-slate-800 p-1">
+                                @php
+                                    $listImg = $product->image_url ?? ((stripos($product->name, 'ventana') !== false) ? '/images/products/ventana-aluminio.svg' : '/images/products/puerta-aluminio.svg');
+                                @endphp
+                                <img src="{{ $listImg }}" 
+                                     alt="{{ $product->name }}" 
+                                     onerror="this.onerror=null; this.src='/images/products/puerta-aluminio.svg';"
+                                     class="w-9 h-9 object-contain rounded-lg bg-slate-100 dark:bg-slate-800 p-1">
                                 <div>
                                     <p>{{ $product->name }}</p>
                                     <span class="text-[11px] text-slate-400">{{ $product->subtitle }}</span>
