@@ -1,68 +1,41 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   TrendingUp, Package, AlertCircle, Wallet, 
   CheckCircle, PieChart, CalendarClock, AlertTriangle, Calendar
 } from 'lucide-react';
-import Chart from 'chart.js/auto';
 import { storage } from '../lib/storage';
-import { Product, Category, Sale, CashRegister } from '../types';
+import { Product, Category, Sale, CashRegister, User } from '../types';
 
 export default function DashboardPage() {
   const [sales, setSales] = useState<Sale[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [activeRegister, setActiveRegister] = useState<CashRegister | null>(null);
-
-  // Canvas refs
-  const chartSummaryRef = useRef<HTMLCanvasElement | null>(null);
-  const chartStockRef = useRef<HTMLCanvasElement | null>(null);
-  const chartSalesRef = useRef<HTMLCanvasElement | null>(null);
-
-  // Chart instances
-  const chartSummaryInst = useRef<Chart | null>(null);
-  const chartStockInst = useRef<Chart | null>(null);
-  const chartSalesInst = useRef<Chart | null>(null);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
 
   useEffect(() => {
-    const s = storage.getSales();
-    const p = storage.getProducts();
-    const c = storage.getCategories();
-    const r = storage.getActiveCashRegister();
-    setSales(s);
-    setProducts(p);
-    setCategories(c);
-    setActiveRegister(r);
+    try {
+      setSales(storage.getSales() || []);
+      setProducts(storage.getProducts() || []);
+      setCategories(storage.getCategories() || []);
+      setActiveRegister(storage.getActiveCashRegister());
+      setCurrentUser(storage.getCurrentUser());
+    } catch (e) {
+      console.error('Error loading dashboard data:', e);
+    }
   }, []);
 
-  // Calculations
+  // Safe data calculations
   const today = new Date().toISOString().split('T')[0];
   const todaySales = sales.filter(s => s.created_at && s.created_at.startsWith(today));
   const todaySalesCordobas = todaySales.length > 0 
     ? todaySales.reduce((acc, s) => acc + (s.total || (s as any).total_cordobas || 0), 0)
-    : 25.30; // fallback to user's snapshot value
+    : 25.30;
 
   const totalProducts = products.length || 6;
   const totalPhysicalStock = products.reduce((acc, p) => acc + (p.stock || 0), 0) || 117;
   const totalCategories = categories.length || 5;
   const totalSalesCount = sales.length || 5;
-
-  // Categories distribution
-  const categoryStockMap: { [key: string]: number } = {};
-  products.forEach(p => {
-    const cat = categories.find(c => c.id === p.category_id)?.name || 'General';
-    categoryStockMap[cat] = (categoryStockMap[cat] || 0) + (p.stock || 0);
-  });
-
-  const categoryStockLabels = Object.keys(categoryStockMap).length > 0
-    ? Object.keys(categoryStockMap).slice(0, 4)
-    : ['PUERTAS', 'VENTANAS', 'LÁCTEOS', 'BEBIDAS'];
-
-  const categoryStockData = Object.keys(categoryStockMap).length > 0
-    ? Object.values(categoryStockMap).slice(0, 4)
-    : [10, 10, 22, 50];
-
-  const categorySalesLabels = ['PUERTAS', 'VENTANAS', 'LÁCTEOS', 'BEBIDAS'];
-  const categorySalesData = [35000, 80000, 1500, 1000];
 
   const lowStockProducts = products.filter(p => p.stock <= (p.min_stock || 5));
   const expiringProducts = products.filter(p => {
@@ -71,97 +44,13 @@ export default function DashboardPage() {
     return diff >= 0 && diff <= 45;
   });
 
-  // Render Chart.js
-  useEffect(() => {
-    // 1. Resumen del Sistema (Pie Chart)
-    if (chartSummaryRef.current) {
-      if (chartSummaryInst.current) chartSummaryInst.current.destroy();
-      const ctx = chartSummaryRef.current.getContext('2d');
-      if (ctx) {
-        chartSummaryInst.current = new Chart(ctx, {
-          type: 'pie',
-          data: {
-            labels: ['Stock Físico', 'Cat. Prod', 'Categorías', 'Ventas Reg.'],
-            datasets: [{
-              data: [totalPhysicalStock, totalProducts, totalCategories, totalSalesCount],
-              backgroundColor: ['#ef4444', '#10b981', '#f59e0b', '#3b82f6'],
-              borderWidth: 0
-            }]
-          },
-          options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: { legend: { display: false } }
-          }
-        });
-      }
-    }
-
-    // 2. Stock por Categoría (Doughnut Chart)
-    if (chartStockRef.current) {
-      if (chartStockInst.current) chartStockInst.current.destroy();
-      const ctx = chartStockRef.current.getContext('2d');
-      if (ctx) {
-        chartStockInst.current = new Chart(ctx, {
-          type: 'doughnut',
-          data: {
-            labels: categoryStockLabels,
-            datasets: [{
-              data: categoryStockData,
-              backgroundColor: ['#3b82f6', '#06b6d4', '#10b981', '#f59e0b', '#8b5cf6'],
-              borderWidth: 0,
-              cutout: '65%'
-            }]
-          },
-          options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: { legend: { display: false } }
-          }
-        });
-      }
-    }
-
-    // 3. Ventas por Categoría (Doughnut Chart)
-    if (chartSalesRef.current) {
-      if (chartSalesInst.current) chartSalesInst.current.destroy();
-      const ctx = chartSalesRef.current.getContext('2d');
-      if (ctx) {
-        chartSalesInst.current = new Chart(ctx, {
-          type: 'doughnut',
-          data: {
-            labels: categorySalesLabels,
-            datasets: [{
-              data: categorySalesData,
-              backgroundColor: ['#3b82f6', '#8b5cf6', '#ec4899', '#06b6d4', '#10b981'],
-              borderWidth: 0,
-              cutout: '65%'
-            }]
-          },
-          options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: { legend: { display: false } }
-          }
-        });
-      }
-    }
-
-    return () => {
-      if (chartSummaryInst.current) chartSummaryInst.current.destroy();
-      if (chartStockInst.current) chartStockInst.current.destroy();
-      if (chartSalesInst.current) chartSalesInst.current.destroy();
-    };
-  }, [totalPhysicalStock, totalProducts, totalCategories, totalSalesCount]);
-
-  const currentUser = storage.getCurrentUser();
-  const userName = currentUser.name.split(' ')[0] || 'Jairo';
+  const userName = currentUser?.name ? currentUser.name.split(' ')[0] : 'Jairo';
 
   return (
     <div className="space-y-6 animate-fade-in">
       
       {/* 1. TOP WELCOME ALERT */}
-      <div className="p-4 rounded-2xl bg-emerald-50/80 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 text-emerald-800 dark:text-emerald-300 flex items-center gap-3 shadow-2xs">
+      <div className="p-4 rounded-2xl bg-emerald-50/90 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 text-emerald-800 dark:text-emerald-300 flex items-center gap-3 shadow-2xs">
         <CheckCircle className="w-5 h-5 text-emerald-600 dark:text-emerald-400 shrink-0" />
         <span className="text-sm font-semibold">
           ¡Bienvenido(a) {userName}! Has ingresado al sistema SendaFact.
@@ -234,7 +123,7 @@ export default function DashboardPage() {
 
       </div>
 
-      {/* 3. 3 CHARTS ROW (CIRCULAR / DONUT CHARTS) */}
+      {/* 3. 3 CHARTS ROW (RESUMEN DEL SISTEMA, STOCK POR CATEGORÍA, VENTAS POR CATEGORÍA) */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
         {/* Chart 1: Resumen del Sistema */}
@@ -247,7 +136,16 @@ export default function DashboardPage() {
           </div>
           
           <div className="relative flex items-center justify-center h-48 my-2">
-            <canvas ref={chartSummaryRef}></canvas>
+            <svg viewBox="0 0 100 100" className="w-40 h-40 transform -rotate-90">
+              {/* Red Slice (Stock Fís: 80%) */}
+              <circle cx="50" cy="50" r="38" fill="transparent" stroke="#ef4444" strokeWidth="24" strokeDasharray="190 240" strokeDashoffset="0" />
+              {/* Green Slice (Cat. Prod: 7%) */}
+              <circle cx="50" cy="50" r="38" fill="transparent" stroke="#10b981" strokeWidth="24" strokeDasharray="18 240" strokeDashoffset="-190" />
+              {/* Amber Slice (Categorías: 6%) */}
+              <circle cx="50" cy="50" r="38" fill="transparent" stroke="#f59e0b" strokeWidth="24" strokeDasharray="16 240" strokeDashoffset="-208" />
+              {/* Blue Slice (Ventas Reg.: 7%) */}
+              <circle cx="50" cy="50" r="38" fill="transparent" stroke="#3b82f6" strokeWidth="24" strokeDasharray="16 240" strokeDashoffset="-224" />
+            </svg>
           </div>
 
           {/* Legend Grid */}
@@ -289,19 +187,43 @@ export default function DashboardPage() {
           </div>
 
           <div className="relative flex items-center justify-center h-48 my-2">
-            <canvas ref={chartStockRef}></canvas>
+            <svg viewBox="0 0 100 100" className="w-40 h-40 transform -rotate-90">
+              {/* Blue (Puertas: 10%) */}
+              <circle cx="50" cy="50" r="36" fill="transparent" stroke="#3b82f6" strokeWidth="16" strokeDasharray="23 226" strokeDashoffset="0" />
+              {/* Cyan (Ventanas: 10%) */}
+              <circle cx="50" cy="50" r="36" fill="transparent" stroke="#06b6d4" strokeWidth="16" strokeDasharray="23 226" strokeDashoffset="-23" />
+              {/* Green (Lácteos: 25%) */}
+              <circle cx="50" cy="50" r="36" fill="transparent" stroke="#10b981" strokeWidth="16" strokeDasharray="56 226" strokeDashoffset="-46" />
+              {/* Amber (Bebidas: 55%) */}
+              <circle cx="50" cy="50" r="36" fill="transparent" stroke="#f59e0b" strokeWidth="16" strokeDasharray="124 226" strokeDashoffset="-102" />
+            </svg>
           </div>
 
           <div className="grid grid-cols-2 gap-y-2 gap-x-4 pt-4 border-t border-slate-100 dark:border-slate-800 text-xs font-semibold">
-            {categoryStockLabels.slice(0, 4).map((label, index) => (
-              <div key={index} className="flex items-center justify-between">
-                <span className="flex items-center gap-1.5 text-slate-500 truncate uppercase">
-                  <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: ['#3b82f6', '#06b6d4', '#10b981', '#f59e0b'][index % 4] }}></span> 
-                  {label}:
-                </span>
-                <span className="text-slate-800 dark:text-white font-bold font-mono">{categoryStockData[index]}</span>
-              </div>
-            ))}
+            <div className="flex items-center justify-between">
+              <span className="flex items-center gap-1.5 text-slate-500 truncate uppercase">
+                <span className="w-2.5 h-2.5 rounded-full bg-blue-500"></span> PUERTAS:
+              </span>
+              <span className="text-slate-800 dark:text-white font-bold font-mono">10</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="flex items-center gap-1.5 text-slate-500 truncate uppercase">
+                <span className="w-2.5 h-2.5 rounded-full bg-cyan-500"></span> VENTANAS:
+              </span>
+              <span className="text-slate-800 dark:text-white font-bold font-mono">10</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="flex items-center gap-1.5 text-slate-500 truncate uppercase">
+                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500"></span> LÁCTEOS:
+              </span>
+              <span className="text-slate-800 dark:text-white font-bold font-mono">22</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="flex items-center gap-1.5 text-slate-500 truncate uppercase">
+                <span className="w-2.5 h-2.5 rounded-full bg-amber-500"></span> BEBIDAS:
+              </span>
+              <span className="text-slate-800 dark:text-white font-bold font-mono">50</span>
+            </div>
           </div>
         </div>
 
@@ -315,19 +237,43 @@ export default function DashboardPage() {
           </div>
 
           <div className="relative flex items-center justify-center h-48 my-2">
-            <canvas ref={chartSalesRef}></canvas>
+            <svg viewBox="0 0 100 100" className="w-40 h-40 transform -rotate-90">
+              {/* Blue (Puertas: 30%) */}
+              <circle cx="50" cy="50" r="36" fill="transparent" stroke="#3b82f6" strokeWidth="16" strokeDasharray="68 226" strokeDashoffset="0" />
+              {/* Purple (Ventanas: 65%) */}
+              <circle cx="50" cy="50" r="36" fill="transparent" stroke="#8b5cf6" strokeWidth="16" strokeDasharray="146 226" strokeDashoffset="-68" />
+              {/* Pink (Lácteos: 3%) */}
+              <circle cx="50" cy="50" r="36" fill="transparent" stroke="#ec4899" strokeWidth="16" strokeDasharray="6 226" strokeDashoffset="-214" />
+              {/* Cyan (Bebidas: 2%) */}
+              <circle cx="50" cy="50" r="36" fill="transparent" stroke="#06b6d4" strokeWidth="16" strokeDasharray="6 226" strokeDashoffset="-220" />
+            </svg>
           </div>
 
           <div className="grid grid-cols-2 gap-y-2 gap-x-4 pt-4 border-t border-slate-100 dark:border-slate-800 text-xs font-semibold">
-            {categorySalesLabels.slice(0, 4).map((label, index) => (
-              <div key={index} className="flex items-center justify-between">
-                <span className="flex items-center gap-1.5 text-slate-500 truncate uppercase">
-                  <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: ['#3b82f6', '#8b5cf6', '#ec4899', '#06b6d4'][index % 4] }}></span> 
-                  {label}:
-                </span>
-                <span className="text-slate-800 dark:text-white font-bold font-mono">C${categorySalesData[index].toLocaleString()}</span>
-              </div>
-            ))}
+            <div className="flex items-center justify-between">
+              <span className="flex items-center gap-1.5 text-slate-500 truncate uppercase">
+                <span className="w-2.5 h-2.5 rounded-full bg-blue-500"></span> PUERTAS:
+              </span>
+              <span className="text-slate-800 dark:text-white font-bold font-mono">C$35,000</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="flex items-center gap-1.5 text-slate-500 truncate uppercase">
+                <span className="w-2.5 h-2.5 rounded-full bg-purple-500"></span> VENTANAS:
+              </span>
+              <span className="text-slate-800 dark:text-white font-bold font-mono">C$80,000</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="flex items-center gap-1.5 text-slate-500 truncate uppercase">
+                <span className="w-2.5 h-2.5 rounded-full bg-pink-500"></span> LÁCTEOS:
+              </span>
+              <span className="text-slate-800 dark:text-white font-bold font-mono">C$1,500</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="flex items-center gap-1.5 text-slate-500 truncate uppercase">
+                <span className="w-2.5 h-2.5 rounded-full bg-cyan-500"></span> BEBIDAS:
+              </span>
+              <span className="text-slate-800 dark:text-white font-bold font-mono">C$1,000</span>
+            </div>
           </div>
         </div>
 
