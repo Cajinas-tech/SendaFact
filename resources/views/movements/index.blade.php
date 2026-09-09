@@ -107,7 +107,7 @@
             <div class="text-3xl font-black text-emerald-600 dark:text-emerald-400 font-sans tracking-tight">
                 ${{ number_format($netBalance, 2) }}
             </div>
-            <p class="text-[11px] font-semibold text-slate-400">{{ \Carbon\Carbon::parse($dateFilter)->format('d \d\e F Y') }}</p>
+            <p class="text-[11px] font-semibold text-slate-400">{{ !empty($dateFilter) ? \Carbon\Carbon::parse($dateFilter)->format('d \d\e F Y') : 'Hoy' }}</p>
         </div>
 
     </div>
@@ -123,10 +123,10 @@
                         <th class="p-4"># TICKET</th>
                         <th class="p-4">MÉTODO PAGO</th>
                         <th class="p-4 text-center">CANTIDAD</th>
-                        <th class="p-4 text-right">TOTAL VENTA</th>
-                        <th class="p-4 text-right">MARGEN</th>
-                        <th class="p-4 text-right">MARGEN %</th>
-                        <th class="p-4">FECHA/HORA</th>
+                        <th class="p-4 text-right">TOTAL</th>
+                        <th class="p-4 text-right">MARGEN ($)</th>
+                        <th class="p-4 text-right">MARGEN (%)</th>
+                        <th class="p-4">HORA</th>
                         <th class="p-4 text-center">USUARIO</th>
                         <th class="p-4 text-center">CLIENTE</th>
                         <th class="p-4 text-center">ACCIÓN</th>
@@ -136,12 +136,13 @@
                     @foreach($movements as $m)
                         <tr class="hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition">
                             <td class="p-4">
-                                <span class="px-2.5 py-1 rounded-md text-[10px] font-black uppercase tracking-wider {{ $m->type === 'venta' ? 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300' : 'bg-rose-100 text-rose-700' }}">
-                                    {{ strtoupper($m->type) }}
+                                <span class="px-2.5 py-1 rounded-full text-[10px] font-black uppercase {{ $m->type === 'venta' ? 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400' : ($m->type === 'compra' ? 'bg-blue-100 text-blue-700' : 'bg-rose-100 text-rose-700') }}">
+                                    {{ $m->type }}
                                 </span>
                             </td>
-                            <td class="p-4 font-bold text-slate-900 dark:text-white">
-                                {{ $m->product_name }}
+                            <td class="p-4">
+                                <div class="font-extrabold text-slate-900 dark:text-white uppercase">{{ $m->product_name }}</div>
+                                <div class="text-[11px] text-slate-400 font-mono">{{ $m->sku }}</div>
                             </td>
                             <td class="p-4 font-mono font-bold text-blue-600 dark:text-blue-400">
                                 {{ $m->ticket_number }}
@@ -162,7 +163,7 @@
                                 {{ number_format($m->margin_percentage, 1) }}%
                             </td>
                             <td class="p-4 font-mono text-slate-500">
-                                {{ \Carbon\Carbon::parse($m->movement_date)->format('h:i A') }}
+                                {{ !empty($m->movement_date) ? \Carbon\Carbon::parse($m->movement_date)->format('h:i A') : '---' }}
                             </td>
                             <td class="p-4 text-center">
                                 <span title="Usuario: Jairo (Admin)" class="inline-flex items-center justify-center w-7 h-7 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">

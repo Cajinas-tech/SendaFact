@@ -19,12 +19,24 @@ class CashRegisterController extends Controller
             $current = (object)[
                 'id' => 1,
                 'opening_amount' => 1000.00,
+                'closing_amount' => null,
                 'status' => 'open',
                 'opened_at' => now()->startOfDay(),
+                'closed_at' => null,
                 'notes' => 'Apertura de turno matutino',
                 'user' => (object)['name' => 'Jairo (Admin)']
             ];
-            $registers = collect([$current]);
+            $past = (object)[
+                'id' => 2,
+                'opening_amount' => 1000.00,
+                'closing_amount' => 3500.00,
+                'status' => 'closed',
+                'opened_at' => now()->subDay()->setTime(8, 0),
+                'closed_at' => now()->subDay()->setTime(18, 0),
+                'notes' => 'Cierre conforme de turno anterior',
+                'user' => (object)['name' => 'Jairo (Admin)']
+            ];
+            $registers = collect([$current, $past]);
             $todaySales = 25.30;
         }
 

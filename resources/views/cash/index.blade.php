@@ -19,7 +19,7 @@
                 </div>
                 @if($current)
                     <p class="text-xs text-slate-400 mt-1">
-                        Abierta por <strong>{{ $current->user->name ?? 'Jairo' }}</strong> el {{ $current->opened_at->format('d/m/Y h:i A') }} con un fondo inicial de <strong>C${{ number_format($current->opening_amount, 2) }}</strong>
+                        Abierta por <strong>{{ $current->user->name ?? 'Jairo' }}</strong> el {{ isset($current->opened_at) ? (is_string($current->opened_at) ? \Carbon\Carbon::parse($current->opened_at)->format('d/m/Y h:i A') : $current->opened_at->format('d/m/Y h:i A')) : 'Hoy' }} con un fondo inicial de <strong>C${{ number_format($current->opening_amount ?? 0, 2) }}</strong>
                     </p>
                 @else
                     <p class="text-xs text-rose-500 font-semibold mt-1">No hay una sesiÃ³n de caja activa. Debes abrir caja para facturar en efectivo.</p>
@@ -64,13 +64,13 @@
                     @foreach($registers as $reg)
                         <tr class="hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition">
                             <td class="p-4 font-bold text-slate-900 dark:text-white">{{ $reg->user->name ?? 'Jairo' }}</td>
-                            <td class="p-4 font-mono text-slate-600 dark:text-slate-300">{{ $reg->opened_at->format('d/m/Y h:i A') }}</td>
-                            <td class="p-4 font-mono text-slate-600 dark:text-slate-300">{{ $reg->closed_at ? $reg->closed_at->format('d/m/Y h:i A') : 'En curso' }}</td>
-                            <td class="p-4 text-right font-mono font-bold text-slate-900 dark:text-white">C${{ number_format($reg->opening_amount, 2) }}</td>
-                            <td class="p-4 text-right font-mono font-bold text-emerald-600">{{ $reg->closing_amount ? 'C$' . number_format($reg->closing_amount, 2) : '---' }}</td>
+                            <td class="p-4 font-mono text-slate-600 dark:text-slate-300">{{ isset($reg->opened_at) ? (is_string($reg->opened_at) ? \Carbon\Carbon::parse($reg->opened_at)->format('d/m/Y h:i A') : $reg->opened_at->format('d/m/Y h:i A')) : 'Hoy' }}</td>
+                            <td class="p-4 font-mono text-slate-600 dark:text-slate-300">{{ !empty($reg->closed_at) ? (is_string($reg->closed_at) ? \Carbon\Carbon::parse($reg->closed_at)->format('d/m/Y h:i A') : $reg->closed_at->format('d/m/Y h:i A')) : 'En curso' }}</td>
+                            <td class="p-4 text-right font-mono font-bold text-slate-900 dark:text-white">C${{ number_format($reg->opening_amount ?? 0, 2) }}</td>
+                            <td class="p-4 text-right font-mono font-bold text-emerald-600">{{ !empty($reg->closing_amount) ? 'C$' . number_format($reg->closing_amount, 2) : '---' }}</td>
                             <td class="p-4 text-center">
-                                <span class="px-2.5 py-1 rounded-full text-[10px] font-black uppercase {{ $reg->status === 'open' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-600' }}">
-                                    {{ $reg->status === 'open' ? 'Abierta' : 'Cerrada' }}
+                                <span class="px-2.5 py-1 rounded-full text-[10px] font-black uppercase {{ ($reg->status ?? 'open') === 'open' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-600' }}">
+                                    {{ ($reg->status ?? 'open') === 'open' ? 'Abierta' : 'Cerrada' }}
                                 </span>
                             </td>
                         </tr>

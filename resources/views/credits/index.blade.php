@@ -90,7 +90,7 @@
                                 </div>
                             </td>
                             <td class="p-4 font-medium text-slate-600 dark:text-slate-400">
-                                {{ \Carbon\Carbon::parse($credit->due_date)->format('d/m/Y') }}
+                                {{ !empty($credit->due_date) ? \Carbon\Carbon::parse($credit->due_date)->format('d/m/Y') : '---' }}
                             </td>
                             <td class="p-4">
                                 <span class="px-2.5 py-1 rounded-full text-[10px] font-black uppercase {{ $credit->status === 'activo' ? 'bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-400' : 'bg-emerald-100 text-emerald-700' }}">

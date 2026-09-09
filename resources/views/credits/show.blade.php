@@ -104,18 +104,18 @@
             </div>
             <div>
                 <span class="text-[10px] uppercase font-bold text-slate-400">Se fio el</span>
-                <p class="font-extrabold text-slate-800 dark:text-white">{{ \Carbon\Carbon::parse($credit->fio_date)->format('d/m/Y') }}</p>
+                <p class="font-extrabold text-slate-800 dark:text-white">{{ !empty($credit->fio_date) ? \Carbon\Carbon::parse($credit->fio_date)->format('d/m/Y') : '---' }}</p>
             </div>
             <div>
                 <span class="text-[10px] uppercase font-bold text-slate-400">Vence</span>
-                <p class="font-extrabold text-slate-800 dark:text-white">{{ \Carbon\Carbon::parse($credit->due_date)->format('d/m/Y') }}</p>
+                <p class="font-extrabold text-slate-800 dark:text-white">{{ !empty($credit->due_date) ? \Carbon\Carbon::parse($credit->due_date)->format('d/m/Y') : '---' }}</p>
             </div>
         </div>
 
         <!-- Tip Notice -->
         <div class="flex items-center gap-2 text-xs font-semibold text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/40 p-3 rounded-xl border border-amber-200 dark:border-amber-800/40">
             <i data-lucide="trending-up" class="w-4 h-4 shrink-0"></i>
-            <span>Si no abona nada, el {{ \Carbon\Carbon::parse($credit->due_date)->format('d \d\e M, Y') }} deberá ${{ number_format($credit->remaining_amount * 1.0012, 2) }} {{ $daysLeftText }}</span>
+            <span>Si no abona nada, el {{ !empty($credit->due_date) ? \Carbon\Carbon::parse($credit->due_date)->format('d \d\e M, Y') : 'vencimiento' }} deberá ${{ number_format(($credit->remaining_amount ?? 0) * 1.0012, 2) }} {{ $daysLeftText ?? '' }}</span>
         </div>
 
     </div>
