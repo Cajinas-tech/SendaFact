@@ -71,11 +71,34 @@
             background: rgba(15, 23, 42, 0.95);
             border-color: #1e293b;
         }
-        .sidebar-scroll::-webkit-scrollbar { width: 5px; }
-        .sidebar-scroll::-webkit-scrollbar-track { background: rgba(0,0,0,0.02); }
-        .sidebar-scroll::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 9999px; }
-        .dark .sidebar-scroll::-webkit-scrollbar-thumb { background: #475569; }
-        .sidebar-scroll::-webkit-scrollbar-thumb:hover { background: #3b82f6; }
+        /* Barra de Desplazamiento Visible Permanente para el Menú Lateral */
+        .sidebar-scroll {
+            overflow-y: scroll !important;
+            scrollbar-width: thin;
+            scrollbar-color: #3b82f6 #e2e8f0;
+        }
+        .dark .sidebar-scroll {
+            scrollbar-color: #3b82f6 #1e293b;
+        }
+        .sidebar-scroll::-webkit-scrollbar {
+            width: 6px;
+            display: block;
+        }
+        .sidebar-scroll::-webkit-scrollbar-track {
+            background: #f1f5f9;
+            border-radius: 9999px;
+            margin: 6px 0;
+        }
+        .dark .sidebar-scroll::-webkit-scrollbar-track {
+            background: #1e293b;
+        }
+        .sidebar-scroll::-webkit-scrollbar-thumb {
+            background: #3b82f6;
+            border-radius: 9999px;
+        }
+        .sidebar-scroll::-webkit-scrollbar-thumb:hover {
+            background: #1d4ed8;
+        }
     </style>
     @stack('styles')
 </head>
