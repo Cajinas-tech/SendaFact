@@ -71,18 +71,23 @@
             background: rgba(15, 23, 42, 0.95);
             border-color: #1e293b;
         }
+        .sidebar-scroll::-webkit-scrollbar { width: 5px; }
+        .sidebar-scroll::-webkit-scrollbar-track { background: rgba(0,0,0,0.02); }
+        .sidebar-scroll::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 9999px; }
+        .dark .sidebar-scroll::-webkit-scrollbar-thumb { background: #475569; }
+        .sidebar-scroll::-webkit-scrollbar-thumb:hover { background: #3b82f6; }
     </style>
     @stack('styles')
 </head>
-<body class="bg-[#f4f7fb] dark:bg-[#0b1120] text-[#1e293b] dark:text-[#f1f5f9] font-sans antialiased min-h-screen transition-colors duration-200">
-    <div class="flex min-h-screen overflow-hidden">
+<body class="bg-[#f4f7fb] dark:bg-[#0b1120] text-[#1e293b] dark:text-[#f1f5f9] font-sans antialiased h-screen overflow-hidden transition-colors duration-200">
+    <div class="flex h-screen w-full overflow-hidden">
         
-        <!-- SIDEBAR -->
+        <!-- SIDEBAR (INDEPENDENT FIXED HEIGHT CONTAINER) -->
         <aside :class="sidebarCollapsed ? 'w-20' : 'w-64'" 
-               class="bg-white dark:bg-[#0f172a] border-r border-slate-200 dark:border-slate-800 flex flex-col justify-between transition-all duration-300 z-30 shrink-0 select-none shadow-sm">
+               class="bg-white dark:bg-[#0f172a] border-r border-slate-200 dark:border-slate-800 h-screen flex flex-col justify-between transition-all duration-300 z-30 shrink-0 select-none shadow-sm">
             
-            <!-- Sidebar Top: Brand Logo -->
-            <div class="p-4 border-b border-slate-100 dark:border-slate-800/60">
+            <!-- Sidebar Top: Brand Logo (Pinned Top) -->
+            <div class="p-4 border-b border-slate-100 dark:border-slate-800/60 shrink-0">
                 <div class="flex items-center gap-3">
                     <div class="w-12 h-12 rounded-2xl bg-[#070b14] flex items-center justify-center shadow-lg shadow-blue-950/40 p-1 shrink-0 overflow-hidden border border-slate-800/80">
                         <img src="/images/logo/senda-logo.png" alt="Senda Sistemas" class="w-full h-full object-contain">
@@ -103,8 +108,8 @@
                 </div>
             </div>
 
-            <!-- Sidebar Navigation Items -->
-            <div class="flex-1 overflow-y-auto px-3 py-4 space-y-1">
+            <!-- Sidebar Navigation Items (INDEPENDENT VERTICAL SCROLL) -->
+            <div class="flex-1 overflow-y-auto px-3 py-4 space-y-1 sidebar-scroll overscroll-contain">
                 @php
                     $navItems = [
                         ['route' => 'dashboard', 'pattern' => 'dashboard*', 'icon' => 'layout-dashboard', 'label' => 'Panel Central'],
@@ -133,8 +138,8 @@
                 @endforeach
             </div>
 
-            <!-- Sidebar Bottom: Logout & Collapse Action (EXACTLY AS IN SCREENSHOT) -->
-            <div class="p-3 border-t border-slate-100 dark:border-slate-800/60 space-y-1">
+            <!-- Sidebar Bottom: Logout & Collapse Action (Pinned Bottom) -->
+            <div class="p-3 border-t border-slate-100 dark:border-slate-800/60 space-y-1 shrink-0 bg-white dark:bg-[#0f172a]">
                 
                 <!-- BOTÓN SALIR DEL SISTEMA (RED / PINK AS IN SCREENSHOT) -->
                 <form action="{{ route('logout') }}" method="POST" class="w-full">
@@ -148,15 +153,15 @@
 
                 <!-- CONTRAER BARRA -->
                 <button @click="sidebarCollapsed = !sidebarCollapsed" 
-                        class="w-full flex items-center gap-3 px-3.5 py-2 text-xs font-semibold text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/60 rounded-xl transition">
+                       class="w-full flex items-center gap-3 px-3.5 py-2 text-xs font-semibold text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/60 rounded-xl transition">
                     <i data-lucide="chevron-left" :class="sidebarCollapsed ? 'rotate-180' : ''" class="w-4 h-4 transition-transform duration-300 shrink-0"></i>
                     <span x-show="!sidebarCollapsed">CONTRAER BARRA</span>
                 </button>
             </div>
         </aside>
 
-        <!-- MAIN CONTENT WRAPPER -->
-        <div class="flex-1 flex flex-col min-w-0 overflow-y-auto">
+        <!-- MAIN CONTENT WRAPPER (INDEPENDENT SCROLL) -->
+        <div class="flex-1 flex flex-col h-screen min-w-0 overflow-y-auto">
             
             <!-- TOP NAVBAR -->
             <header class="h-16 bg-white dark:bg-[#0f172a] border-b border-slate-200 dark:border-slate-800 flex items-center justify-between px-6 sticky top-0 z-20 shadow-xs">
