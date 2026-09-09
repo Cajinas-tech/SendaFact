@@ -132,69 +132,70 @@
                 </div>
             </div>
 
-            <!-- Sidebar Navigation Items (INDEPENDENT VERTICAL SCROLL) -->
-            <div id="sidebarScrollContainer" class="flex-1 overflow-y-auto px-3 py-4 space-y-1.5 sidebar-scroll">
-                @php
-                    $navSections = [
-                        'OPERACIONES' => [
-                            ['route' => 'dashboard', 'pattern' => 'dashboard*', 'icon' => 'layout-dashboard', 'label' => 'Panel Central'],
-                            ['route' => 'catalog.index', 'pattern' => 'catalogo*', 'icon' => 'book-open', 'label' => 'Catálogo de Productos'],
-                            ['route' => 'pos.index', 'pattern' => 'pos*', 'icon' => 'shopping-cart', 'label' => 'Ventas (POS)'],
-                            ['route' => 'cash.index', 'pattern' => 'caja*', 'icon' => 'banknote', 'label' => 'Control de Caja'],
-                        ],
-                        'INVENTARIO Y CRÉDITOS' => [
-                            ['route' => 'products.index', 'pattern' => 'productos*', 'icon' => 'package', 'label' => 'Gestión de Productos'],
-                            ['route' => 'movements.index', 'pattern' => 'movimientos*', 'icon' => 'clipboard-list', 'label' => 'Inventario & Movimientos'],
-                            ['route' => 'credits.index', 'pattern' => 'creditos*', 'icon' => 'credit-card', 'label' => 'Créditos y Cuentas'],
-                            ['route' => 'customers.index', 'pattern' => 'clientes*', 'icon' => 'users', 'label' => 'Gestión de Clientes'],
-                        ],
-                        'ADMINISTRACIÓN' => [
-                            ['route' => 'users.index', 'pattern' => 'usuarios*', 'icon' => 'user-cog', 'label' => 'Usuarios & Roles'],
-                            ['route' => 'backup.index', 'pattern' => 'backup*', 'icon' => 'archive', 'label' => 'Centro de Respaldos'],
-                            ['route' => 'settings.index', 'pattern' => 'ajustes*', 'icon' => 'sliders-horizontal', 'label' => 'Ajuste del Sistema'],
-                        ],
-                    ];
-                @endphp
+            <!-- Sidebar Navigation Items (INDEPENDENT VERTICAL SCROLL EXTENDING TO BOTTOM) -->
+            <div id="sidebarScrollContainer" class="flex-1 overflow-y-auto px-3 py-4 space-y-1.5 sidebar-scroll flex flex-col justify-between">
+                <div>
+                    @php
+                        $navSections = [
+                            'OPERACIONES' => [
+                                ['route' => 'dashboard', 'pattern' => 'dashboard*', 'icon' => 'layout-dashboard', 'label' => 'Panel Central'],
+                                ['route' => 'catalog.index', 'pattern' => 'catalogo*', 'icon' => 'book-open', 'label' => 'Catálogo de Productos'],
+                                ['route' => 'pos.index', 'pattern' => 'pos*', 'icon' => 'shopping-cart', 'label' => 'Ventas (POS)'],
+                                ['route' => 'cash.index', 'pattern' => 'caja*', 'icon' => 'banknote', 'label' => 'Control de Caja'],
+                            ],
+                            'INVENTARIO Y CRÉDITOS' => [
+                                ['route' => 'products.index', 'pattern' => 'productos*', 'icon' => 'package', 'label' => 'Gestión de Productos'],
+                                ['route' => 'movements.index', 'pattern' => 'movimientos*', 'icon' => 'clipboard-list', 'label' => 'Inventario & Movimientos'],
+                                ['route' => 'credits.index', 'pattern' => 'creditos*', 'icon' => 'credit-card', 'label' => 'Créditos y Cuentas'],
+                                ['route' => 'customers.index', 'pattern' => 'clientes*', 'icon' => 'users', 'label' => 'Gestión de Clientes'],
+                            ],
+                            'ADMINISTRACIÓN' => [
+                                ['route' => 'users.index', 'pattern' => 'usuarios*', 'icon' => 'user-cog', 'label' => 'Usuarios & Roles'],
+                                ['route' => 'backup.index', 'pattern' => 'backup*', 'icon' => 'archive', 'label' => 'Centro de Respaldos'],
+                                ['route' => 'settings.index', 'pattern' => 'ajustes*', 'icon' => 'sliders-horizontal', 'label' => 'Ajuste del Sistema'],
+                            ],
+                        ];
+                    @endphp
 
-                @foreach($navSections as $sectionName => $items)
-                    <div class="pt-2 pb-1 first:pt-0" x-show="!sidebarCollapsed">
-                        <span class="text-[10px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500 px-3">
-                            {{ $sectionName }}
-                        </span>
-                    </div>
+                    @foreach($navSections as $sectionName => $items)
+                        <div class="pt-3 pb-1 first:pt-0" x-show="!sidebarCollapsed">
+                            <span class="text-[10px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500 px-3">
+                                {{ $sectionName }}
+                            </span>
+                        </div>
 
-                    @foreach($items as $item)
-                        @php
-                            $isActive = request()->is($item['pattern']) || (request()->routeIs('dashboard') && $item['route'] === 'dashboard');
-                        @endphp
-                        <a href="{{ route($item['route']) }}" 
-                           class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all duration-200 group {{ $isActive ? 'bg-blue-600 text-white shadow-md shadow-blue-500/25' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/60 hover:text-slate-900 dark:hover:text-white' }}">
-                            <i data-lucide="{{ $item['icon'] }}" class="w-5 h-5 shrink-0 {{ $isActive ? 'text-white' : 'text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-300' }}"></i>
-                            <span x-show="!sidebarCollapsed" class="truncate font-medium">{{ $item['label'] }}</span>
-                        </a>
+                        @foreach($items as $item)
+                            @php
+                                $isActive = request()->is($item['pattern']) || (request()->routeIs('dashboard') && $item['route'] === 'dashboard');
+                            @endphp
+                            <a href="{{ route($item['route']) }}" 
+                               class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all duration-200 group {{ $isActive ? 'bg-blue-600 text-white shadow-md shadow-blue-500/25' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/60 hover:text-slate-900 dark:hover:text-white' }}">
+                                <i data-lucide="{{ $item['icon'] }}" class="w-5 h-5 shrink-0 {{ $isActive ? 'text-white' : 'text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-300' }}"></i>
+                                <span x-show="!sidebarCollapsed" class="truncate font-medium">{{ $item['label'] }}</span>
+                            </a>
+                        @endforeach
                     @endforeach
-                @endforeach
-            </div>
+                </div>
 
-            <!-- Sidebar Bottom: Logout & Collapse Action (Pinned Bottom) -->
-            <div class="p-3 border-t border-slate-100 dark:border-slate-800/60 space-y-1 shrink-0 bg-white dark:bg-[#0f172a]">
-                
-                <!-- BOTÓN SALIR DEL SISTEMA (RED / PINK AS IN SCREENSHOT) -->
-                <form action="{{ route('logout') }}" method="POST" class="w-full">
-                    @csrf
-                    <button type="submit" 
-                            class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-bold text-rose-500 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition group">
-                        <i data-lucide="log-out" class="w-5 h-5 text-rose-500 group-hover:text-rose-600 shrink-0"></i>
-                        <span x-show="!sidebarCollapsed" class="truncate font-bold">Salir del Sistema</span>
+                <!-- ACCIONES INFERIORES DENTRO DEL DESPLAZAMIENTO (SALIR DEL SISTEMA Y CONTRAER BARRA) -->
+                <div class="pt-4 mt-3 border-t border-slate-100 dark:border-slate-800/80 space-y-1">
+                    <!-- BOTÓN SALIR DEL SISTEMA -->
+                    <form action="{{ route('logout') }}" method="POST" class="w-full">
+                        @csrf
+                        <button type="submit" 
+                                class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-bold text-rose-500 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition group">
+                            <i data-lucide="log-out" class="w-5 h-5 text-rose-500 group-hover:text-rose-600 shrink-0"></i>
+                            <span x-show="!sidebarCollapsed" class="truncate font-bold">Salir del Sistema</span>
+                        </button>
+                    </form>
+
+                    <!-- CONTRAER BARRA -->
+                    <button @click="sidebarCollapsed = !sidebarCollapsed" 
+                           class="w-full flex items-center gap-3 px-3.5 py-2.5 text-xs font-semibold text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/60 rounded-xl transition">
+                        <i data-lucide="chevron-left" :class="sidebarCollapsed ? 'rotate-180' : ''" class="w-4 h-4 transition-transform duration-300 shrink-0"></i>
+                        <span x-show="!sidebarCollapsed">CONTRAER BARRA</span>
                     </button>
-                </form>
-
-                <!-- CONTRAER BARRA -->
-                <button @click="sidebarCollapsed = !sidebarCollapsed" 
-                       class="w-full flex items-center gap-3 px-3.5 py-2 text-xs font-semibold text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/60 rounded-xl transition">
-                    <i data-lucide="chevron-left" :class="sidebarCollapsed ? 'rotate-180' : ''" class="w-4 h-4 transition-transform duration-300 shrink-0"></i>
-                    <span x-show="!sidebarCollapsed">CONTRAER BARRA</span>
-                </button>
+                </div>
             </div>
         </aside>
 
