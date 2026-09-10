@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { 
   Settings, Database, Users, Building2, 
   Download, Upload, Save, AlertTriangle, 
@@ -10,8 +11,18 @@ import { User, CompanySetting, Product } from '../types';
 import { useToast } from '../components/UI/Toast';
 
 export const SettingsPage: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'backup' | 'users' | 'company'>('backup');
+  const [searchParams] = useSearchParams();
+  const tabParam = searchParams.get('tab');
+  const [activeTab, setActiveTab] = useState<'backup' | 'users' | 'company'>(
+    tabParam === 'users' ? 'users' : tabParam === 'company' ? 'company' : 'backup'
+  );
   const { success, warning, error, info } = useToast();
+
+  useEffect(() => {
+    if (tabParam === 'users' || tabParam === 'backup' || tabParam === 'company') {
+      setActiveTab(tabParam);
+    }
+  }, [tabParam]);
   
   // File input refs
   const jsonInputRef = useRef<HTMLInputElement | null>(null);

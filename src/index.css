@@ -26,23 +26,45 @@
   -webkit-backdrop-filter: blur(16px);
 }
 
-/* Custom Minimal Scrollbar */
+/* Custom Visible Scrollbar for Sidebar */
+.sidebar-scroll {
+  overflow-y: auto !important;
+  scrollbar-width: thin;
+  scrollbar-color: #2563eb #f1f5f9;
+}
+
+.dark .sidebar-scroll {
+  scrollbar-color: #3b82f6 #0b1329;
+}
+
 .sidebar-scroll::-webkit-scrollbar {
-  width: 5px;
-  height: 5px;
+  width: 6px;
 }
+
 .sidebar-scroll::-webkit-scrollbar-track {
-  background: transparent;
+  background: #f1f5f9;
+  border-radius: 9999px;
+  margin: 4px 0;
 }
+
+.dark .sidebar-scroll::-webkit-scrollbar-track {
+  background: #0b1329;
+  border-radius: 9999px;
+  margin: 4px 0;
+}
+
 .sidebar-scroll::-webkit-scrollbar-thumb {
-  background: rgba(148, 163, 184, 0.35);
+  background: #2563eb;
   border-radius: 9999px;
 }
+
 .dark .sidebar-scroll::-webkit-scrollbar-thumb {
-  background: rgba(148, 163, 184, 0.15);
+  background: #3b82f6;
+  border-radius: 9999px;
 }
+
 .sidebar-scroll::-webkit-scrollbar-thumb:hover {
-  background: rgba(148, 163, 184, 0.6);
+  background: #1d4ed8;
 }
 
 /* Modern Animations & Micro-interactions */
