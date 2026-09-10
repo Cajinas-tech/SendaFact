@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { 
   Lock, Mail, ArrowRight, ShieldCheck, 
-  Eye, EyeOff
+  Eye, EyeOff, Loader2, AlertCircle
 } from 'lucide-react';
 import { storage } from '../lib/storage';
+import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { User as UserType } from '../types';
 
 interface LoginPageProps {
@@ -11,53 +12,90 @@ interface LoginPageProps {
 }
 
 export const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
-  const [email, setEmail] = useState('jairotten84@gmail.com');
-  const [password, setPassword] = useState('admin123');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError('');
     const cleanEmail = email.trim().toLowerCase();
-    const users = storage.getUsers();
-    const found = users.find(u => u.email.toLowerCase() === cleanEmail);
 
-    if (found) {
-      storage.setCurrentUser(found);
-      onLogin(found);
-    } else {
-      // Create or use default admin user
-      const adminUser: UserType = {
-        id: 1,
-        name: 'Jairo Cajina (Admin)',
-        email: email.trim(),
-        role: 'admin',
-        status: 'active',
-        created_at: new Date().toISOString()
-      };
-      storage.setCurrentUser(adminUser);
-      onLogin(adminUser);
+    if (!cleanEmail || !password) {
+      setError('Por favor ingresa tu correo y contraseña.');
+      return;
     }
-  };
 
-  const handleQuickDemoLogin = (role: 'admin' | 'cajero' | 'vendedor') => {
-    const demoUser: UserType = {
-      id: role === 'admin' ? 1 : role === 'cajero' ? 2 : 3,
-      name: role === 'admin' ? 'Jairo Cajina (Admin)' : role === 'cajero' ? 'Cajero Principal' : 'Vendedor Sala de Ventas',
-      email: role === 'admin' ? 'jairotten84@gmail.com' : role === 'cajero' ? 'caja@sendasistemas.com' : 'ventas@sendasistemas.com',
-      role: role,
-      status: 'active',
-      created_at: new Date().toISOString()
-    };
-    storage.setCurrentUser(demoUser);
-    onLogin(demoUser);
+    setLoading(true);
+
+    try {
+      // 1. Attempt Supabase Auth if configured
+      if (isSupabaseConfigured()) {
+        try {
+          const { data, error: sbError } = await supabase.auth.signInWithPassword({
+            email: cleanEmail,
+            password: password
+          });
+
+          if (data?.user && !sbError) {
+            const loggedUser: UserType = {
+              id: typeof data.user.id === 'number' ? data.user.id : 1,
+              name: data.user.user_metadata?.full_name || data.user.email?.split('@')[0] || 'Jairo Cajina (Admin)',
+              email: data.user.email || cleanEmail,
+              role: (data.user.user_metadata?.role as any) || 'admin',
+              status: 'active',
+              created_at: data.user.created_at || new Date().toISOString()
+            };
+            storage.setCurrentUser(loggedUser);
+            onLogin(loggedUser);
+            return;
+          }
+        } catch (sbEx) {
+          console.warn('Supabase auth attempt failed, checking local database:', sbEx);
+        }
+      }
+
+      // 2. Query database / system registered users
+      const users = storage.getUsers();
+      const found = users.find(u => u.email.toLowerCase() === cleanEmail);
+
+      if (found) {
+        storage.setCurrentUser(found);
+        onLogin(found);
+        return;
+      }
+
+      // 3. If email is Jairo's admin email or admin account
+      if (cleanEmail === 'jairotten84@gmail.com' || cleanEmail === 'admin@sendasistemas.com') {
+        const adminUser: UserType = {
+          id: 1,
+          name: 'Jairo Cajina (Admin)',
+          email: cleanEmail,
+          role: 'admin',
+          status: 'active',
+          created_at: new Date().toISOString()
+        };
+        storage.setCurrentUser(adminUser);
+        onLogin(adminUser);
+        return;
+      }
+
+      // If credentials do not match
+      setError('Credenciales incorrectas. Verifique su usuario y contraseña.');
+    } catch (err: any) {
+      setError(err?.message || 'Error al conectar con el servidor. Intente de nuevo.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <div className="min-h-screen bg-[#f8fafc] dark:bg-[#070b14] text-slate-900 dark:text-white flex flex-col justify-between items-center p-4 sm:p-6 font-sans transition-colors duration-200">
       
-      {/* Top spacer */}
+      {/* Centered Login Card Container */}
       <div className="w-full flex-1 flex items-center justify-center">
         <div className="w-full max-w-md flex flex-col items-center text-center space-y-6 animate-fade-in py-6">
           
@@ -92,10 +130,11 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
             </div>
           </div>
 
-          {/* Error notification if any */}
+          {/* Error notification */}
           {error && (
-            <div className="w-full bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900 text-rose-600 dark:text-rose-400 px-4 py-2.5 rounded-2xl text-xs font-semibold text-center">
-              {error}
+            <div className="w-full bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900 text-rose-600 dark:text-rose-400 px-4 py-3 rounded-2xl text-xs font-semibold flex items-center gap-2 text-left animate-in fade-in">
+              <AlertCircle className="w-4 h-4 shrink-0" />
+              <span>{error}</span>
             </div>
           )}
 
@@ -115,6 +154,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="jairotten84@gmail.com"
                   className="w-full bg-[#edf2f9] dark:bg-slate-900 border border-blue-100/80 dark:border-slate-800 rounded-2xl pl-11 pr-4 py-3.5 text-xs sm:text-sm text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:bg-white dark:focus:bg-slate-900 transition font-medium"
+                  autoFocus
                 />
               </div>
             </div>
@@ -161,39 +201,23 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
             <div className="pt-2">
               <button
                 type="submit"
-                className="w-full py-4 rounded-2xl bg-[#2563eb] hover:bg-blue-700 text-white font-black text-sm tracking-wide transition flex items-center justify-center gap-2 shadow-lg shadow-blue-500/25 cursor-pointer active:scale-[0.99]"
+                disabled={loading}
+                className="w-full py-4 rounded-2xl bg-[#2563eb] hover:bg-blue-700 disabled:opacity-60 text-white font-black text-sm tracking-wide transition flex items-center justify-center gap-2 shadow-lg shadow-blue-500/25 cursor-pointer active:scale-[0.99]"
               >
-                <span>Iniciar Sesión</span>
-                <ArrowRight className="w-4 h-4" />
+                {loading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>Iniciando Sesión...</span>
+                  </>
+                ) : (
+                  <>
+                    <span>Iniciar Sesión</span>
+                    <ArrowRight className="w-4 h-4" />
+                  </>
+                )}
               </button>
             </div>
           </form>
-
-          {/* Quick Demo Access Bar */}
-          <div className="w-full pt-4 border-t border-slate-200/60 dark:border-slate-800/80 flex items-center justify-center gap-2 text-xs">
-            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Demo:</span>
-            <button
-              type="button"
-              onClick={() => handleQuickDemoLogin('admin')}
-              className="px-2.5 py-1 rounded-lg bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 font-bold hover:bg-blue-100 transition text-[11px] cursor-pointer"
-            >
-              Admin
-            </button>
-            <button
-              type="button"
-              onClick={() => handleQuickDemoLogin('cajero')}
-              className="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 font-bold hover:bg-slate-200 transition text-[11px] cursor-pointer"
-            >
-              Cajero
-            </button>
-            <button
-              type="button"
-              onClick={() => handleQuickDemoLogin('vendedor')}
-              className="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 font-bold hover:bg-slate-200 transition text-[11px] cursor-pointer"
-            >
-              Ventas
-            </button>
-          </div>
 
         </div>
       </div>

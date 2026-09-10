@@ -155,9 +155,10 @@ const DEFAULT_SETTINGS: CompanySetting = {
 };
 
 const DEFAULT_USERS: User[] = [
-  { id: 1, name: 'Jairo Cajina (Admin)', email: 'admin@sendasistemas.com', role: 'admin', phone: '+505 8888 0001', status: 'active', created_at: '2026-09-01' },
-  { id: 2, name: 'Cajero Principal', email: 'caja@sendasistemas.com', role: 'cajero', phone: '+505 8888 0002', status: 'active', created_at: '2026-09-02' },
-  { id: 3, name: 'Vendedor Sala de Ventas', email: 'ventas@sendasistemas.com', role: 'vendedor', phone: '+505 8888 0003', status: 'active', created_at: '2026-09-03' },
+  { id: 1, name: 'Jairo Cajina (Admin)', email: 'jairotten84@gmail.com', role: 'admin', phone: '+505 8888 0001', status: 'active', created_at: '2026-09-01' },
+  { id: 2, name: 'Administrador Senda', email: 'admin@sendasistemas.com', role: 'admin', phone: '+505 8888 0001', status: 'active', created_at: '2026-09-01' },
+  { id: 3, name: 'Cajero Principal', email: 'caja@sendasistemas.com', role: 'cajero', phone: '+505 8888 0002', status: 'active', created_at: '2026-09-02' },
+  { id: 4, name: 'Vendedor Sala de Ventas', email: 'ventas@sendasistemas.com', role: 'vendedor', phone: '+505 8888 0003', status: 'active', created_at: '2026-09-03' },
 ];
 
 const DEFAULT_SALES: Sale[] = [
