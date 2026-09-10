@@ -527,7 +527,7 @@ export default function ProductsPage() {
                 </div>
 
                 <div className="sm:col-span-2">
-                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">Subtítulo / Unidad / Medidas</label>
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">Detalle o Descripción del Producto</label>
                   <input
                     type="text"
                     value={formData.subtitle}
@@ -699,7 +699,7 @@ export default function ProductsPage() {
                 </div>
 
                 <div className="sm:col-span-2">
-                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">Subtítulo / Unidad / Medidas</label>
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">Detalle o Descripción del Producto</label>
                   <input
                     type="text"
                     value={formData.subtitle}
