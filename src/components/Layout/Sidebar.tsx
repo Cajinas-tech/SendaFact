@@ -113,69 +113,71 @@ export default function Sidebar({ collapsed, setCollapsed, mobileOpen, setMobile
           </div>
         </div>
 
-        {/* 2. NAVIGATION ITEMS WITH INDEPENDENT BLUE SCROLLBAR */}
-        <div className={`flex-1 min-h-0 overflow-y-auto ${collapsed ? 'px-2' : 'px-2.5'} py-3 space-y-4 sidebar-scroll`}>
-          {navSections.map((section, sIdx) => (
-            <div key={sIdx} className="space-y-1">
-              {!collapsed && (
-                <div className="px-3 pt-1 pb-1">
-                  <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500">
-                    {section.title}
-                  </span>
-                </div>
+        {/* 2. NAVIGATION ITEMS & ACTIONS WITH FULL-HEIGHT BLUE SCROLLBAR */}
+        <div className={`flex-1 min-h-0 overflow-y-auto ${collapsed ? 'px-2' : 'px-2.5'} py-3 space-y-4 sidebar-scroll flex flex-col justify-between`}>
+          <div className="space-y-4">
+            {navSections.map((section, sIdx) => (
+              <div key={sIdx} className="space-y-1">
+                {!collapsed && (
+                  <div className="px-3 pt-1 pb-1">
+                    <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                      {section.title}
+                    </span>
+                  </div>
+                )}
+                {section.items.map((item, iIdx) => {
+                  const Icon = item.icon;
+                  const active = isItemActive(item.path);
+
+                  return (
+                    <NavLink
+                      key={iIdx}
+                      to={item.path}
+                      onClick={() => setMobileOpen(false)}
+                      className={`flex items-center ${collapsed ? 'justify-center p-3' : 'gap-3 px-3.5 py-2.5'} rounded-xl text-xs sm:text-sm font-semibold transition-all duration-200 group ${
+                        active
+                          ? 'bg-blue-600 text-white shadow-md shadow-blue-500/25 font-bold'
+                          : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/60 hover:text-slate-900 dark:hover:text-white'
+                      }`}
+                      title={collapsed ? item.label : undefined}
+                    >
+                      <Icon className={`w-5 h-5 shrink-0 ${active ? 'text-white' : 'text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-300'}`} />
+                      {!collapsed && <span className="truncate">{item.label}</span>}
+                    </NavLink>
+                  );
+                })}
+              </div>
+            ))}
+          </div>
+
+          {/* 3. BOTTOM ACTIONS: LOGOUT & COLLAPSE (INSIDE FULL SCROLL) */}
+          <div className={`pt-3 border-t border-slate-100 dark:border-slate-800/80 space-y-1.5 shrink-0 ${collapsed ? 'flex flex-col items-center' : ''}`}>
+            <button
+              type="button"
+              onClick={handleLogout}
+              className={`w-full flex items-center ${collapsed ? 'justify-center p-2.5' : 'gap-3 px-3.5 py-2.5'} rounded-xl text-xs font-bold text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition cursor-pointer`}
+              title="Salir del Sistema"
+            >
+              <LogOut className="w-5 h-5 shrink-0 text-rose-500" />
+              {!collapsed && <span>Salir del Sistema</span>}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setCollapsed(!collapsed)}
+              className={`w-full hidden lg:flex items-center ${collapsed ? 'justify-center p-2.5' : 'gap-3 px-3.5 py-2'} rounded-xl text-[11px] font-bold uppercase tracking-wider text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800/60 transition cursor-pointer`}
+              title={collapsed ? 'Expandir barra' : 'Contraer barra'}
+            >
+              {collapsed ? (
+                <ChevronRight className="w-5 h-5 text-slate-400" />
+              ) : (
+                <>
+                  <ChevronLeft className="w-4 h-4 text-slate-400" />
+                  <span>CONTRAER BARRA</span>
+                </>
               )}
-              {section.items.map((item, iIdx) => {
-                const Icon = item.icon;
-                const active = isItemActive(item.path);
-
-                return (
-                  <NavLink
-                    key={iIdx}
-                    to={item.path}
-                    onClick={() => setMobileOpen(false)}
-                    className={`flex items-center ${collapsed ? 'justify-center p-3' : 'gap-3 px-3.5 py-2.5'} rounded-xl text-xs sm:text-sm font-semibold transition-all duration-200 group ${
-                      active
-                        ? 'bg-blue-600 text-white shadow-md shadow-blue-500/25 font-bold'
-                        : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/60 hover:text-slate-900 dark:hover:text-white'
-                    }`}
-                    title={collapsed ? item.label : undefined}
-                  >
-                    <Icon className={`w-5 h-5 shrink-0 ${active ? 'text-white' : 'text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-300'}`} />
-                    {!collapsed && <span className="truncate">{item.label}</span>}
-                  </NavLink>
-                );
-              })}
-            </div>
-          ))}
-        </div>
-
-        {/* 3. FIXED BOTTOM ACTIONS: LOGOUT & COLLAPSE */}
-        <div className={`p-3 border-t border-slate-100 dark:border-slate-800/80 space-y-1.5 shrink-0 bg-white dark:bg-[#070b14] ${collapsed ? 'flex flex-col items-center' : ''}`}>
-          <button
-            type="button"
-            onClick={handleLogout}
-            className={`w-full flex items-center ${collapsed ? 'justify-center p-2.5' : 'gap-3 px-3.5 py-2.5'} rounded-xl text-xs font-bold text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition cursor-pointer`}
-            title="Salir del Sistema"
-          >
-            <LogOut className="w-5 h-5 shrink-0 text-rose-500" />
-            {!collapsed && <span>Salir del Sistema</span>}
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setCollapsed(!collapsed)}
-            className={`w-full hidden lg:flex items-center ${collapsed ? 'justify-center p-2.5' : 'gap-3 px-3.5 py-2'} rounded-xl text-[11px] font-bold uppercase tracking-wider text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800/60 transition cursor-pointer`}
-            title={collapsed ? 'Expandir barra' : 'Contraer barra'}
-          >
-            {collapsed ? (
-              <ChevronRight className="w-5 h-5 text-slate-400" />
-            ) : (
-              <>
-                <ChevronLeft className="w-4 h-4 text-slate-400" />
-                <span>CONTRAER BARRA</span>
-              </>
-            )}
-          </button>
+            </button>
+          </div>
         </div>
       </aside>
     </>
