@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import Sidebar from './components/Layout/Sidebar';
 import Header from './components/Layout/Header';
 import { ToastProvider } from './components/UI/Toast';
@@ -20,6 +20,7 @@ export default function App() {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
 
   const getPageTitle = (path: string) => {
     switch (path) {
@@ -41,9 +42,7 @@ export default function App() {
   if (isLoginPage) {
     return (
       <ToastProvider>
-        <Routes>
-          <Route path="/login" element={<LoginPage onLogin={() => window.location.href = '/'} />} />
-        </Routes>
+        <LoginPage onLogin={() => navigate('/')} />
       </ToastProvider>
     );
   }
@@ -76,6 +75,7 @@ export default function App() {
               <Route path="/creditos" element={<CreditsPage />} />
               <Route path="/clientes" element={<CustomersPage />} />
               <Route path="/ajustes" element={<SettingsPage />} />
+              <Route path="/login" element={<LoginPage onLogin={() => navigate('/')} />} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </main>
