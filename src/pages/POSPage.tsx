@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { Search, ShoppingBag, Trash2, CheckCircle, CreditCard, Banknote, RefreshCw, Zap, Tag, Percent, X } from 'lucide-react';
+import { Search, ShoppingBag, Trash2, CheckCircle, CreditCard, Banknote, RefreshCw, Zap, Tag, Percent, X, ArrowRight } from 'lucide-react';
 import ProductCard from '../components/POS/ProductCard';
 import CartItem from '../components/POS/CartItem';
 import TicketModal from '../components/POS/TicketModal';
@@ -18,6 +18,7 @@ export default function POSPage() {
   const [paymentMethod, setPaymentMethod] = useState<'efectivo' | 'tarjeta' | 'transferencia' | 'credito'>('efectivo');
   const [cart, setCart] = useState<{ id: number; name: string; sku: string; price_cordobas: number; price_usd: number; quantity: number }[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [mobileTab, setMobileTab] = useState<'catalog' | 'cart'>('catalog');
 
   // IVA y Descuentos
   const [taxRate, setTaxRate] = useState<number>(0); // 0 (Sin IVA), 5, 10, 15, 20, 25, 30, 50
@@ -355,14 +356,48 @@ export default function POSPage() {
   }, [totalCordobas, exchangeRate]);
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+    <div className="space-y-4 sm:space-y-6 animate-fade-in pb-20 lg:pb-0">
+      
+      {/* Mobile & Tablet Tab Toggle (only visible on < lg screens) */}
+      <div className="lg:hidden flex p-1 rounded-2xl bg-slate-200/80 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80">
+        <button
+          type="button"
+          onClick={() => setMobileTab('catalog')}
+          className={`flex-1 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition flex items-center justify-center gap-1.5 cursor-pointer ${
+            mobileTab === 'catalog'
+              ? 'bg-blue-600 text-white shadow-md shadow-blue-500/25'
+              : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+          }`}
+        >
+          <Search className="w-4 h-4" />
+          <span>Catálogo ({filteredProducts.length})</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => setMobileTab('cart')}
+          className={`flex-1 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition flex items-center justify-center gap-1.5 cursor-pointer ${
+            mobileTab === 'cart'
+              ? 'bg-blue-600 text-white shadow-md shadow-blue-500/25'
+              : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+          }`}
+        >
+          <ShoppingBag className="w-4 h-4" />
+          <span>Orden ({cart.reduce((acc, i) => acc + i.quantity, 0)})</span>
+          {cart.length > 0 && (
+            <span className="font-mono text-[10px] font-black bg-emerald-500 text-white px-1.5 py-0.5 rounded-full ml-1">
+              C${totalCordobas.toFixed(0)}
+            </span>
+          )}
+        </button>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6 items-start">
         
-        {/* PANEL IZQUIERDO: CATÁLOGO Y BUSCADOR (8 Cols) */}
-        <div className="lg:col-span-7 xl:col-span-8 space-y-4">
+        {/* PANEL IZQUIERDO: CATÁLOGO Y BUSCADOR */}
+        <div className={`lg:col-span-7 xl:col-span-8 space-y-4 ${mobileTab === 'cart' ? 'hidden lg:block' : 'block'}`}>
           
           {/* Buscador & Filtro de Categorías */}
-          <div className="glass-card rounded-2xl p-4 border border-slate-200/80 dark:border-slate-800 flex flex-col sm:flex-row gap-3">
+          <div className="glass-card rounded-2xl p-3.5 sm:p-4 border border-slate-200/80 dark:border-slate-800 flex flex-col sm:flex-row gap-3">
             <div className="relative flex-1">
               <Search className="w-4 h-4 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2" />
               <input
@@ -379,7 +414,7 @@ export default function POSPage() {
             </div>
 
             {/* Botones de Categoría */}
-            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 scroll-smooth">
               <button
                 type="button"
                 onClick={() => setSelectedCategory('all')}
@@ -409,7 +444,7 @@ export default function POSPage() {
           </div>
 
           {/* Cuadrícula de Productos */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-4 max-h-[calc(100vh-280px)] overflow-y-auto pr-1">
+          <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 max-h-[calc(100vh-260px)] overflow-y-auto pr-1">
             {filteredProducts.length === 0 ? (
               <div className="col-span-full py-16 text-center glass-card rounded-2xl border border-slate-200 dark:border-slate-800">
                 <Search className="w-10 h-10 mx-auto text-slate-300 dark:text-slate-600 mb-2" />
@@ -428,8 +463,8 @@ export default function POSPage() {
           </div>
         </div>
 
-        {/* PANEL DERECHO: CARRITO Y COBRO (4 Cols) */}
-        <div className="lg:col-span-5 xl:col-span-4">
+        {/* PANEL DERECHO: CARRITO Y COBRO */}
+        <div className={`lg:col-span-5 xl:col-span-4 ${mobileTab === 'catalog' ? 'hidden lg:block' : 'block'}`}>
           <div className="glass-card rounded-3xl p-5 sm:p-6 border border-slate-200/90 dark:border-slate-800 shadow-xl space-y-5">
             
             {/* Cabecera del Carrito */}
@@ -692,15 +727,28 @@ export default function POSPage() {
         }}
       />
 
-      {/* Modal de Ticket Exitoso */}
-      <TicketModal
-        isOpen={ticketModalOpen}
-        onClose={() => setTicketModalOpen(false)}
-        ticketNumber={lastSaleData.ticketNumber}
-        saleId={lastSaleData.saleId}
-        totalCordobas={lastSaleData.totalCordobas}
-        sale={completedSale}
-      />
+      {/* Floating Bottom Cart Bar (Mobile/Tablet only when in catalog view and cart not empty) */}
+      {cart.length > 0 && mobileTab === 'catalog' && (
+        <div className="lg:hidden fixed bottom-4 left-4 right-4 z-40 animate-in slide-in-from-bottom duration-200">
+          <button
+            type="button"
+            onClick={() => setMobileTab('cart')}
+            className="w-full py-3.5 px-5 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white shadow-2xl flex items-center justify-between font-black text-xs uppercase tracking-wider border border-blue-400/30 cursor-pointer active:scale-[0.99]"
+          >
+            <div className="flex items-center gap-2.5">
+              <div className="w-7 h-7 rounded-xl bg-white/20 flex items-center justify-center text-xs font-mono font-black">
+                {cart.reduce((acc, i) => acc + i.quantity, 0)}
+              </div>
+              <span>Ver Orden Actual</span>
+            </div>
+            <div className="flex items-center gap-2 font-mono text-sm">
+              <span>C$ {totalCordobas.toFixed(2)}</span>
+              <ArrowRight className="w-4 h-4 stroke-[3]" />
+            </div>
+          </button>
+        </div>
+      )}
+
     </div>
   );
 }

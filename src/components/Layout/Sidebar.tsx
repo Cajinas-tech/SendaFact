@@ -13,7 +13,8 @@ import {
   SlidersHorizontal,
   LogOut,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  X
 } from 'lucide-react';
 import { storage } from '../../lib/storage';
 import ConfirmModal from '../UI/ConfirmModal';
@@ -90,7 +91,17 @@ export default function Sidebar({ collapsed, setCollapsed, mobileOpen, setMobile
         } ${mobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}
       >
         {/* 1. LOGO & BRAND HEADER (Fixed, shrink-0) */}
-        <div className={`border-b border-slate-100 dark:border-slate-800/80 shrink-0 ${collapsed ? 'p-3 flex justify-center' : 'p-4'}`}>
+        <div className={`relative border-b border-slate-100 dark:border-slate-800/80 shrink-0 ${collapsed ? 'p-3 flex justify-center' : 'p-4'}`}>
+          {/* Mobile Close X Button */}
+          <button
+            type="button"
+            onClick={() => setMobileOpen(false)}
+            className="lg:hidden absolute top-3 right-3 p-1.5 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
+            aria-label="Cerrar menú"
+          >
+            <X className="w-5 h-5" />
+          </button>
+
           {collapsed ? (
             <div className="w-14 h-14 rounded-2xl bg-[#070b14] flex items-center justify-center shadow-lg shadow-blue-950/40 p-1.5 shrink-0 overflow-hidden border border-slate-800/80 mx-auto">
               <img src="/images/logo/senda-logo.png" alt="Senda Sistemas" className="w-full h-full object-contain" />

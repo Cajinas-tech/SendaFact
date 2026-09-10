@@ -36,13 +36,14 @@ export default function CartItem({ item, onIncrement, onDecrement, onRemove }: C
       </div>
 
       {/* Quantity Stepper */}
-      <div className="flex items-center gap-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-0.5">
+      <div className="flex items-center gap-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-1 shadow-2xs">
         <button
           type="button"
           onClick={() => onDecrement(item.id)}
-          className="w-5 h-5 rounded flex items-center justify-center text-slate-500 hover:text-slate-800 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-700 transition"
+          className="w-6 h-6 rounded-lg flex items-center justify-center text-slate-500 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-700 active:bg-slate-200 transition cursor-pointer"
+          aria-label="Disminuir"
         >
-          <Minus className="w-3 h-3" />
+          <Minus className="w-3.5 h-3.5" />
         </button>
         <span className="w-6 text-center text-xs font-black font-mono text-slate-900 dark:text-white">
           {item.quantity}
@@ -50,9 +51,10 @@ export default function CartItem({ item, onIncrement, onDecrement, onRemove }: C
         <button
           type="button"
           onClick={() => onIncrement(item.id)}
-          className="w-5 h-5 rounded flex items-center justify-center text-slate-500 hover:text-slate-800 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-700 transition"
+          className="w-6 h-6 rounded-lg flex items-center justify-center text-slate-500 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-700 active:bg-slate-200 transition cursor-pointer"
+          aria-label="Aumentar"
         >
-          <Plus className="w-3 h-3" />
+          <Plus className="w-3.5 h-3.5" />
         </button>
       </div>
 
