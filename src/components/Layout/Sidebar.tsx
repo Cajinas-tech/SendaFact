@@ -9,8 +9,6 @@ import {
   ClipboardList,
   CreditCard,
   Users,
-  UserCheck,
-  Archive,
   SlidersHorizontal,
   LogOut,
   ChevronLeft,
@@ -51,8 +49,6 @@ export default function Sidebar({ collapsed, setCollapsed, mobileOpen, setMobile
     {
       title: 'ADMINISTRACIÓN',
       items: [
-        { path: '/ajustes?tab=users', icon: UserCheck, label: 'Usuarios & Roles' },
-        { path: '/ajustes?tab=backup', icon: Archive, label: 'Centro de Respaldos' },
         { path: '/ajustes', icon: SlidersHorizontal, label: 'Ajuste del Sistema' },
       ]
     }
