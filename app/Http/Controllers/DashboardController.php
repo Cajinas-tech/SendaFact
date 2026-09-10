@@ -74,7 +74,7 @@ class DashboardController extends Controller
             $todaySalesCordobas = 25.30;
             $totalProducts = 6;
             $activeQuotesCount = 0;
-            $cashStatus = 'Abierta';
+            $cashStatus = 'Cerrada';
             $lowStockProducts = collect();
             $expiringProducts = collect();
             $quotesList = collect();

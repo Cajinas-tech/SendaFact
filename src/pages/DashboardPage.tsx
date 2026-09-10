@@ -133,12 +133,24 @@ export default function DashboardPage() {
             <span className="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 group-hover:text-purple-500 transition-colors">
               ESTADO DE CAJA
             </span>
-            <h3 className="text-2xl font-black text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping inline-block" />
-              {activeRegister ? 'Abierta' : 'Abierta'}
+            <h3 className={`text-2xl font-black flex items-center gap-1.5 ${
+              activeRegister 
+                ? 'text-emerald-600 dark:text-emerald-400' 
+                : 'text-rose-600 dark:text-rose-400'
+            }`}>
+              <span className={`w-2 h-2 rounded-full inline-block ${
+                activeRegister 
+                  ? 'bg-emerald-500 animate-ping' 
+                  : 'bg-rose-500'
+              }`} />
+              {activeRegister ? 'Abierta' : 'Cerrada'}
             </h3>
           </div>
-          <div className="w-12 h-12 rounded-2xl bg-purple-50 dark:bg-purple-950/60 text-purple-600 dark:text-purple-400 flex items-center justify-center shadow-xs group-hover:scale-110 transition-transform">
+          <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shadow-xs group-hover:scale-110 transition-transform ${
+            activeRegister 
+              ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400' 
+              : 'bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400'
+          }`}>
             <Wallet className="w-6 h-6" />
           </div>
         </div>

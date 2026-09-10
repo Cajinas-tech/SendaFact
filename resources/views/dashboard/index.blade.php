@@ -52,11 +52,12 @@
         <div class="glass-card rounded-2xl p-5 shadow-xs flex items-center justify-between border border-slate-200/80 dark:border-slate-800">
             <div class="space-y-1">
                 <span class="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">ESTADO DE CAJA</span>
-                <h3 class="text-2xl font-black text-emerald-600 dark:text-emerald-400">
+                <h3 class="text-2xl font-black {{ $cashStatus === 'Abierta' ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400' }} flex items-center gap-1.5">
+                    <span class="w-2 h-2 rounded-full inline-block {{ $cashStatus === 'Abierta' ? 'bg-emerald-500 animate-ping' : 'bg-rose-500' }}"></span>
                     {{ $cashStatus }}
                 </h3>
             </div>
-            <div class="w-12 h-12 rounded-2xl bg-purple-50 dark:bg-purple-950/60 text-purple-600 dark:text-purple-400 flex items-center justify-center shadow-xs">
+            <div class="w-12 h-12 rounded-2xl {{ $cashStatus === 'Abierta' ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400' : 'bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400' }} flex items-center justify-center shadow-xs">
                 <i data-lucide="wallet" class="w-6 h-6"></i>
             </div>
         </div>
