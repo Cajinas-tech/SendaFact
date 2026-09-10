@@ -172,9 +172,38 @@ export default function TicketModal({
             </div>
           </div>
 
-          {/* Grand Total Highlight */}
-          <div className="border-t-2 border-slate-800 dark:border-slate-300 pt-2.5 space-y-1 text-right">
-            <div className="flex justify-between items-baseline font-black text-sm text-slate-900 dark:text-white">
+          {/* Subtotal, Descuento, IVA & Grand Total Highlight */}
+          <div className="border-t-2 border-slate-800 dark:border-slate-300 pt-2.5 space-y-1.5 text-right text-[11px]">
+            {sale?.subtotal_cordobas !== undefined && (
+              <div className="flex justify-between text-slate-600 dark:text-slate-400">
+                <span>Subtotal Base:</span>
+                <span className="font-bold">
+                  C$ {sale.subtotal_cordobas.toFixed(2)}
+                </span>
+              </div>
+            )}
+
+            {sale?.discount_amount && sale.discount_amount > 0 ? (
+              <div className="flex justify-between text-rose-600 dark:text-rose-400 font-medium">
+                <span>
+                  Descuento {sale.discount_type === 'percentage' ? `(${sale.discount_value}%)` : '(Fijo)'}:
+                </span>
+                <span className="font-bold">
+                  -C$ {sale.discount_amount.toFixed(2)}
+                </span>
+              </div>
+            ) : null}
+
+            {sale?.tax_rate && sale.tax_rate > 0 ? (
+              <div className="flex justify-between text-slate-700 dark:text-slate-300 font-medium">
+                <span>IVA ({sale.tax_rate}%):</span>
+                <span className="font-bold">
+                  +C$ {(sale.tax_amount || 0).toFixed(2)}
+                </span>
+              </div>
+            ) : null}
+
+            <div className="pt-1.5 border-t border-dashed border-slate-300 dark:border-slate-700 flex justify-between items-baseline font-black text-sm text-slate-900 dark:text-white">
               <span className="uppercase text-xs tracking-wider">TOTAL A PAGAR:</span>
               <span className="text-base font-black text-blue-600 dark:text-blue-400">
                 C$ {totalCordobas.toLocaleString('es-NI', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}

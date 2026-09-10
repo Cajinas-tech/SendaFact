@@ -65,6 +65,12 @@ export interface Sale {
   user_id?: number;
   user_name?: string;
   payment_method: 'efectivo' | 'tarjeta' | 'transferencia' | 'credito';
+  subtotal_cordobas?: number;
+  discount_type?: 'percentage' | 'fixed';
+  discount_value?: number;
+  discount_amount?: number;
+  tax_rate?: number;
+  tax_amount?: number;
   total_cordobas: number;
   total_usd: number;
   status: 'completed' | 'cancelled' | 'pending';

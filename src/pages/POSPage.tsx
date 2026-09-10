@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { Search, ShoppingBag, Trash2, CheckCircle, CreditCard, Banknote, RefreshCw, Zap } from 'lucide-react';
+import { Search, ShoppingBag, Trash2, CheckCircle, CreditCard, Banknote, RefreshCw, Zap, Tag, Percent, X } from 'lucide-react';
 import ProductCard from '../components/POS/ProductCard';
 import CartItem from '../components/POS/CartItem';
 import TicketModal from '../components/POS/TicketModal';
+import DiscountModal from '../components/POS/DiscountModal';
 import { storage } from '../lib/storage';
 import { Product, Category, Customer, Sale } from '../types';
 import { useToast } from '../components/UI/Toast';
@@ -17,6 +18,12 @@ export default function POSPage() {
   const [paymentMethod, setPaymentMethod] = useState<'efectivo' | 'tarjeta' | 'transferencia' | 'credito'>('efectivo');
   const [cart, setCart] = useState<{ id: number; name: string; sku: string; price_cordobas: number; price_usd: number; quantity: number }[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
+
+  // IVA y Descuentos
+  const [taxRate, setTaxRate] = useState<number>(0); // 0 (Sin IVA), 5, 10, 15, 20, 25, 30, 50
+  const [discountModalOpen, setDiscountModalOpen] = useState(false);
+  const [discountType, setDiscountType] = useState<'percentage' | 'fixed'>('percentage');
+  const [discountValue, setDiscountValue] = useState<number>(0);
 
   // Modal de Ticket
   const [ticketModalOpen, setTicketModalOpen] = useState(false);
@@ -114,6 +121,7 @@ export default function POSPage() {
   const clearCart = () => {
     if (cart.length > 0) {
       setCart([]);
+      setDiscountValue(0);
       info('Orden limpiada', 'Se vaciaron los productos de la orden actual');
     }
   };
@@ -144,8 +152,6 @@ export default function POSPage() {
 
     try {
       const ticketNumber = 'NOVA-V-' + Math.floor(1000 + Math.random() * 9000);
-      const totalCordobas = cart.reduce((acc, i) => acc + (i.price_cordobas * i.quantity), 0);
-      const totalUsd = totalCordobas / exchangeRate;
       const currentUser = storage.getCurrentUser();
       const customer = customers.find(c => String(c.id) === String(selectedCustomerId));
 
@@ -157,6 +163,12 @@ export default function POSPage() {
         user_id: currentUser.id,
         user_name: currentUser.name,
         payment_method: paymentMethod,
+        subtotal_cordobas: subtotal,
+        discount_type: discountValue > 0 ? discountType : undefined,
+        discount_value: discountValue > 0 ? discountValue : undefined,
+        discount_amount: discountAmount > 0 ? discountAmount : undefined,
+        tax_rate: taxRate > 0 ? taxRate : 0,
+        tax_amount: taxAmount > 0 ? taxAmount : 0,
         total_cordobas: totalCordobas,
         total_usd: totalUsd,
         status: 'completed',
@@ -230,6 +242,7 @@ export default function POSPage() {
       setCart([]);
       setSelectedCustomerId('');
       setPaymentMethod('efectivo');
+      setDiscountValue(0);
 
     } catch (e) {
       error('Error al procesar la venta', 'Por favor verifica la caja y los productos seleccionados');
@@ -316,9 +329,30 @@ export default function POSPage() {
     return cart.reduce((acc, item) => acc + (item.price_cordobas * item.quantity), 0);
   }, [cart]);
 
+  const discountAmount = useMemo(() => {
+    if (discountValue <= 0 || subtotal <= 0) return 0;
+    if (discountType === 'percentage') {
+      return (subtotal * Math.min(Math.max(discountValue, 0), 100)) / 100;
+    }
+    return Math.min(Math.max(discountValue, 0), subtotal);
+  }, [subtotal, discountType, discountValue]);
+
+  const discountedSubtotal = useMemo(() => {
+    return Math.max(subtotal - discountAmount, 0);
+  }, [subtotal, discountAmount]);
+
+  const taxAmount = useMemo(() => {
+    if (taxRate <= 0 || discountedSubtotal <= 0) return 0;
+    return (discountedSubtotal * taxRate) / 100;
+  }, [discountedSubtotal, taxRate]);
+
+  const totalCordobas = useMemo(() => {
+    return discountedSubtotal + taxAmount;
+  }, [discountedSubtotal, taxAmount]);
+
   const totalUsd = useMemo(() => {
-    return subtotal / exchangeRate;
-  }, [subtotal, exchangeRate]);
+    return totalCordobas / exchangeRate;
+  }, [totalCordobas, exchangeRate]);
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -460,6 +494,82 @@ export default function POSPage() {
               )}
             </div>
 
+            {/* Descuento & IVA (Impuestos) */}
+            <div className="pt-3 border-t border-slate-100 dark:border-slate-800 space-y-2.5">
+              <div className="grid grid-cols-2 gap-2.5">
+                
+                {/* Descuento Trigger */}
+                <div>
+                  <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1">
+                    Descuento
+                  </label>
+                  {discountValue > 0 ? (
+                    <div className="p-2 rounded-xl border border-rose-200 dark:border-rose-900/60 bg-rose-50/80 dark:bg-rose-950/30 flex items-center justify-between">
+                      <div className="flex items-center gap-1.5 truncate">
+                        <span className="text-xs font-black text-rose-600 dark:text-rose-400">
+                          {discountType === 'percentage' ? `-${discountValue}%` : `-C$${discountValue}`}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <button
+                          type="button"
+                          onClick={() => setDiscountModalOpen(true)}
+                          className="text-[10px] font-extrabold text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
+                        >
+                          Editar
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setDiscountValue(0)}
+                          className="p-0.5 text-slate-400 hover:text-rose-600 transition cursor-pointer"
+                          title="Quitar Descuento"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => setDiscountModalOpen(true)}
+                      disabled={cart.length === 0}
+                      className="w-full py-2.5 px-3 rounded-xl border border-dashed border-amber-300 dark:border-amber-700/80 bg-amber-50/50 dark:bg-amber-950/20 text-amber-700 dark:text-amber-400 hover:bg-amber-100/60 dark:hover:bg-amber-950/40 text-xs font-bold flex items-center justify-between transition cursor-pointer disabled:opacity-40 shadow-2xs"
+                    >
+                      <span className="flex items-center gap-1.5">
+                        <Tag className="w-3.5 h-3.5" />
+                        <span>Descuento</span>
+                      </span>
+                      <span className="text-[10px] font-black bg-amber-200/70 dark:bg-amber-900/60 px-1.5 py-0.5 rounded">
+                        % / C$
+                      </span>
+                    </button>
+                  )}
+                </div>
+
+                {/* Selector de IVA */}
+                <div>
+                  <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1">
+                    IVA (Impuesto)
+                  </label>
+                  <select
+                    value={taxRate}
+                    onChange={(e) => setTaxRate(Number(e.target.value))}
+                    className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs font-bold text-slate-700 dark:text-slate-300 outline-none cursor-pointer"
+                  >
+                    <option value={0}>Sin IVA (0%)</option>
+                    <option value={5}>IVA 5%</option>
+                    <option value={10}>IVA 10%</option>
+                    <option value={15}>IVA 15%</option>
+                    <option value={20}>IVA 20%</option>
+                    <option value={25}>IVA 25%</option>
+                    <option value={30}>IVA 30%</option>
+                    <option value={50}>IVA 50%</option>
+                  </select>
+                </div>
+
+              </div>
+            </div>
+
             {/* Método de Pago */}
             <div className="pt-3 border-t border-slate-100 dark:border-slate-800 space-y-2">
               <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-400">
@@ -493,7 +603,7 @@ export default function POSPage() {
               </div>
             </div>
 
-            {/* Totales */}
+            {/* Totales Desglosados */}
             <div className="pt-3 border-t border-slate-100 dark:border-slate-800 space-y-1.5 text-xs">
               <div className="flex justify-between font-medium text-slate-500">
                 <span>Subtotal:</span>
@@ -501,18 +611,40 @@ export default function POSPage() {
                   C${subtotal.toFixed(2)}
                 </span>
               </div>
+
+              {discountAmount > 0 && (
+                <div className="flex justify-between font-bold text-rose-600 dark:text-rose-400">
+                  <span>
+                    Descuento {discountType === 'percentage' ? `(${discountValue}%)` : '(Fijo)'}:
+                  </span>
+                  <span className="font-mono">
+                    -C${discountAmount.toFixed(2)}
+                  </span>
+                </div>
+              )}
+
+              {taxRate > 0 && (
+                <div className="flex justify-between font-medium text-slate-700 dark:text-slate-300">
+                  <span>IVA ({taxRate}%):</span>
+                  <span className="font-mono font-bold text-slate-800 dark:text-white">
+                    +C${taxAmount.toFixed(2)}
+                  </span>
+                </div>
+              )}
+
               <div className="flex justify-between font-medium text-slate-500">
                 <span>Equivalente USD (T.C. {exchangeRate.toFixed(2)}):</span>
                 <span className="font-mono font-bold text-slate-800 dark:text-white">
                   ≈ ${totalUsd.toFixed(2)} USD
                 </span>
               </div>
+
               <div className="pt-2 border-t border-slate-200 dark:border-slate-700 flex justify-between items-baseline">
                 <span className="font-black text-sm text-slate-900 dark:text-white uppercase">
                   TOTAL A COBRAR:
                 </span>
                 <span className="text-xl font-black text-blue-600 dark:text-blue-400 font-mono">
-                  C${subtotal.toFixed(2)}
+                  C${totalCordobas.toFixed(2)}
                 </span>
               </div>
             </div>
@@ -543,6 +675,22 @@ export default function POSPage() {
         </div>
 
       </div>
+
+      {/* Modal de Descuento */}
+      <DiscountModal
+        isOpen={discountModalOpen}
+        onClose={() => setDiscountModalOpen(false)}
+        baseSubtotal={subtotal}
+        currentDiscountType={discountType}
+        currentDiscountValue={discountValue}
+        onApplyDiscount={(type, val) => {
+          setDiscountType(type);
+          setDiscountValue(val);
+          if (val > 0) {
+            success('Descuento Aplicado', type === 'percentage' ? `${val}% de descuento` : `C$ ${val.toFixed(2)} de descuento`);
+          }
+        }}
+      />
 
       {/* Modal de Ticket Exitoso */}
       <TicketModal
