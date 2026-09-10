@@ -278,12 +278,6 @@
                     </div>
 
                     <div>
-                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">Precio Venta ($ USD)</label>
-                        <input type="number" step="0.01" name="price_usd" placeholder="0.76 (Auto si se omite)" 
-                               class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 font-mono text-xs font-bold">
-                    </div>
-
-                    <div>
                         <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">Costo Unitario (C$)</label>
                         <input type="number" step="0.01" name="cost_price" placeholder="25.00" 
                                class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 font-mono text-xs font-bold">
@@ -311,7 +305,7 @@
                     </div>
 
                     <!-- FECHA DE VENCIMIENTO -->
-                    <div>
+                    <div class="sm:col-span-2">
                         <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">Fecha de Vencimiento</label>
                         <input type="date" name="expiry_date" 
                                class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 font-mono text-xs font-bold text-slate-800 dark:text-slate-200">
@@ -407,12 +401,6 @@
                     </div>
 
                     <div>
-                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">Precio Venta ($ USD)</label>
-                        <input type="number" step="0.01" name="price_usd" :value="currentProduct.price_usd" 
-                               class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 font-mono text-xs font-bold">
-                    </div>
-
-                    <div>
                         <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">Costo Unitario (C$)</label>
                         <input type="number" step="0.01" name="cost_price" :value="currentProduct.cost_price" 
                                class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 font-mono text-xs font-bold">
@@ -440,7 +428,7 @@
                     </div>
 
                     <!-- FECHA DE VENCIMIENTO -->
-                    <div>
+                    <div class="sm:col-span-2">
                         <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">Fecha de Vencimiento</label>
                         <input type="date" name="expiry_date" :value="currentProduct.expiry_date ? currentProduct.expiry_date.substring(0, 10) : ''" 
                                class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 font-mono text-xs font-bold text-slate-800 dark:text-slate-200">

@@ -469,20 +469,8 @@ export default function ProductsPage() {
                     required
                     value={formData.price_cordobas}
                     onChange={(e) => setFormData({ ...formData, price_cordobas: e.target.value })}
-                    placeholder="3500.00"
+                    placeholder="28.00"
                     className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 font-mono text-xs font-bold text-blue-600 outline-none"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">Precio Venta ($ USD)</label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    value={formData.price_usd}
-                    onChange={(e) => setFormData({ ...formData, price_usd: e.target.value })}
-                    placeholder="Auto si se omite"
-                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 font-mono text-xs font-bold outline-none"
                   />
                 </div>
 
@@ -528,7 +516,7 @@ export default function ProductsPage() {
                 </div>
 
                 {/* FECHA DE VENCIMIENTO */}
-                <div>
+                <div className="sm:col-span-2">
                   <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">Fecha de Vencimiento</label>
                   <input
                     type="date"
@@ -660,17 +648,6 @@ export default function ProductsPage() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">Precio Venta ($ USD)</label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    value={formData.price_usd}
-                    onChange={(e) => setFormData({ ...formData, price_usd: e.target.value })}
-                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 font-mono text-xs font-bold outline-none"
-                  />
-                </div>
-
-                <div>
                   <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">Costo Unitario (C$)</label>
                   <input
                     type="number"
@@ -711,7 +688,7 @@ export default function ProductsPage() {
                 </div>
 
                 {/* FECHA DE VENCIMIENTO */}
-                <div>
+                <div className="sm:col-span-2">
                   <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">Fecha de Vencimiento</label>
                   <input
                     type="date"
