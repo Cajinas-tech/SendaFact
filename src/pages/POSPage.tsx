@@ -20,6 +20,7 @@ export default function POSPage() {
 
   // Modal de Ticket
   const [ticketModalOpen, setTicketModalOpen] = useState(false);
+  const [completedSale, setCompletedSale] = useState<Sale | null>(null);
   const [lastSaleData, setLastSaleData] = useState({ ticketNumber: '', saleId: 0, totalCordobas: 0 });
 
   const { success, warning, error, info } = useToast();
@@ -218,6 +219,7 @@ export default function POSPage() {
         }, ...existingCredits]);
       }
 
+      setCompletedSale(newSale);
       setLastSaleData({
         ticketNumber: ticketNumber,
         saleId: newSale.id,
@@ -549,6 +551,7 @@ export default function POSPage() {
         ticketNumber={lastSaleData.ticketNumber}
         saleId={lastSaleData.saleId}
         totalCordobas={lastSaleData.totalCordobas}
+        sale={completedSale}
       />
     </div>
   );

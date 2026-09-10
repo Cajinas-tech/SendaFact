@@ -136,6 +136,7 @@ export interface User {
 export interface CompanySetting {
   id?: number;
   name: string;
+  logo?: string;
   ruc?: string;
   phone?: string;
   email?: string;

@@ -144,6 +144,7 @@ const DEFAULT_CUSTOMERS: Customer[] = [
 const DEFAULT_SETTINGS: CompanySetting = {
   id: 1,
   name: 'SENDA SISTEMAS',
+  logo: '',
   ruc: 'J0310000012345',
   phone: '+505 8888 8888',
   email: 'contacto@sendasistemas.com',

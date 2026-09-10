@@ -2,7 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { 
   Settings, Database, Users, Building2, 
   Download, Upload, Save, AlertTriangle, 
-  FileSpreadsheet, RotateCcw, Flame, UserPlus, Trash2, CheckCircle2
+  FileSpreadsheet, RotateCcw, Flame, UserPlus, Trash2, CheckCircle2,
+  Image as ImageIcon, UploadCloud, X
 } from 'lucide-react';
 import { storage } from '../lib/storage';
 import { User, CompanySetting, Product } from '../types';
@@ -15,6 +16,7 @@ export const SettingsPage: React.FC = () => {
   // File input refs
   const jsonInputRef = useRef<HTMLInputElement | null>(null);
   const csvInputRef = useRef<HTMLInputElement | null>(null);
+  const logoInputRef = useRef<HTMLInputElement | null>(null);
 
   // Company settings
   const [company, setCompany] = useState<CompanySetting>({
@@ -196,11 +198,46 @@ export const SettingsPage: React.FC = () => {
     }
   };
 
+  // Logo handling
+  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      error('Archivo no válido', 'Por favor selecciona una imagen válida (PNG, JPG, SVG o WebP)');
+      return;
+    }
+
+    if (file.size > 2.5 * 1024 * 1024) {
+      warning('Imagen muy pesada', 'El tamaño máximo recomendado es 2.5MB para almacenamiento local');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const base64 = event.target?.result as string;
+      setCompany(prev => ({ ...prev, logo: base64 }));
+      info('Logo cargado', 'Recuerda hacer clic en "Guardar Cambios" para confirmar');
+    };
+    reader.onerror = () => {
+      error('Error', 'No se pudo procesar la imagen seleccionada');
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleRemoveLogo = () => {
+    setCompany(prev => ({ ...prev, logo: '' }));
+    if (logoInputRef.current) {
+      logoInputRef.current.value = '';
+    }
+    info('Logo removido', 'Recuerda hacer clic en "Guardar Cambios" para confirmar');
+  };
+
   // Save company info
   const handleSaveCompany = (e: React.FormEvent) => {
     e.preventDefault();
     storage.saveCompanySettings(company);
-    success('¡Configuración Guardada!', 'Datos comerciales de la empresa actualizados correctamente');
+    success('¡Configuración Guardada!', 'Datos comerciales y logotipo de la empresa actualizados correctamente');
   };
 
   // Save User
@@ -556,11 +593,82 @@ export const SettingsPage: React.FC = () => {
 
       {/* TAB 3: COMPANY SETTINGS */}
       {activeTab === 'company' && (
-        <form onSubmit={handleSaveCompany} className="glass-card p-6 max-w-2xl space-y-4 animate-fade-in">
-          <h3 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
-            <Building2 className="w-5 h-5 text-blue-500" />
-            Información del Comercio y Parámetros Fiscales
-          </h3>
+        <form onSubmit={handleSaveCompany} className="glass-card p-6 max-w-2xl space-y-5 animate-fade-in">
+          <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-800">
+            <div>
+              <h3 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                <Building2 className="w-5 h-5 text-blue-500" />
+                Información del Comercio y Logotipo
+              </h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                Personaliza la identidad y cabecera de tus facturas y tickets térmicos
+              </p>
+            </div>
+          </div>
+
+          {/* Logotipo de la Empresa */}
+          <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 space-y-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <label className="block text-xs font-bold uppercase text-slate-700 dark:text-slate-300">
+                  Logotipo de la Empresa
+                </label>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                  Este logo aparecerá impreso en la parte superior de cada factura y ticket de venta (POS).
+                </p>
+              </div>
+              {company.logo && (
+                <button
+                  type="button"
+                  onClick={handleRemoveLogo}
+                  className="px-2.5 py-1 text-xs font-medium text-rose-500 hover:text-white hover:bg-rose-500 border border-rose-200 dark:border-rose-900/50 rounded-lg transition flex items-center gap-1 cursor-pointer"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  Quitar Logo
+                </button>
+              )}
+            </div>
+
+            <div className="flex items-center gap-4">
+              {/* Preview Box */}
+              <div className="w-24 h-24 rounded-2xl border-2 border-dashed border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 flex items-center justify-center p-2 overflow-hidden shadow-xs shrink-0">
+                {company.logo ? (
+                  <img
+                    src={company.logo}
+                    alt="Logo Empresa"
+                    className="w-full h-full object-contain"
+                  />
+                ) : (
+                  <div className="text-center text-slate-400 dark:text-slate-600 flex flex-col items-center">
+                    <ImageIcon className="w-7 h-7 stroke-[1.5]" />
+                    <span className="text-[10px] mt-1 font-medium">Sin Logo</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Upload Controls */}
+              <div className="flex-1 space-y-2">
+                <input
+                  type="file"
+                  ref={logoInputRef}
+                  accept="image/png, image/jpeg, image/webp, image/svg+xml"
+                  onChange={handleLogoUpload}
+                  className="hidden"
+                />
+                <button
+                  type="button"
+                  onClick={() => logoInputRef.current?.click()}
+                  className="px-4 py-2 bg-slate-900 hover:bg-slate-800 dark:bg-slate-800 dark:hover:bg-slate-700 text-white rounded-xl text-xs font-bold flex items-center gap-2 shadow-xs transition cursor-pointer"
+                >
+                  <UploadCloud className="w-4 h-4 text-blue-400" />
+                  <span>{company.logo ? 'Cambiar Logotipo' : 'Subir Logotipo de Empresa'}</span>
+                </button>
+                <p className="text-[10px] text-slate-400 dark:text-slate-500">
+                  Formatos admitidos: PNG, JPG, SVG o WebP (Fondo transparente recomendado, máx. 2.5 MB).
+                </p>
+              </div>
+            </div>
+          </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
