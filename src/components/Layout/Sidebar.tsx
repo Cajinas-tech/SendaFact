@@ -9,6 +9,7 @@ import {
   ClipboardList,
   CreditCard,
   Users,
+  Tag,
   SlidersHorizontal,
   LogOut,
   ChevronLeft,
@@ -43,6 +44,7 @@ export default function Sidebar({ collapsed, setCollapsed, mobileOpen, setMobile
       title: 'INVENTARIO Y CRÉDITOS',
       items: [
         { path: '/productos', icon: Package, label: 'Gestión de Productos' },
+        { path: '/categorias', icon: Tag, label: 'Categorías' },
         { path: '/movimientos', icon: ClipboardList, label: 'Inventario & Movimientos' },
         { path: '/creditos', icon: CreditCard, label: 'Créditos y Cuentas' },
         { path: '/clientes', icon: Users, label: 'Gestión de Clientes' },

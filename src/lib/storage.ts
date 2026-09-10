@@ -16,12 +16,12 @@ const STORAGE_KEYS = {
 };
 
 const DEFAULT_CATEGORIES: Category[] = [
-  { id: 1, name: 'PUERTAS', slug: 'puertas', icon: 'door-closed', products_count: 1 },
-  { id: 2, name: 'VENTANAS', slug: 'ventanas', icon: 'app-window', products_count: 1 },
-  { id: 3, name: 'LÁCTEOS', slug: 'lacteos', icon: 'milk', products_count: 2 },
-  { id: 4, name: 'BEBIDAS', slug: 'bebidas', icon: 'cup-soda', products_count: 1 },
-  { id: 5, name: 'FERRETERÍA', slug: 'ferreteria', icon: 'wrench', products_count: 1 },
-  { id: 6, name: 'GENERAL', slug: 'general', icon: 'folder', products_count: 0 },
+  { id: 1, code: 'udqq3jv1', name: 'PUERTAS', slug: 'puertas', icon: 'door-closed', description: 'PUERTAS DE ALUMINIO Y VIDRIO', products_count: 1 },
+  { id: 2, code: 'ivc3n67a', name: 'VENTANAS', slug: 'ventanas', icon: 'app-window', description: 'VENTANAS DE ALUMINIO Y VIDRIO', products_count: 1 },
+  { id: 3, code: 'lac78x2', name: 'LÁCTEOS', slug: 'lacteos', icon: 'milk', description: 'PRODUCTOS LÁCTEOS Y DERIVADOS', products_count: 2 },
+  { id: 4, code: 'beb99w1', name: 'BEBIDAS', slug: 'bebidas', icon: 'cup-soda', description: 'BEBIDAS, JUGOS Y REFRESCOS', products_count: 1 },
+  { id: 5, code: 'fer55k8', name: 'FERRETERÍA', slug: 'ferreteria', icon: 'wrench', description: 'HERRAMIENTAS Y ACCESORIOS DE FERRETERÍA', products_count: 1 },
+  { id: 6, code: 'gen00a1', name: 'GENERAL', slug: 'general', icon: 'folder', description: 'CATEGORÍA GENERAL SIN CLASIFICAR', products_count: 0 },
 ];
 
 const DEFAULT_PRODUCTS: Product[] = [
@@ -265,10 +265,49 @@ export const storage = {
       this.setCategories(DEFAULT_CATEGORIES);
       return DEFAULT_CATEGORIES;
     }
-    try { return JSON.parse(raw) || DEFAULT_CATEGORIES; } catch (e) { return DEFAULT_CATEGORIES; }
+    try {
+      const parsed: Category[] = JSON.parse(raw) || DEFAULT_CATEGORIES;
+      // Auto-migrate missing codes / descriptions if needed
+      let changed = false;
+      const migrated = parsed.map((cat, i) => {
+        let updatedCat = { ...cat };
+        if (!updatedCat.code) {
+          const defaultMatch = DEFAULT_CATEGORIES.find(d => String(d.id) === String(cat.id) || d.name.toUpperCase() === cat.name.toUpperCase());
+          updatedCat.code = defaultMatch?.code || Math.random().toString(36).substring(2, 10);
+          changed = true;
+        }
+        if (!updatedCat.description) {
+          const defaultMatch = DEFAULT_CATEGORIES.find(d => String(d.id) === String(cat.id) || d.name.toUpperCase() === cat.name.toUpperCase());
+          updatedCat.description = defaultMatch?.description || `${cat.name} GENERAL`;
+          changed = true;
+        }
+        return updatedCat;
+      });
+      if (changed) {
+        this.setCategories(migrated);
+        return migrated;
+      }
+      return parsed;
+    } catch (e) {
+      return DEFAULT_CATEGORIES;
+    }
   },
   setCategories(categories: Category[]) {
     localStorage.setItem(STORAGE_KEYS.CATEGORIES, JSON.stringify(categories));
+  },
+  saveCategory(category: Category) {
+    const list = this.getCategories();
+    const idx = list.findIndex(c => String(c.id) === String(category.id));
+    if (idx >= 0) {
+      list[idx] = { ...list[idx], ...category };
+    } else {
+      list.unshift(category);
+    }
+    this.setCategories(list);
+  },
+  deleteCategory(id: number | string) {
+    const list = this.getCategories().filter(c => String(c.id) !== String(id));
+    this.setCategories(list);
   },
 
   // CUSTOMERS

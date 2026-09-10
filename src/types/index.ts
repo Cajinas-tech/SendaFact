@@ -1,10 +1,12 @@
 export interface Category {
-  id: number;
+  id: number | string;
+  code?: string;
   name: string;
-  slug: string;
+  slug?: string;
   icon?: string;
   description?: string;
   products_count?: number;
+  created_at?: string;
 }
 
 export interface Product {
