@@ -15,6 +15,7 @@ import {
   ChevronRight
 } from 'lucide-react';
 import { storage } from '../../lib/storage';
+import ConfirmModal from '../UI/ConfirmModal';
 
 interface SidebarProps {
   collapsed: boolean;
@@ -26,6 +27,7 @@ interface SidebarProps {
 export default function Sidebar({ collapsed, setCollapsed, mobileOpen, setMobileOpen }: SidebarProps) {
   const navigate = useNavigate();
   const location = useLocation();
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
 
   const navSections = [
     {
@@ -150,7 +152,7 @@ export default function Sidebar({ collapsed, setCollapsed, mobileOpen, setMobile
           <div className={`pt-3 border-t border-slate-100 dark:border-slate-800/80 space-y-1.5 shrink-0 ${collapsed ? 'flex flex-col items-center' : ''}`}>
             <button
               type="button"
-              onClick={handleLogout}
+              onClick={() => setShowLogoutModal(true)}
               className={`w-full flex items-center ${collapsed ? 'justify-center p-2.5' : 'gap-3 px-3.5 py-2.5'} rounded-xl text-xs font-bold text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition cursor-pointer`}
               title="Salir del Sistema"
             >
@@ -176,6 +178,19 @@ export default function Sidebar({ collapsed, setCollapsed, mobileOpen, setMobile
           </div>
         </div>
       </aside>
+
+      {/* Modal de Confirmación de Cerrar Sesión */}
+      <ConfirmModal
+        isOpen={showLogoutModal}
+        onClose={() => setShowLogoutModal(false)}
+        onConfirm={handleLogout}
+        title="¿Cerrar Sesión?"
+        message="¿Está seguro de que desea salir del sistema? Tendrá que volver a ingresar sus credenciales para acceder."
+        confirmText="Sí, Salir"
+        cancelText="Cancelar"
+        type="logout"
+        iconShape="circle"
+      />
     </>
   );
 }
