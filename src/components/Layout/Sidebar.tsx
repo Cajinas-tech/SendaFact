@@ -92,13 +92,13 @@ export default function Sidebar({ collapsed, setCollapsed, mobileOpen, setMobile
         {/* 1. LOGO & BRAND HEADER (Fixed, shrink-0) */}
         <div className={`border-b border-slate-100 dark:border-slate-800/80 shrink-0 ${collapsed ? 'p-3 flex justify-center' : 'p-4'}`}>
           {collapsed ? (
-            <div className="w-12 h-12 rounded-2xl bg-[#070b14] flex items-center justify-center shadow-lg shadow-blue-950/40 p-1 shrink-0 overflow-hidden border border-slate-800/80 mx-auto">
+            <div className="w-14 h-14 rounded-2xl bg-[#070b14] flex items-center justify-center shadow-lg shadow-blue-950/40 p-1.5 shrink-0 overflow-hidden border border-slate-800/80 mx-auto">
               <img src="/images/logo/senda-logo.png" alt="Senda Sistemas" className="w-full h-full object-contain" />
             </div>
           ) : (
             <div className="flex flex-col items-center justify-center text-center space-y-2.5">
-              {/* Logo Icon Box */}
-              <div className="w-16 h-16 rounded-2xl bg-[#070b14] flex items-center justify-center shadow-xl shadow-blue-950/40 p-1.5 shrink-0 overflow-hidden border border-slate-800/80">
+              {/* Logo Icon Box (+40% size) */}
+              <div className="w-[90px] h-[90px] rounded-2xl bg-[#070b14] flex items-center justify-center shadow-xl shadow-blue-950/40 p-2 shrink-0 overflow-hidden border border-slate-800/80">
                 <img src="/images/logo/senda-logo.png" alt="Senda Sistemas" className="w-full h-full object-contain" />
               </div>
               
