@@ -9,6 +9,7 @@ import {
 import { storage } from '../lib/storage';
 import { User, CompanySetting, Product } from '../types';
 import { useToast } from '../components/UI/Toast';
+import ConfirmModal from '../components/UI/ConfirmModal';
 
 export const SettingsPage: React.FC = () => {
   const [searchParams] = useSearchParams();
@@ -17,6 +18,10 @@ export const SettingsPage: React.FC = () => {
     tabParam === 'users' ? 'users' : tabParam === 'company' ? 'company' : 'backup'
   );
   const { success, warning, error, info } = useToast();
+
+  // Confirmation Modals State
+  const [showResetConfirm, setShowResetConfirm] = useState(false);
+  const [deleteUserTarget, setDeleteUserTarget] = useState<{ id: any; name: string } | null>(null);
 
   useEffect(() => {
     if (tabParam === 'users' || tabParam === 'backup' || tabParam === 'company') {
@@ -201,12 +206,11 @@ export const SettingsPage: React.FC = () => {
   };
 
   // 3. RESTABLECER SISTEMA
-  const handleResetData = () => {
-    if (confirm('¿Está seguro de restablecer TODO el sistema? Se borrarán las ventas locales y se restaurará el inventario a los valores de fábrica.')) {
-      storage.resetAllData();
-      loadData();
-      warning('¡Sistema Restablecido!', 'Base de datos devuelta a valores iniciales de fábrica');
-    }
+  const confirmResetData = () => {
+    storage.resetAllData();
+    loadData();
+    warning('¡Sistema Restablecido!', 'Base de datos devuelta a valores iniciales de fábrica');
+    setShowResetConfirm(false);
   };
 
   // Logo handling
@@ -272,12 +276,12 @@ export const SettingsPage: React.FC = () => {
     );
   };
 
-  const handleDeleteUser = (id: any) => {
-    if (confirm('¿Desea eliminar este usuario?')) {
-      storage.deleteUser(id);
-      loadData();
-      warning('Usuario Eliminado', 'El usuario fue retirado del sistema');
-    }
+  const confirmDeleteUser = () => {
+    if (!deleteUserTarget) return;
+    storage.deleteUser(deleteUserTarget.id);
+    loadData();
+    warning('Usuario Eliminado', `"${deleteUserTarget.name}" fue retirado del sistema`);
+    setDeleteUserTarget(null);
   };
 
   return (
@@ -496,7 +500,7 @@ export const SettingsPage: React.FC = () => {
               <div className="pt-2">
                 <button
                   type="button"
-                  onClick={handleResetData}
+                  onClick={() => setShowResetConfirm(true)}
                   className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-500 hover:to-red-500 text-white font-bold text-xs shadow-md shadow-rose-600/20 flex items-center justify-center gap-2 transition cursor-pointer active:scale-[0.99]"
                 >
                   <Flame className="w-4 h-4" />
@@ -587,8 +591,9 @@ export const SettingsPage: React.FC = () => {
                           <Settings className="w-3.5 h-3.5" />
                         </button>
                         <button
-                          onClick={() => handleDeleteUser(u.id)}
+                          onClick={() => setDeleteUserTarget({ id: u.id, name: u.name })}
                           className="p-1.5 bg-rose-500/10 hover:bg-rose-500 text-rose-600 hover:text-white rounded-lg text-xs transition cursor-pointer"
+                          title="Eliminar usuario"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
@@ -822,6 +827,31 @@ export const SettingsPage: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* MODAL ANIMADO: Confirmar Restablecer Sistema */}
+      <ConfirmModal
+        isOpen={showResetConfirm}
+        onClose={() => setShowResetConfirm(false)}
+        onConfirm={confirmResetData}
+        title="¿Restablecer Todo el Sistema?"
+        message="Se eliminarán todas las ventas y registros locales de prueba, y se restaurará el inventario a sus valores originales de fábrica. Esta acción es irreversible."
+        confirmText="Sí, Restablecer Todo"
+        cancelText="Cancelar"
+        type="danger"
+      />
+
+      {/* MODAL ANIMADO: Confirmar Eliminar Usuario */}
+      <ConfirmModal
+        isOpen={!!deleteUserTarget}
+        onClose={() => setDeleteUserTarget(null)}
+        onConfirm={confirmDeleteUser}
+        title="¿Eliminar Usuario del Sistema?"
+        itemName={deleteUserTarget?.name}
+        message="¿Estás seguro de que deseas eliminar este usuario? Perderá el acceso y credenciales al sistema POS."
+        confirmText="Sí, Eliminar Usuario"
+        cancelText="Cancelar"
+        type="danger"
+      />
 
     </div>
   );

@@ -13,6 +13,7 @@ import {
 import { storage, compressImageFile } from '../lib/storage';
 import { Product, Category } from '../types';
 import { useToast } from '../components/UI/Toast';
+import ConfirmModal from '../components/UI/ConfirmModal';
 
 export default function ProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -23,6 +24,7 @@ export default function ProductsPage() {
   // Modales
   const [createModal, setCreateModal] = useState(false);
   const [editModal, setEditModal] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<{ id: number; name: string } | null>(null);
   const [currentProduct, setCurrentProduct] = useState<Partial<Product>>({});
 
   // Form State
@@ -176,13 +178,14 @@ export default function ProductsPage() {
   };
 
   // Eliminar Producto
-  const handleDelete = (id: number, name: string) => {
-    if (window.confirm(`¿Estás seguro de eliminar el producto ${name}?`)) {
-      const updated = products.filter(p => p.id !== id);
-      storage.setProducts(updated);
-      setProducts(updated);
-      warning('Producto Eliminado', `${name} fue retirado del catálogo`);
-    }
+  const confirmDelete = () => {
+    if (!deleteTarget) return;
+    const { id, name } = deleteTarget;
+    const updated = products.filter(p => p.id !== id);
+    storage.setProducts(updated);
+    setProducts(updated);
+    warning('Producto Eliminado', `"${name}" fue retirado permanentemente del catálogo`);
+    setDeleteTarget(null);
   };
 
   // Exportar CSV
@@ -351,8 +354,8 @@ export default function ProductsPage() {
 
                           <button
                             type="button"
-                            onClick={() => handleDelete(p.id, p.name)}
-                            className="p-1.5 rounded-lg border border-rose-200 dark:border-rose-900/60 bg-rose-50/60 dark:bg-rose-950/40 text-rose-500 hover:bg-rose-100 dark:hover:bg-rose-900/60 transition shadow-2xs"
+                            onClick={() => setDeleteTarget({ id: p.id, name: p.name })}
+                            className="p-1.5 rounded-lg border border-rose-200 dark:border-rose-900/60 bg-rose-50/60 dark:bg-rose-950/40 text-rose-500 hover:bg-rose-100 dark:hover:bg-rose-900/60 transition shadow-2xs cursor-pointer"
                             title="Eliminar producto"
                           >
                             <Trash2 className="w-4 h-4" />
@@ -678,6 +681,19 @@ export default function ProductsPage() {
           </div>
         </div>
       )}
+
+      {/* Modal de Confirmación de Eliminación Animado */}
+      <ConfirmModal
+        isOpen={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={confirmDelete}
+        title="¿Eliminar Producto del Catálogo?"
+        itemName={deleteTarget?.name}
+        message="¿Estás seguro de que deseas eliminar permanentemente este producto? Se removerá del inventario y del catálogo de ventas (POS)."
+        confirmText="Sí, Eliminar Producto"
+        cancelText="Cancelar"
+        type="danger"
+      />
 
     </div>
   );
