@@ -90,27 +90,36 @@ export default function Sidebar({ collapsed, setCollapsed, mobileOpen, setMobile
         } ${mobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}
       >
         {/* 1. LOGO & BRAND HEADER (Fixed, shrink-0) */}
-        <div className={`p-4 border-b border-slate-100 dark:border-slate-800/80 shrink-0 ${collapsed ? 'flex justify-center' : ''}`}>
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-2xl bg-[#070b14] flex items-center justify-center shadow-lg shadow-blue-950/40 p-1 shrink-0 overflow-hidden border border-slate-800/80">
+        <div className={`border-b border-slate-100 dark:border-slate-800/80 shrink-0 ${collapsed ? 'p-3 flex justify-center' : 'p-4'}`}>
+          {collapsed ? (
+            <div className="w-12 h-12 rounded-2xl bg-[#070b14] flex items-center justify-center shadow-lg shadow-blue-950/40 p-1 shrink-0 overflow-hidden border border-slate-800/80 mx-auto">
               <img src="/images/logo/senda-logo.png" alt="Senda Sistemas" className="w-full h-full object-contain" />
             </div>
-            {!collapsed && (
-              <div className="overflow-hidden">
-                <h1 className="font-black text-sm tracking-tight uppercase leading-tight flex items-center gap-1">
-                  <span className="text-blue-600 dark:text-blue-400 font-extrabold tracking-wider">SENDA</span>
-                  <span className="text-amber-500 dark:text-amber-400 font-extrabold tracking-wider">SISTEMAS</span>
-                </h1>
-                {/* Blue & Gold Brand Accent Line */}
-                <div className="h-0.5 w-full bg-gradient-to-r from-blue-500 via-amber-400 to-amber-500 rounded-full my-1" />
-                <div className="inline-block">
-                  <span className="text-[9px] font-extrabold px-2 py-0.5 rounded-full bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800/40 uppercase">
-                    SISTEMA V3.0 (POS)
-                  </span>
-                </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center text-center space-y-2.5">
+              {/* Logo Icon Box */}
+              <div className="w-16 h-16 rounded-2xl bg-[#070b14] flex items-center justify-center shadow-xl shadow-blue-950/40 p-1.5 shrink-0 overflow-hidden border border-slate-800/80">
+                <img src="/images/logo/senda-logo.png" alt="Senda Sistemas" className="w-full h-full object-contain" />
               </div>
-            )}
-          </div>
+              
+              {/* Brand Title SENDA SISTEMAS */}
+              <h1 className="font-black text-sm tracking-wider uppercase leading-none flex items-center justify-center gap-1.5 drop-shadow-xs">
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 via-blue-500 to-blue-400 dark:from-blue-400 dark:via-blue-300 dark:to-cyan-300 font-extrabold tracking-wider">
+                  SENDA
+                </span>
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-500 via-amber-400 to-yellow-400 dark:from-amber-400 dark:via-yellow-400 dark:to-yellow-300 font-extrabold tracking-wider">
+                  SISTEMAS
+                </span>
+              </h1>
+
+              {/* Version Pill Badge */}
+              <div className="flex justify-center">
+                <span className="text-[10px] font-black px-3.5 py-0.5 rounded-full bg-purple-50/80 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800/60 uppercase tracking-wider shadow-2xs">
+                  SISTEMA V3.0 (REACT)
+                </span>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* 2. NAVIGATION ITEMS & ACTIONS WITH FULL-HEIGHT BLUE SCROLLBAR */}
