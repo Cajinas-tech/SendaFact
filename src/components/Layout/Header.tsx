@@ -101,14 +101,14 @@ export default function Header({ titleBadge = 'DASHBOARD / ESTADÍSTICAS', onOpe
         {/* User Badge */}
         <div className="flex items-center gap-2.5 pl-2 border-l border-slate-200 dark:border-slate-800">
           <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300 font-bold text-xs flex items-center justify-center">
-            {getInitials(currentUser.name)}
+            {getInitials(currentUser?.name || 'Jairo Cajina')}
           </div>
           <div className="hidden sm:block text-left leading-tight">
             <p className="text-xs font-black text-slate-800 dark:text-white capitalize">
-              {currentUser.name.split(' ')[0]}
+              {(currentUser?.name || 'Administrador').split(' ')[0]}
             </p>
             <span className="text-[10px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-wide">
-              {currentUser.role === 'admin' ? 'ADMINISTRADOR' : currentUser.role === 'supervisor' ? 'SUPERVISOR' : 'CAJERO'}
+              {currentUser?.role === 'cajero' ? 'CAJERO' : currentUser?.role === 'vendedor' ? 'VENDEDOR' : 'ADMINISTRADOR'}
             </span>
           </div>
         </div>
