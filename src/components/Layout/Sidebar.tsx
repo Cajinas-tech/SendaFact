@@ -102,15 +102,14 @@ export default function Sidebar({ collapsed, setCollapsed, mobileOpen, setMobile
                 <img src="/images/logo/senda-logo.png" alt="Senda Sistemas" className="w-full h-full object-contain" />
               </div>
               
-              {/* Brand Title SENDA SISTEMAS */}
-              <h1 className="font-black text-sm tracking-wider uppercase leading-none flex items-center justify-center gap-1.5 drop-shadow-xs">
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 via-blue-500 to-blue-400 dark:from-blue-400 dark:via-blue-300 dark:to-cyan-300 font-extrabold tracking-wider">
-                  SENDA
-                </span>
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-500 via-amber-400 to-yellow-400 dark:from-amber-400 dark:via-yellow-400 dark:to-yellow-300 font-extrabold tracking-wider">
-                  SISTEMAS
-                </span>
-              </h1>
+              {/* Brand Title SENDA SISTEMAS (3D Metallic Logo Graphic) */}
+              <div className="w-full px-1 flex justify-center py-0.5">
+                <img 
+                  src="/images/logo/senda-brand-text.png" 
+                  alt="SENDA SISTEMAS" 
+                  className="w-auto h-5 sm:h-5.5 max-w-[195px] object-contain drop-shadow-md select-none pointer-events-none" 
+                />
+              </div>
 
               {/* Version Pill Badge */}
               <div className="flex justify-center">

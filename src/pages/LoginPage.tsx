@@ -64,9 +64,13 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
             <img src="/images/logo/senda-logo.png" alt="Senda Sistemas" className="w-full h-full object-contain" />
           </div>
           
-          <h1 className="text-2xl font-black text-white tracking-tight uppercase">
-            <span className="text-blue-500">SENDA</span> <span className="text-amber-400">SISTEMAS</span>
-          </h1>
+          <div className="flex justify-center mb-2">
+            <img 
+              src="/images/logo/senda-brand-text.png" 
+              alt="SENDA SISTEMAS" 
+              className="w-auto h-7 sm:h-8 max-w-[240px] object-contain drop-shadow-lg" 
+            />
+          </div>
           <p className="text-xs text-slate-400 mt-1 uppercase tracking-widest font-bold">
             SISTEMA DE FACTURACIÓN V3.0 (POS)
           </p>
