@@ -3,7 +3,41 @@
 @section('title_badge', 'CATÁLOGO DE PRODUCTOS (FICHAS)')
 
 @section('content')
-<div class="space-y-6" x-data="{ viewMode: 'grid' }">
+<div class="space-y-6" x-data="{ 
+    viewMode: 'grid',
+    selectedProduct: null,
+    copied: false,
+    openModal(p) {
+        this.selectedProduct = p;
+    },
+    closeModal() {
+        this.selectedProduct = null;
+    },
+    copyFicha() {
+        if (!this.selectedProduct) return;
+        const p = this.selectedProduct;
+        const text = `📋 *FICHA TÉCNICA Y COMERCIAL*\n` +
+          `*Producto:* ${p.name}\n` +
+          `*SKU:* ${p.sku}\n` +
+          (p.unit ? `*Unidad:* ${p.unit}\n` : '') +
+          (p.dimensions ? `*Medidas:* ${p.dimensions}\n` : '') +
+          `*Precio:* C$ ${parseFloat(p.price_cordobas || 0).toLocaleString('es-NI', { minimumFractionDigits: 2 })} (≈ $${parseFloat(p.price_usd || 0).toFixed(2)} USD)\n` +
+          `*Disponibilidad:* ${p.stock} unidades en stock\n` +
+          (p.description ? `*Detalle:* ${p.description}\n` : '');
+        navigator.clipboard.writeText(text);
+        this.copied = true;
+        setTimeout(() => { this.copied = false; }, 2000);
+    },
+    shareWhatsApp() {
+        if (!this.selectedProduct) return;
+        const p = this.selectedProduct;
+        const text = `Hola! Me gustaría cotizar este producto:\n` +
+          `*${p.name}* (SKU: ${p.sku})\n` +
+          (p.dimensions ? `Medidas: ${p.dimensions}\n` : '') +
+          `Precio: C$ ${parseFloat(p.price_cordobas || 0).toLocaleString('es-NI', { minimumFractionDigits: 2 })} (≈ $${parseFloat(p.price_usd || 0).toFixed(2)} USD)`;
+        window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
+    }
+}">
 
     <!-- TOP BANNER CARD -->
     <div class="glass-card rounded-3xl p-6 sm:p-8 shadow-xs border border-slate-200/80 dark:border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-6">
@@ -100,7 +134,37 @@
     <!-- PRODUCT CARDS GRID (AS IN IMAGE 1) -->
     <div x-show="viewMode === 'grid'" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
         @forelse($products as $product)
-            <div class="glass-card rounded-3xl overflow-hidden border border-slate-200/90 dark:border-slate-800 shadow-xs hover:shadow-xl transition-all duration-300 flex flex-col group">
+            @php
+                $pImg = $product->image_url ?? null;
+                $fallbackSvg = (stripos($product->name ?? '', 'ventana') !== false) ? '/images/products/ventana-aluminio.svg' : '/images/products/puerta-aluminio.svg';
+                
+                if (empty($pImg) || $pImg === 'null' || (!str_starts_with($pImg, 'data:image') && !str_starts_with($pImg, 'http') && !str_starts_with($pImg, '/'))) {
+                    if (stripos($product->name ?? '', 'puerta') !== false) {
+                        $pImg = '/images/products/puerta-aluminio.svg';
+                    } elseif (stripos($product->name ?? '', 'ventana') !== false) {
+                        $pImg = '/images/products/ventana-aluminio.svg';
+                    } else {
+                        $pImg = null;
+                    }
+                }
+                $jsProduct = [
+                    'id' => $product->id,
+                    'name' => $product->name,
+                    'sku' => $product->sku,
+                    'subtitle' => $product->subtitle,
+                    'description' => $product->description,
+                    'unit' => $product->unit ?? 'UNIDAD',
+                    'dimensions' => $product->dimensions,
+                    'stock' => $product->stock,
+                    'price_cordobas' => $product->price_cordobas,
+                    'price_usd' => $product->price_usd,
+                    'category_name' => $product->category->name ?? 'GENERAL',
+                    'image_url' => $pImg ?: $fallbackSvg,
+                    'fallback_svg' => $fallbackSvg,
+                ];
+            @endphp
+            <div @click="openModal({{ json_encode($jsProduct) }})"
+                 class="glass-card rounded-3xl overflow-hidden border border-slate-200/90 dark:border-slate-800 shadow-xs hover:shadow-xl transition-all duration-300 flex flex-col group cursor-pointer">
                 
                 <!-- Product Image & Top Tags -->
                 <div class="relative bg-slate-50 dark:bg-slate-900/50 p-6 flex items-center justify-center min-h-[260px] border-b border-slate-100 dark:border-slate-800">
@@ -119,20 +183,6 @@
 
                     <!-- Visual Illustration / Photo -->
                     <div class="w-full h-48 flex items-center justify-center p-2 group-hover:scale-105 transition-transform duration-300">
-                        @php
-                            $pImg = $product->image_url ?? null;
-                            $fallbackSvg = (stripos($product->name ?? '', 'ventana') !== false) ? '/images/products/ventana-aluminio.svg' : '/images/products/puerta-aluminio.svg';
-                            
-                            if (empty($pImg) || $pImg === 'null' || (!str_starts_with($pImg, 'data:image') && !str_starts_with($pImg, 'http') && !str_starts_with($pImg, '/'))) {
-                                if (stripos($product->name ?? '', 'puerta') !== false) {
-                                    $pImg = '/images/products/puerta-aluminio.svg';
-                                } elseif (stripos($product->name ?? '', 'ventana') !== false) {
-                                    $pImg = '/images/products/ventana-aluminio.svg';
-                                } else {
-                                    $pImg = null;
-                                }
-                            }
-                        @endphp
                         @if(!empty($pImg))
                             <img src="{{ $pImg }}" 
                                  alt="{{ $product->name }}" 
@@ -149,6 +199,12 @@
                     <div class="absolute bottom-3 left-4">
                         <span class="px-2.5 py-0.5 rounded-md text-[10px] font-mono font-bold bg-blue-900/80 text-blue-200 border border-blue-700/50">
                             {{ $product->sku }}
+                        </span>
+                    </div>
+
+                    <div class="absolute bottom-3 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold bg-blue-600 text-white shadow-sm">
+                            <i data-lucide="eye" class="w-3 h-3"></i> Ver Ficha
                         </span>
                     </div>
                 </div>
@@ -217,12 +273,28 @@
                 </thead>
                 <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
                     @foreach($products as $product)
-                        <tr class="hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition">
+                        @php
+                            $listFallback = (stripos($product->name, 'ventana') !== false) ? '/images/products/ventana-aluminio.svg' : '/images/products/puerta-aluminio.svg';
+                            $listImg = $product->image_url ?: $listFallback;
+                            $jsProductList = [
+                                'id' => $product->id,
+                                'name' => $product->name,
+                                'sku' => $product->sku,
+                                'subtitle' => $product->subtitle,
+                                'description' => $product->description,
+                                'unit' => $product->unit ?? 'UNIDAD',
+                                'dimensions' => $product->dimensions,
+                                'stock' => $product->stock,
+                                'price_cordobas' => $product->price_cordobas,
+                                'price_usd' => $product->price_usd,
+                                'category_name' => $product->category->name ?? 'GENERAL',
+                                'image_url' => $listImg,
+                                'fallback_svg' => $listFallback,
+                            ];
+                        @endphp
+                        <tr @click="openModal({{ json_encode($jsProductList) }})"
+                            class="hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition cursor-pointer">
                             <td class="p-4 font-bold text-slate-900 dark:text-white flex items-center gap-3">
-                                @php
-                                    $listFallback = (stripos($product->name, 'ventana') !== false) ? '/images/products/ventana-aluminio.svg' : '/images/products/puerta-aluminio.svg';
-                                    $listImg = $product->image_url ?: $listFallback;
-                                @endphp
                                 <img src="{{ $listImg }}" 
                                      alt="{{ $product->name }}" 
                                      onerror="this.onerror=null; this.src='{{ $listFallback }}';"
@@ -255,6 +327,147 @@
                     @endforeach
                 </tbody>
             </table>
+        </div>
+    </div>
+
+    <!-- FICHA TECNICA Y COMERCIAL MODAL -->
+    <div x-show="selectedProduct" 
+         x-cloak
+         class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-slate-900/70 backdrop-blur-sm animate-fade-in overflow-y-auto"
+         @keydown.escape.window="closeModal()">
+        <div class="bg-white dark:bg-[#0f172a] border border-slate-200 dark:border-slate-800 rounded-3xl shadow-2xl max-w-4xl w-full overflow-hidden flex flex-col my-auto"
+             @click.away="closeModal()">
+            
+            <!-- MODAL HEADER -->
+            <div class="p-5 sm:p-6 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between gap-4 bg-slate-50/50 dark:bg-slate-900/50">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-2xl bg-blue-600 text-white flex items-center justify-center shadow-md shadow-blue-500/30 shrink-0">
+                        <i data-lucide="sparkles" class="w-5 h-5"></i>
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-2 flex-wrap">
+                            <h3 class="text-base sm:text-lg font-black text-slate-900 dark:text-white uppercase tracking-tight">
+                                Ficha Técnica y Comercial
+                            </h3>
+                            <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-blue-100 text-blue-700 dark:bg-blue-950/70 dark:text-blue-300 border border-blue-200 dark:border-blue-800"
+                                  x-text="selectedProduct?.category_name || 'GENERAL'">
+                            </span>
+                        </div>
+                        <p class="text-xs text-slate-500 dark:text-slate-400 font-mono mt-0.5">
+                            SKU: <span class="font-bold text-slate-700 dark:text-slate-300" x-text="selectedProduct?.sku"></span>
+                        </p>
+                    </div>
+                </div>
+
+                <button @click="closeModal()" 
+                        class="p-2.5 rounded-2xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-500 hover:text-slate-800 dark:hover:text-white transition"
+                        title="Cerrar">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <!-- MODAL BODY -->
+            <div class="p-6 sm:p-8 grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8 max-h-[75vh] overflow-y-auto" x-if="selectedProduct">
+                <!-- LEFT: IMAGE & PRICE -->
+                <div class="flex flex-col gap-4">
+                    <!-- Image container maintaining original structure -->
+                    <div class="relative rounded-2xl border border-slate-200 dark:border-slate-700/80 bg-slate-50 dark:bg-slate-900/60 p-4 flex items-center justify-center min-h-[260px] sm:min-h-[320px]">
+                        <div class="absolute top-3 left-3 z-10">
+                            <span class="px-3 py-1 rounded-lg text-xs font-black bg-emerald-500 text-white shadow-xs flex items-center gap-1">
+                                <i data-lucide="check" class="w-3.5 h-3.5"></i> 
+                                <span x-text="(selectedProduct?.stock || 0) + ' disponibles'"></span>
+                            </span>
+                        </div>
+
+                        <img :src="selectedProduct?.image_url" 
+                             :alt="selectedProduct?.name"
+                             class="max-h-[280px] max-w-full w-auto h-auto object-contain drop-shadow-md rounded-xl"
+                             style="aspect-ratio: auto;" />
+                    </div>
+
+                    <!-- Price Banner -->
+                    <div class="rounded-2xl p-4 sm:p-5 bg-blue-50/70 dark:bg-blue-950/40 border border-blue-100 dark:border-blue-900/50 text-center">
+                        <span class="text-[11px] font-black uppercase tracking-wider text-blue-600 dark:text-blue-400 block mb-1">
+                            PRECIO DE VENTA AL CLIENTE
+                        </span>
+                        <div class="text-2xl sm:text-3xl font-black text-blue-700 dark:text-blue-300 font-mono">
+                            C$ <span x-text="Number(selectedProduct?.price_cordobas || 0).toLocaleString('es-NI', { minimumFractionDigits: 2, maximumFractionDigits: 2 })"></span>
+                        </div>
+                        <div class="text-xs font-bold text-slate-500 dark:text-slate-400 font-mono mt-1">
+                            Equivalente a ≈ $<span x-text="Number(selectedProduct?.price_usd || 0).toFixed(2)"></span> USD <span class="text-[10px] font-normal text-slate-400">(Sujeto a tipo de cambio)</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- RIGHT: SPECIFICATIONS & DETAILS -->
+                <div class="flex flex-col justify-between space-y-5">
+                    <div class="space-y-4">
+                        <div>
+                            <h4 class="text-lg sm:text-xl font-black text-slate-900 dark:text-white uppercase leading-snug"
+                                x-text="selectedProduct?.name"></h4>
+                            <p class="text-xs sm:text-sm font-semibold text-blue-600 dark:text-blue-400 mt-1"
+                               x-show="selectedProduct?.subtitle"
+                               x-text="selectedProduct?.subtitle"></p>
+                        </div>
+
+                        <!-- Metadata Badges -->
+                        <div class="grid grid-cols-2 gap-2.5">
+                            <div class="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700">
+                                <span class="text-[10px] font-black uppercase text-slate-400 block">SKU / CÓDIGO</span>
+                                <span class="text-xs font-mono font-black text-slate-800 dark:text-slate-200" x-text="selectedProduct?.sku"></span>
+                            </div>
+                            <div class="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700">
+                                <span class="text-[10px] font-black uppercase text-slate-400 block">UNIDAD DE MEDIDA</span>
+                                <span class="text-xs font-black text-slate-800 dark:text-slate-200" x-text="selectedProduct?.unit || 'UNIDAD'"></span>
+                            </div>
+                        </div>
+
+                        <!-- Medidas y Dimensiones -->
+                        <div class="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200/80 dark:border-slate-700 space-y-1.5">
+                            <div class="flex items-center gap-2 text-xs font-black uppercase text-slate-700 dark:text-slate-300">
+                                <i data-lucide="ruler" class="w-4 h-4 text-blue-500"></i>
+                                <span>MEDIDAS Y ESPECIFICACIONES</span>
+                            </div>
+                            <p class="text-xs font-semibold text-slate-600 dark:text-slate-400 pl-6"
+                               x-text="selectedProduct?.dimensions || 'No especificadas'"></p>
+                        </div>
+
+                        <!-- Description -->
+                        <div class="space-y-1.5">
+                            <span class="text-[11px] font-black uppercase tracking-wider text-slate-400">
+                                DETALLE O DESCRIPCIÓN DEL PRODUCTO
+                            </span>
+                            <div class="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200/80 dark:border-slate-700 text-xs text-slate-600 dark:text-slate-300 leading-relaxed max-h-36 overflow-y-auto"
+                                 x-text="selectedProduct?.description || selectedProduct?.subtitle || 'Sin descripción adicional registrada.'">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Actions -->
+                    <div class="pt-4 border-t border-slate-100 dark:border-slate-800 flex flex-wrap gap-2">
+                        <button @click="shareWhatsApp()"
+                                class="flex-1 min-w-[130px] flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black transition shadow-sm">
+                            <i data-lucide="message-circle" class="w-4 h-4"></i>
+                            <span>WhatsApp</span>
+                        </button>
+
+                        <button @click="copyFicha()"
+                                class="flex-1 min-w-[130px] flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-black transition border border-slate-200 dark:border-slate-700">
+                            <i data-lucide="copy" class="w-4 h-4" x-show="!copied"></i>
+                            <i data-lucide="check" class="w-4 h-4 text-emerald-500" x-show="copied"></i>
+                            <span x-text="copied ? '¡Copiado!' : 'Copiar Ficha'"></span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- MODAL FOOTER -->
+            <div class="p-4 bg-slate-50 dark:bg-slate-900/60 border-t border-slate-100 dark:border-slate-800 flex items-center justify-end">
+                <button @click="closeModal()"
+                        class="px-5 py-2 rounded-xl bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-extrabold transition">
+                    Cerrar
+                </button>
+            </div>
         </div>
     </div>
 
