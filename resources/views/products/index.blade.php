@@ -99,11 +99,12 @@
                                 $imgSrc = $fallbackImg;
                             }
                             $catName = $p->category->name ?? ($p->category_name ?? 'GENERAL');
-                            $subtitle = $p->subtitle ?? 'UNIDAD • TERMINADO';
+                            $unitLabel = $p->unit ?? 'UNIDAD';
+                            $subtitle = $p->subtitle ?? ($unitLabel . ' • TERMINADO');
                             if (empty($subtitle) && !empty($p->dimensions)) {
                                 $subtitle = $p->dimensions . ' • TERMINADO';
                             }
-                            $expiryDate = !empty($p->expiry_date) ? $p->expiry_date : '2026-09-05';
+                            $expiryDate = !empty($p->expiry_date) ? (\Carbon\Carbon::parse($p->expiry_date)->format('Y-m-d')) : '2026-09-05';
                             $actDate = !empty($p->updated_at) ? (\Carbon\Carbon::parse($p->updated_at)->format('Y-m-d')) : '2026-09-05';
                         @endphp
                         <tr class="hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition" 
@@ -129,8 +130,9 @@
                                 <h3 class="font-extrabold text-slate-900 dark:text-white uppercase text-xs sm:text-sm tracking-tight">
                                     {{ $p->name }}
                                 </h3>
-                                <p class="text-[11px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wide mt-0.5">
-                                    {{ $subtitle }}
+                                <p class="text-[11px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wide mt-0.5 flex items-center gap-1.5">
+                                    <span class="inline-block px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold text-[10px]">{{ $unitLabel }}</span>
+                                    <span>{{ $subtitle }}</span>
                                 </p>
                             </td>
 
@@ -226,7 +228,7 @@
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div class="sm:col-span-2">
                         <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">Nombre del Producto</label>
-                        <input type="text" name="name" required placeholder="Ej. PUERTA DE ALUMINIO-VIDRIO" 
+                        <input type="text" name="name" required placeholder="Ej. COCA COLA 600ML" 
                                class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-semibold">
                     </div>
 
@@ -265,25 +267,25 @@
 
                     <div>
                         <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">SKU / Código</label>
-                        <input type="text" name="sku" placeholder="#SKU-9859 (Opcional)" 
+                        <input type="text" name="sku" placeholder="#SKU-4958 (Opcional)" 
                                class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 font-mono text-xs font-bold">
                     </div>
 
                     <div>
                         <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">Precio Venta (C$ Córdobas)</label>
-                        <input type="number" step="0.01" name="price_cordobas" required placeholder="3500.00" 
+                        <input type="number" step="0.01" name="price_cordobas" required placeholder="28.00" 
                                class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 font-mono text-xs font-bold text-blue-600">
                     </div>
 
                     <div>
                         <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">Precio Venta ($ USD)</label>
-                        <input type="number" step="0.01" name="price_usd" placeholder="Auto si se omite" 
+                        <input type="number" step="0.01" name="price_usd" placeholder="0.76 (Auto si se omite)" 
                                class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 font-mono text-xs font-bold">
                     </div>
 
                     <div>
                         <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">Costo Unitario (C$)</label>
-                        <input type="number" step="0.01" name="cost_price" placeholder="0.00" 
+                        <input type="number" step="0.01" name="cost_price" placeholder="25.00" 
                                class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 font-mono text-xs font-bold">
                     </div>
 
@@ -293,16 +295,38 @@
                                class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 font-mono text-xs font-bold">
                     </div>
 
+                    <!-- UNIDAD DE MEDIDA -->
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">Unidad de Medida</label>
+                        <select name="unit" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-bold">
+                            <option value="UNIDAD">UNIDAD</option>
+                            <option value="CAJA">CAJA</option>
+                            <option value="TRES LITROS">TRES LITROS</option>
+                            <option value="DOS LITROS">DOS LITROS</option>
+                            <option value="UN LITRO">UN LITRO</option>
+                            <option value="MEDIO LITRO">MEDIO LITRO</option>
+                            <option value="LIBRA">LIBRA</option>
+                            <option value="ONZA">ONZA</option>
+                        </select>
+                    </div>
+
+                    <!-- FECHA DE VENCIMIENTO -->
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">Fecha de Vencimiento</label>
+                        <input type="date" name="expiry_date" 
+                               class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 font-mono text-xs font-bold text-slate-800 dark:text-slate-200">
+                    </div>
+
                     <div class="sm:col-span-2">
                         <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">Subtítulo / Unidad / Medidas</label>
-                        <input type="text" name="subtitle" placeholder="Ej. UNIDAD • TERMINADO" 
+                        <input type="text" name="subtitle" placeholder="Ej. BEBIDA GASEOSA" 
                                class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs">
                     </div>
                 </div>
 
                 <div class="flex justify-end gap-2 pt-3 border-t border-slate-100 dark:border-slate-700">
                     <button type="button" @click="createModal = false" class="px-4 py-2.5 rounded-xl border text-xs font-bold">Cancelar</button>
-                    <button type="submit" class="px-6 py-2.5 rounded-xl bg-blue-600 text-white font-extrabold text-xs uppercase shadow-md shadow-blue-500/25">Guardar Producto</button>
+                    <button type="submit" class="px-6 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs uppercase shadow-md shadow-blue-500/25 transition">Guardar Producto</button>
                 </div>
             </form>
         </div>
@@ -362,6 +386,15 @@
                     </div>
 
                     <div>
+                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">Categoría</label>
+                        <select name="category_id" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-bold">
+                            @foreach($categories as $cat)
+                                <option value="{{ $cat->id }}" :selected="currentProduct.category_id == {{ $cat->id }}">{{ strtoupper($cat->name) }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <div>
                         <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">SKU / Código</label>
                         <input type="text" name="sku" :value="currentProduct.sku" required 
                                class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 font-mono text-xs font-bold">
@@ -374,21 +407,55 @@
                     </div>
 
                     <div>
+                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">Precio Venta ($ USD)</label>
+                        <input type="number" step="0.01" name="price_usd" :value="currentProduct.price_usd" 
+                               class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 font-mono text-xs font-bold">
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">Costo Unitario (C$)</label>
+                        <input type="number" step="0.01" name="cost_price" :value="currentProduct.cost_price" 
+                               class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 font-mono text-xs font-bold">
+                    </div>
+
+                    <div>
                         <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">Stock</label>
                         <input type="number" name="stock" :value="currentProduct.stock" required 
                                class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 font-mono text-xs font-bold">
                     </div>
 
+                    <!-- UNIDAD DE MEDIDA -->
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">Unidad de Medida</label>
+                        <select name="unit" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-bold">
+                            <option value="UNIDAD" :selected="(currentProduct.unit || 'UNIDAD') == 'UNIDAD'">UNIDAD</option>
+                            <option value="CAJA" :selected="currentProduct.unit == 'CAJA'">CAJA</option>
+                            <option value="TRES LITROS" :selected="currentProduct.unit == 'TRES LITROS'">TRES LITROS</option>
+                            <option value="DOS LITROS" :selected="currentProduct.unit == 'DOS LITROS'">DOS LITROS</option>
+                            <option value="UN LITRO" :selected="currentProduct.unit == 'UN LITRO'">UN LITRO</option>
+                            <option value="MEDIO LITRO" :selected="currentProduct.unit == 'MEDIO LITRO'">MEDIO LITRO</option>
+                            <option value="LIBRA" :selected="currentProduct.unit == 'LIBRA'">LIBRA</option>
+                            <option value="ONZA" :selected="currentProduct.unit == 'ONZA'">ONZA</option>
+                        </select>
+                    </div>
+
+                    <!-- FECHA DE VENCIMIENTO -->
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">Fecha de Vencimiento</label>
+                        <input type="date" name="expiry_date" :value="currentProduct.expiry_date ? currentProduct.expiry_date.substring(0, 10) : ''" 
+                               class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 font-mono text-xs font-bold text-slate-800 dark:text-slate-200">
+                    </div>
+
                     <div class="sm:col-span-2">
                         <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">Subtítulo / Unidad / Medidas</label>
-                        <input type="text" name="subtitle" :value="currentProduct.subtitle" 
+                        <input type="text" name="subtitle" :value="currentProduct.subtitle" placeholder="Ej. BEBIDA GASEOSA"
                                class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs">
                     </div>
                 </div>
 
                 <div class="flex justify-end gap-2 pt-3 border-t border-slate-100 dark:border-slate-700">
                     <button type="button" @click="editModal = false" class="px-4 py-2.5 rounded-xl border text-xs font-bold">Cancelar</button>
-                    <button type="submit" class="px-6 py-2.5 rounded-xl bg-blue-600 text-white font-extrabold text-xs uppercase shadow-md shadow-blue-500/25">Actualizar Producto</button>
+                    <button type="submit" class="px-6 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs uppercase shadow-md shadow-blue-500/25 transition">Actualizar Producto</button>
                 </div>
             </form>
         </div>

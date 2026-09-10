@@ -61,6 +61,7 @@ return new class extends Migration
             $table->integer('min_stock')->default(5);
             $table->text('image_url')->nullable();
             $table->boolean('is_finished_good')->default(true);
+            $table->string('unit')->default('UNIDAD');
             $table->date('expiry_date')->nullable();
             $table->string('status')->default('active');
             $table->timestamps();

@@ -27,6 +27,7 @@ export interface Product {
   min_stock?: number;
   image_url?: string | null;
   is_finished_good?: boolean;
+  unit?: string;
   expiry_date?: string;
   status: 'active' | 'inactive';
   created_at?: string;

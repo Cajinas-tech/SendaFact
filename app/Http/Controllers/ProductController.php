@@ -34,6 +34,7 @@ class ProductController extends Controller
             'price_usd' => 95.11,
             'stock' => 10,
             'min_stock' => 2,
+            'unit' => 'UNIDAD',
             'dimensions' => '2.10 m',
             'subtitle' => 'PUERTAS DE ALUMINIO Y VIDRIO 210X80X4.44',
             'image_url' => '/images/products/puerta-aluminio.svg',
@@ -52,6 +53,7 @@ class ProductController extends Controller
             'price_usd' => 217.39,
             'stock' => 10,
             'min_stock' => 2,
+            'unit' => 'UNIDAD',
             'dimensions' => '1.80 m',
             'subtitle' => 'VENTANA DE VIDRIO Y ALUMINIO 1.80 LARGO X 1.20 ALTO X 5.71 CM',
             'image_url' => '/images/products/ventana-aluminio.svg',
@@ -134,10 +136,20 @@ class ProductController extends Controller
         }
         $data['is_finished_good'] = true;
         $data['status'] = 'active';
+        if (empty($data['unit'])) {
+            $data['unit'] = 'UNIDAD';
+        }
+        if (empty($data['subtitle']) && !empty($data['unit'])) {
+            $data['subtitle'] = $data['unit'] . ' • TERMINADO';
+        }
 
         try {
             try {
-                DB::statement("ALTER TABLE products ALTER COLUMN image_url TYPE text");
+                \Illuminate\Support\Facades\DB::statement("ALTER TABLE products ALTER COLUMN image_url TYPE text");
+            } catch (\Throwable $ex) {}
+
+            try {
+                \Illuminate\Support\Facades\DB::statement("ALTER TABLE products ADD COLUMN IF NOT EXISTS unit VARCHAR(100) DEFAULT 'UNIDAD'");
             } catch (\Throwable $ex) {}
 
             $catId = $data['category_id'] ?? 1;
@@ -180,7 +192,11 @@ class ProductController extends Controller
 
         try {
             try {
-                DB::statement("ALTER TABLE products ALTER COLUMN image_url TYPE text");
+                \Illuminate\Support\Facades\DB::statement("ALTER TABLE products ALTER COLUMN image_url TYPE text");
+            } catch (\Throwable $ex) {}
+
+            try {
+                \Illuminate\Support\Facades\DB::statement("ALTER TABLE products ADD COLUMN IF NOT EXISTS unit VARCHAR(100) DEFAULT 'UNIDAD'");
             } catch (\Throwable $ex) {}
 
             $product = Product::find($id);
@@ -188,7 +204,7 @@ class ProductController extends Controller
                 $product->update($data);
             }
         } catch (\Throwable $e) {
-            Log::error("DB Product Update Error: " . $e->getMessage());
+            \Illuminate\Support\Facades\Log::error("DB Product Update Error: " . $e->getMessage());
         }
 
         return redirect()->route('products.index')->with('success', 'Producto actualizado.');

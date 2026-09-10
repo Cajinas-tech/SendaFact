@@ -89,6 +89,7 @@ CREATE TABLE IF NOT EXISTS products (
     min_stock INTEGER DEFAULT 5,
     image_url VARCHAR(500) NULL,
     is_finished_good BOOLEAN DEFAULT TRUE,
+    unit VARCHAR(100) DEFAULT 'UNIDAD',
     expiry_date DATE NULL,
     status VARCHAR(50) DEFAULT 'active',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

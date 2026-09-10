@@ -36,6 +36,8 @@ export default function ProductsPage() {
     price_usd: '',
     cost_price: '',
     stock: '10',
+    unit: 'UNIDAD',
+    expiry_date: '',
     subtitle: '',
     image_url: ''
   });
@@ -55,7 +57,8 @@ export default function ProductsPage() {
         p.name.toLowerCase().includes(term) ||
         p.sku.toLowerCase().includes(term) ||
         (cat && cat.name.toLowerCase().includes(term)) ||
-        (p.subtitle && p.subtitle.toLowerCase().includes(term))
+        (p.subtitle && p.subtitle.toLowerCase().includes(term)) ||
+        (p.unit && p.unit.toLowerCase().includes(term))
       );
     });
   }, [products, categories, searchTerm]);
@@ -70,6 +73,8 @@ export default function ProductsPage() {
       price_usd: '',
       cost_price: '',
       stock: '10',
+      unit: 'UNIDAD',
+      expiry_date: '',
       subtitle: '',
       image_url: ''
     });
@@ -88,6 +93,8 @@ export default function ProductsPage() {
       price_usd: String(p.price_usd),
       cost_price: String(p.cost_price),
       stock: String(p.stock),
+      unit: p.unit || 'UNIDAD',
+      expiry_date: p.expiry_date ? p.expiry_date.substring(0, 10) : '',
       subtitle: p.subtitle || '',
       image_url: p.image_url || ''
     });
@@ -129,11 +136,12 @@ export default function ProductsPage() {
       price_usd: priceUsd,
       cost_price: formData.cost_price ? parseFloat(formData.cost_price) : 0,
       stock: parseInt(formData.stock || '10', 10),
-      subtitle: formData.subtitle || 'UNIDAD • TERMINADO',
+      unit: formData.unit || 'UNIDAD',
+      subtitle: formData.subtitle || `${formData.unit || 'UNIDAD'} • TERMINADO`,
       image_url: formData.image_url || fallbackSvg,
       is_finished_good: true,
       status: 'active',
-      expiry_date: '2026-09-05',
+      expiry_date: formData.expiry_date || '2026-09-05',
       updated_at: new Date().toISOString()
     };
 
@@ -163,8 +171,10 @@ export default function ProductsPage() {
           price_usd: priceUsd,
           cost_price: formData.cost_price ? parseFloat(formData.cost_price) : 0,
           stock: parseInt(formData.stock || '0', 10),
-          subtitle: formData.subtitle,
+          unit: formData.unit || 'UNIDAD',
+          subtitle: formData.subtitle || `${formData.unit || 'UNIDAD'} • TERMINADO`,
           image_url: formData.image_url || p.image_url,
+          expiry_date: formData.expiry_date || p.expiry_date || '2026-09-05',
           updated_at: new Date().toISOString()
         };
       }
@@ -498,13 +508,43 @@ export default function ProductsPage() {
                   />
                 </div>
 
+                {/* UNIDAD DE MEDIDA */}
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">Unidad de Medida</label>
+                  <select
+                    value={formData.unit}
+                    onChange={(e) => setFormData({ ...formData, unit: e.target.value })}
+                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-bold outline-none"
+                  >
+                    <option value="UNIDAD">UNIDAD</option>
+                    <option value="CAJA">CAJA</option>
+                    <option value="TRES LITROS">TRES LITROS</option>
+                    <option value="DOS LITROS">DOS LITROS</option>
+                    <option value="UN LITRO">UN LITRO</option>
+                    <option value="MEDIO LITRO">MEDIO LITRO</option>
+                    <option value="LIBRA">LIBRA</option>
+                    <option value="ONZA">ONZA</option>
+                  </select>
+                </div>
+
+                {/* FECHA DE VENCIMIENTO */}
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">Fecha de Vencimiento</label>
+                  <input
+                    type="date"
+                    value={formData.expiry_date}
+                    onChange={(e) => setFormData({ ...formData, expiry_date: e.target.value })}
+                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 font-mono text-xs font-bold outline-none text-slate-800 dark:text-slate-200"
+                  />
+                </div>
+
                 <div className="sm:col-span-2">
                   <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">Subtítulo / Unidad / Medidas</label>
                   <input
                     type="text"
                     value={formData.subtitle}
                     onChange={(e) => setFormData({ ...formData, subtitle: e.target.value })}
-                    placeholder="Ej. UNIDAD • TERMINADO"
+                    placeholder="Ej. BEBIDA GASEOSA"
                     className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs outline-none"
                   />
                 </div>
@@ -651,12 +691,43 @@ export default function ProductsPage() {
                   />
                 </div>
 
+                {/* UNIDAD DE MEDIDA */}
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">Unidad de Medida</label>
+                  <select
+                    value={formData.unit}
+                    onChange={(e) => setFormData({ ...formData, unit: e.target.value })}
+                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-bold outline-none"
+                  >
+                    <option value="UNIDAD">UNIDAD</option>
+                    <option value="CAJA">CAJA</option>
+                    <option value="TRES LITROS">TRES LITROS</option>
+                    <option value="DOS LITROS">DOS LITROS</option>
+                    <option value="UN LITRO">UN LITRO</option>
+                    <option value="MEDIO LITRO">MEDIO LITRO</option>
+                    <option value="LIBRA">LIBRA</option>
+                    <option value="ONZA">ONZA</option>
+                  </select>
+                </div>
+
+                {/* FECHA DE VENCIMIENTO */}
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">Fecha de Vencimiento</label>
+                  <input
+                    type="date"
+                    value={formData.expiry_date}
+                    onChange={(e) => setFormData({ ...formData, expiry_date: e.target.value })}
+                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 font-mono text-xs font-bold outline-none text-slate-800 dark:text-slate-200"
+                  />
+                </div>
+
                 <div className="sm:col-span-2">
                   <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">Subtítulo / Unidad / Medidas</label>
                   <input
                     type="text"
                     value={formData.subtitle}
                     onChange={(e) => setFormData({ ...formData, subtitle: e.target.value })}
+                    placeholder="Ej. BEBIDA GASEOSA"
                     className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs outline-none"
                   />
                 </div>
