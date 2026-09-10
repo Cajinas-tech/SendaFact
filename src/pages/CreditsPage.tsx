@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { 
   CreditCard, Search, DollarSign, 
   Clock, CheckCircle2, AlertTriangle, 
-  Receipt, RefreshCw, UserCheck
+  Receipt, RefreshCw, UserCheck, Calendar, Phone, ArrowUpRight
 } from 'lucide-react';
 import { storage } from '../lib/storage';
 import { CreditAccount, Customer } from '../types';
@@ -13,7 +13,7 @@ export const CreditsPage: React.FC = () => {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'paid'>('pending');
-  const { success } = useToast();
+  const { success, warning, error, info } = useToast();
   
   // Abono Modal
   const [selectedCredit, setSelectedCredit] = useState<CreditAccount | null>(null);
@@ -22,8 +22,10 @@ export const CreditsPage: React.FC = () => {
   const [notes, setNotes] = useState('');
 
   const loadData = () => {
-    setCredits(storage.getCredits());
-    setCustomers(storage.getCustomers());
+    const loadedCredits = storage.getCredits() || [];
+    const loadedCustomers = storage.getCustomers() || [];
+    setCredits(loadedCredits);
+    setCustomers(loadedCustomers);
   };
 
   useEffect(() => {
@@ -34,32 +36,43 @@ export const CreditsPage: React.FC = () => {
     e.preventDefault();
     if (!selectedCredit) return;
 
+    const remaining = selectedCredit.remaining_debt ?? selectedCredit.total_debt ?? 0;
     const amount = parseFloat(paymentAmount) || 0;
-    if (amount <= 0 || amount > selectedCredit.remaining_amount) return;
 
-    const updatedRemaining = selectedCredit.remaining_amount - amount;
-    const isFullPayment = updatedRemaining <= 0.01;
+    if (amount <= 0) {
+      warning('Monto Inválido', 'El abono debe ser mayor a C$ 0.00');
+      return;
+    }
+
+    if (amount > remaining + 0.01) {
+      warning('Monto Excede la Deuda', `El saldo pendiente es de C$ ${remaining.toFixed(2)}`);
+      return;
+    }
+
+    const newRemaining = Math.max(0, remaining - amount);
+    const isFullPayment = newRemaining <= 0.01;
 
     const updatedCredit: CreditAccount = {
       ...selectedCredit,
-      paid_amount: selectedCredit.paid_amount + amount,
-      remaining_amount: Math.max(0, updatedRemaining),
+      remaining_debt: newRemaining,
       status: isFullPayment ? 'paid' : 'pending',
       payments: [
         ...(selectedCredit.payments || []),
         {
-          id: 'pay-' + Date.now(),
-          amount: amount,
-          payment_method: paymentMethod,
-          date: new Date().toISOString(),
-          notes: notes || 'Abono a cuenta'
+          id: Date.now(),
+          credit_id: selectedCredit.id,
+          amount_cordobas: amount,
+          payment_method: paymentMethod === 'cash' ? 'Efectivo' : paymentMethod === 'card' ? 'Tarjeta' : 'Transferencia',
+          receipt_number: `ABO-${Math.floor(1000 + Math.random() * 9000)}`,
+          created_at: new Date().toISOString()
         }
       ]
     };
 
     storage.saveCredit(updatedCredit);
 
-    const customer = customers.find(c => c.id === selectedCredit.customer_id);
+    // Actualizar deuda del cliente
+    const customer = customers.find(c => String(c.id) === String(selectedCredit.customer_id));
     if (customer) {
       storage.saveCustomer({
         ...customer,
@@ -67,13 +80,14 @@ export const CreditsPage: React.FC = () => {
       });
     }
 
+    // Si es en efectivo, reflejar en caja activa
     if (paymentMethod === 'cash') {
       const activeReg = storage.getActiveCashRegister();
       if (activeReg) {
         storage.saveCashRegister({
           ...activeReg,
-          current_cash: activeReg.current_cash + amount,
-          total_sales_cash: activeReg.total_sales_cash + amount
+          cash_sales: (activeReg.cash_sales || 0) + amount,
+          total_sales_cordobas: (activeReg.total_sales_cordobas || 0) + amount
         });
       }
     }
@@ -82,6 +96,7 @@ export const CreditsPage: React.FC = () => {
     setPaymentAmount('');
     setNotes('');
     loadData();
+
     success(
       isFullPayment ? '¡Deuda Cancelada Totalmente!' : '¡Abono Aplicado con Éxito!',
       `C$ ${amount.toFixed(2)} aplicados a la cuenta de ${selectedCredit.customer_name}`
@@ -89,15 +104,26 @@ export const CreditsPage: React.FC = () => {
   };
 
   const filteredCredits = credits.filter(c => {
-    const matchesSearch = c.customer_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          c.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          c.sale_id.toLowerCase().includes(searchTerm.toLowerCase());
+    const s = searchTerm.toLowerCase().trim();
+    const matchesSearch = !s ||
+      (c.customer_name && c.customer_name.toLowerCase().includes(s)) ||
+      (c.ticket_number && c.ticket_number.toLowerCase().includes(s)) ||
+      String(c.id).toLowerCase().includes(s) ||
+      (c.customer_phone && c.customer_phone.includes(s));
+
     const matchesStatus = statusFilter === 'all' || c.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
 
-  const totalOutstanding = credits.filter(c => c.status === 'pending').reduce((sum, c) => sum + c.remaining_amount, 0);
-  const totalRecovered = credits.reduce((sum, c) => sum + c.paid_amount, 0);
+  const totalOutstanding = credits
+    .filter(c => c.status === 'pending')
+    .reduce((sum, c) => sum + (c.remaining_debt ?? c.total_debt ?? 0), 0);
+
+  const totalRecovered = credits.reduce((sum, c) => {
+    const total = c.total_debt || 0;
+    const remaining = c.remaining_debt ?? total;
+    return sum + Math.max(0, total - remaining);
+  }, 0);
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -117,7 +143,7 @@ export const CreditsPage: React.FC = () => {
 
         <button
           onClick={loadData}
-          className="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-bold flex items-center gap-2 transition"
+          className="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-bold flex items-center gap-2 transition cursor-pointer"
         >
           <RefreshCw className="w-4 h-4 text-amber-500" />
           Actualizar Saldos
@@ -134,9 +160,9 @@ export const CreditsPage: React.FC = () => {
             </div>
           </div>
           <div className="text-3xl font-black text-rose-600 dark:text-rose-400 font-mono">
-            C$ {totalOutstanding.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+            C$ {totalOutstanding.toLocaleString('es-NI', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </div>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Capital pendiente de cobro en la calle</p>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Capital pendiente de cobro en clientes</p>
         </div>
 
         <div className="glass-card p-5 relative overflow-hidden">
@@ -147,14 +173,14 @@ export const CreditsPage: React.FC = () => {
             </div>
           </div>
           <div className="text-3xl font-black text-emerald-600 dark:text-emerald-400 font-mono">
-            C$ {totalRecovered.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+            C$ {totalRecovered.toLocaleString('es-NI', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </div>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Abonos recibidos satisfactoriamente</p>
         </div>
 
         <div className="glass-card p-5 relative overflow-hidden">
           <div className="flex items-center justify-between text-slate-500 dark:text-slate-400 mb-2">
-            <span className="text-xs font-bold uppercase tracking-wider">Clientes con Crédito Activo</span>
+            <span className="text-xs font-bold uppercase tracking-wider">Cuentas Activas con Saldo</span>
             <div className="w-9 h-9 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-600 dark:text-amber-400">
               <UserCheck className="w-5 h-5" />
             </div>
@@ -162,7 +188,7 @@ export const CreditsPage: React.FC = () => {
           <div className="text-3xl font-black text-slate-900 dark:text-white font-mono">
             {credits.filter(c => c.status === 'pending').length} cuentas
           </div>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Facturas con saldo mayor a C$ 0.00</p>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Facturas con saldo deudor pendiente</p>
         </div>
       </div>
 
@@ -172,17 +198,17 @@ export const CreditsPage: React.FC = () => {
           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
           <input
             type="text"
-            placeholder="Buscar por cliente, cédula o número de factura de crédito..."
+            placeholder="Buscar por cliente, teléfono o número de factura de crédito..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl pl-10 pr-4 py-2 text-sm text-slate-900 dark:text-slate-200 placeholder-slate-400 focus:outline-none focus:border-amber-500"
+            className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl pl-10 pr-4 py-2.5 text-sm text-slate-900 dark:text-slate-200 placeholder-slate-400 focus:outline-none focus:border-amber-500"
           />
         </div>
 
         <div className="flex bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-1 rounded-xl gap-1 w-full md:w-auto">
           <button
             onClick={() => setStatusFilter('pending')}
-            className={`px-4 py-1.5 rounded-lg text-xs font-bold transition ${
+            className={`px-4 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
               statusFilter === 'pending' ? 'bg-amber-600 text-white shadow-xs' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
             }`}
           >
@@ -190,7 +216,7 @@ export const CreditsPage: React.FC = () => {
           </button>
           <button
             onClick={() => setStatusFilter('paid')}
-            className={`px-4 py-1.5 rounded-lg text-xs font-bold transition ${
+            className={`px-4 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
               statusFilter === 'paid' ? 'bg-emerald-600 text-white shadow-xs' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
             }`}
           >
@@ -198,7 +224,7 @@ export const CreditsPage: React.FC = () => {
           </button>
           <button
             onClick={() => setStatusFilter('all')}
-            className={`px-4 py-1.5 rounded-lg text-xs font-bold transition ${
+            className={`px-4 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
               statusFilter === 'all' ? 'bg-slate-700 text-white shadow-xs' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
             }`}
           >
@@ -213,7 +239,7 @@ export const CreditsPage: React.FC = () => {
           <table className="w-full text-left text-sm text-slate-700 dark:text-slate-300">
             <thead className="bg-slate-50 dark:bg-slate-900/60 text-xs uppercase font-bold text-slate-500 dark:text-slate-400 border-b border-slate-200 dark:border-slate-800">
               <tr>
-                <th className="px-6 py-4">Crédito ID</th>
+                <th className="px-6 py-4">Factura / Ticket</th>
                 <th className="px-6 py-4">Cliente</th>
                 <th className="px-6 py-4">Vencimiento</th>
                 <th className="px-6 py-4 text-right">Monto Total</th>
@@ -231,55 +257,76 @@ export const CreditsPage: React.FC = () => {
                   </td>
                 </tr>
               ) : (
-                filteredCredits.map((credit) => (
-                  <tr key={credit.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/30 transition">
-                    <td className="px-6 py-4 font-mono font-bold text-slate-800 dark:text-slate-300 text-xs">
-                      {credit.id}
-                      <span className="block text-[10px] text-slate-400">Ref: {credit.sale_id}</span>
-                    </td>
-                    <td className="px-6 py-4 font-bold text-slate-900 dark:text-white">{credit.customer_name}</td>
-                    <td className="px-6 py-4 text-slate-500 dark:text-slate-400 text-xs">
-                      <div className="flex items-center gap-1.5">
-                        <Clock className="w-3.5 h-3.5 text-amber-500" />
-                        {new Date(credit.due_date).toLocaleDateString()}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 text-right font-mono font-semibold text-slate-700 dark:text-slate-300">
-                      C$ {credit.total_amount.toLocaleString('en-US', { minimumFractionDigits: 2 })}
-                    </td>
-                    <td className="px-6 py-4 text-right font-mono font-semibold text-emerald-600 dark:text-emerald-400">
-                      C$ {credit.paid_amount.toLocaleString('en-US', { minimumFractionDigits: 2 })}
-                    </td>
-                    <td className="px-6 py-4 text-right font-mono font-black text-rose-600 dark:text-rose-400 text-base">
-                      C$ {credit.remaining_amount.toLocaleString('en-US', { minimumFractionDigits: 2 })}
-                    </td>
-                    <td className="px-6 py-4 text-center">
-                      <span className={`px-2.5 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${
-                        credit.status === 'paid'
-                          ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30'
-                          : 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/30'
-                      }`}>
-                        {credit.status === 'paid' ? 'Saldado' : 'Pendiente'}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-center">
-                      {credit.status === 'pending' ? (
-                        <button
-                          onClick={() => {
-                            setSelectedCredit(credit);
-                            setPaymentAmount(credit.remaining_amount.toString());
-                          }}
-                          className="px-3.5 py-1.5 bg-amber-600 hover:bg-amber-500 text-white rounded-lg text-xs font-bold shadow-sm transition inline-flex items-center gap-1.5"
-                        >
-                          <DollarSign className="w-3.5 h-3.5" />
-                          Abonar
-                        </button>
-                      ) : (
-                        <span className="text-xs text-slate-400 italic">Completado</span>
-                      )}
-                    </td>
-                  </tr>
-                ))
+                filteredCredits.map((credit) => {
+                  const total = credit.total_debt || 0;
+                  const remaining = credit.remaining_debt ?? total;
+                  const paid = Math.max(0, total - remaining);
+
+                  return (
+                    <tr key={credit.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/30 transition">
+                      <td className="px-6 py-4 font-mono font-bold text-slate-800 dark:text-slate-300 text-xs">
+                        {credit.ticket_number || `CR-${credit.id}`}
+                        <span className="block text-[10px] text-slate-400 font-sans">
+                          Emisión: {credit.created_at || 'Reciente'}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="font-bold text-slate-900 dark:text-white">
+                          {credit.customer_name}
+                        </div>
+                        {credit.customer_phone && (
+                          <div className="text-xs text-slate-400 flex items-center gap-1 mt-0.5">
+                            <Phone className="w-3 h-3" />
+                            {credit.customer_phone}
+                          </div>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 text-slate-500 dark:text-slate-400 text-xs">
+                        <div className="flex items-center gap-1.5 font-medium">
+                          <Calendar className="w-3.5 h-3.5 text-amber-500" />
+                          {credit.due_date ? new Date(credit.due_date).toLocaleDateString('es-NI') : '30 días'}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 text-right font-mono font-semibold text-slate-700 dark:text-slate-300">
+                        C$ {total.toLocaleString('es-NI', { minimumFractionDigits: 2 })}
+                      </td>
+                      <td className="px-6 py-4 text-right font-mono font-semibold text-emerald-600 dark:text-emerald-400">
+                        C$ {paid.toLocaleString('es-NI', { minimumFractionDigits: 2 })}
+                      </td>
+                      <td className="px-6 py-4 text-right font-mono font-black text-rose-600 dark:text-rose-400 text-base">
+                        C$ {remaining.toLocaleString('es-NI', { minimumFractionDigits: 2 })}
+                      </td>
+                      <td className="px-6 py-4 text-center">
+                        <span className={`px-2.5 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${
+                          credit.status === 'paid' || remaining <= 0.01
+                            ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30'
+                            : 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/30'
+                        }`}>
+                          {credit.status === 'paid' || remaining <= 0.01 ? 'Saldado' : 'Pendiente'}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 text-center">
+                        {remaining > 0.01 ? (
+                          <button
+                            onClick={() => {
+                              setSelectedCredit(credit);
+                              setPaymentAmount(remaining.toString());
+                            }}
+                            className="px-3.5 py-1.5 bg-amber-600 hover:bg-amber-500 text-white rounded-xl text-xs font-bold shadow-xs transition inline-flex items-center gap-1.5 cursor-pointer"
+                          >
+                            <DollarSign className="w-3.5 h-3.5" />
+                            Abonar
+                          </button>
+                        ) : (
+                          <span className="text-xs text-emerald-500 dark:text-emerald-400 font-bold inline-flex items-center gap-1">
+                            <CheckCircle2 className="w-3.5 h-3.5" />
+                            Pagado
+                          </span>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })
               )}
             </tbody>
           </table>
@@ -288,10 +335,10 @@ export const CreditsPage: React.FC = () => {
 
       {/* MODAL: Realizar Abono */}
       {selectedCredit && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl w-full max-w-md p-6 shadow-2xl space-y-5 animate-in fade-in zoom-in-95 duration-200">
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-150">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl w-full max-w-md p-6 shadow-2xl space-y-5">
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-500">
+              <div className="w-12 h-12 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-500">
                 <Receipt className="w-6 h-6" />
               </div>
               <div>
@@ -300,14 +347,18 @@ export const CreditsPage: React.FC = () => {
               </div>
             </div>
 
-            <div className="bg-slate-50 dark:bg-slate-950 p-4 rounded-xl border border-slate-200 dark:border-slate-800 space-y-1.5 text-sm">
+            <div className="bg-slate-50 dark:bg-slate-950 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-1.5 text-sm">
               <div className="flex justify-between text-slate-600 dark:text-slate-400">
                 <span>Deuda Total:</span>
-                <span className="text-slate-900 dark:text-white font-mono font-bold">C$ {selectedCredit.total_amount.toFixed(2)}</span>
+                <span className="text-slate-900 dark:text-white font-mono font-bold">
+                  C$ {(selectedCredit.total_debt || 0).toFixed(2)}
+                </span>
               </div>
               <div className="flex justify-between text-slate-600 dark:text-slate-400">
                 <span>Saldo Pendiente:</span>
-                <span className="text-rose-600 dark:text-rose-400 font-mono font-bold">C$ {selectedCredit.remaining_amount.toFixed(2)}</span>
+                <span className="text-rose-600 dark:text-rose-400 font-mono font-bold">
+                  C$ {(selectedCredit.remaining_debt ?? selectedCredit.total_debt ?? 0).toFixed(2)}
+                </span>
               </div>
             </div>
 
@@ -320,7 +371,7 @@ export const CreditsPage: React.FC = () => {
                     type="number"
                     step="0.01"
                     min="0.01"
-                    max={selectedCredit.remaining_amount}
+                    max={selectedCredit.remaining_debt ?? selectedCredit.total_debt}
                     required
                     value={paymentAmount}
                     onChange={(e) => setPaymentAmount(e.target.value)}
@@ -337,7 +388,7 @@ export const CreditsPage: React.FC = () => {
                       key={method}
                       type="button"
                       onClick={() => setPaymentMethod(method)}
-                      className={`py-2 rounded-xl text-xs font-bold uppercase transition ${
+                      className={`py-2 rounded-xl text-xs font-bold uppercase transition cursor-pointer ${
                         paymentMethod === method
                           ? 'bg-amber-600 text-white shadow-lg shadow-amber-600/30'
                           : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
@@ -364,13 +415,13 @@ export const CreditsPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setSelectedCredit(null)}
-                  className="flex-1 px-4 py-2.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl text-sm font-bold transition"
+                  className="flex-1 px-4 py-2.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl text-sm font-bold transition cursor-pointer"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 px-4 py-2.5 bg-amber-600 hover:bg-amber-500 text-white rounded-xl text-sm font-bold shadow-lg shadow-amber-600/30 transition"
+                  className="flex-1 px-4 py-2.5 bg-amber-600 hover:bg-amber-500 text-white rounded-xl text-sm font-bold shadow-lg shadow-amber-600/30 transition cursor-pointer"
                 >
                   Aplicar Abono
                 </button>
