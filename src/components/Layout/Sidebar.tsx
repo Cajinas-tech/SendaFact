@@ -90,7 +90,7 @@ export default function Sidebar({ collapsed, setCollapsed, mobileOpen, setMobile
         } ${mobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}
       >
         {/* 1. LOGO & BRAND HEADER (Fixed, shrink-0) */}
-        <div className="p-4 border-b border-slate-100 dark:border-slate-800/80 shrink-0">
+        <div className={`p-4 border-b border-slate-100 dark:border-slate-800/80 shrink-0 ${collapsed ? 'flex justify-center' : ''}`}>
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 rounded-2xl bg-[#070b14] flex items-center justify-center shadow-lg shadow-blue-950/40 p-1 shrink-0 overflow-hidden border border-slate-800/80">
               <img src="/images/logo/senda-logo.png" alt="Senda Sistemas" className="w-full h-full object-contain" />
@@ -114,7 +114,7 @@ export default function Sidebar({ collapsed, setCollapsed, mobileOpen, setMobile
         </div>
 
         {/* 2. NAVIGATION ITEMS WITH INDEPENDENT BLUE SCROLLBAR */}
-        <div className="flex-1 min-h-0 overflow-y-auto px-2.5 py-3 space-y-4 sidebar-scroll">
+        <div className={`flex-1 min-h-0 overflow-y-auto ${collapsed ? 'px-2' : 'px-2.5'} py-3 space-y-4 sidebar-scroll`}>
           {navSections.map((section, sIdx) => (
             <div key={sIdx} className="space-y-1">
               {!collapsed && (
@@ -133,7 +133,7 @@ export default function Sidebar({ collapsed, setCollapsed, mobileOpen, setMobile
                     key={iIdx}
                     to={item.path}
                     onClick={() => setMobileOpen(false)}
-                    className={`flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all duration-200 group ${
+                    className={`flex items-center ${collapsed ? 'justify-center p-3' : 'gap-3 px-3.5 py-2.5'} rounded-xl text-xs sm:text-sm font-semibold transition-all duration-200 group ${
                       active
                         ? 'bg-blue-600 text-white shadow-md shadow-blue-500/25 font-bold'
                         : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/60 hover:text-slate-900 dark:hover:text-white'
@@ -150,11 +150,11 @@ export default function Sidebar({ collapsed, setCollapsed, mobileOpen, setMobile
         </div>
 
         {/* 3. FIXED BOTTOM ACTIONS: LOGOUT & COLLAPSE */}
-        <div className="p-3 border-t border-slate-100 dark:border-slate-800/80 space-y-1 shrink-0 bg-white dark:bg-[#070b14]">
+        <div className={`p-3 border-t border-slate-100 dark:border-slate-800/80 space-y-1.5 shrink-0 bg-white dark:bg-[#070b14] ${collapsed ? 'flex flex-col items-center' : ''}`}>
           <button
             type="button"
             onClick={handleLogout}
-            className="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition cursor-pointer"
+            className={`w-full flex items-center ${collapsed ? 'justify-center p-2.5' : 'gap-3 px-3.5 py-2.5'} rounded-xl text-xs font-bold text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition cursor-pointer`}
             title="Salir del Sistema"
           >
             <LogOut className="w-5 h-5 shrink-0 text-rose-500" />
@@ -164,11 +164,11 @@ export default function Sidebar({ collapsed, setCollapsed, mobileOpen, setMobile
           <button
             type="button"
             onClick={() => setCollapsed(!collapsed)}
-            className="w-full hidden lg:flex items-center gap-3 px-3.5 py-2 rounded-xl text-[11px] font-bold uppercase tracking-wider text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800/60 transition cursor-pointer"
+            className={`w-full hidden lg:flex items-center ${collapsed ? 'justify-center p-2.5' : 'gap-3 px-3.5 py-2'} rounded-xl text-[11px] font-bold uppercase tracking-wider text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800/60 transition cursor-pointer`}
             title={collapsed ? 'Expandir barra' : 'Contraer barra'}
           >
             {collapsed ? (
-              <ChevronRight className="w-4 h-4 mx-auto text-slate-400" />
+              <ChevronRight className="w-5 h-5 text-slate-400" />
             ) : (
               <>
                 <ChevronLeft className="w-4 h-4 text-slate-400" />
