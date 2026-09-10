@@ -2,17 +2,20 @@ import React, { useState, useEffect } from 'react';
 import { 
   CreditCard, Search, DollarSign, 
   Clock, CheckCircle2, AlertTriangle, 
-  Receipt, RefreshCw, UserCheck, Calendar, Phone, ArrowUpRight
+  Receipt, RefreshCw, UserCheck, Calendar, Phone,
+  Ban, XCircle, AlertCircle, Trash2, History
 } from 'lucide-react';
 import { storage } from '../lib/storage';
 import { CreditAccount, Customer } from '../types';
 import { useToast } from '../components/UI/Toast';
 
+type FilterStatus = 'all' | 'pending' | 'overdue' | 'paid' | 'cancelled';
+
 export const CreditsPage: React.FC = () => {
   const [credits, setCredits] = useState<CreditAccount[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'paid'>('pending');
+  const [statusFilter, setStatusFilter] = useState<FilterStatus>('all');
   const { success, warning, error, info } = useToast();
   
   // Abono Modal
@@ -20,6 +23,10 @@ export const CreditsPage: React.FC = () => {
   const [paymentAmount, setPaymentAmount] = useState('');
   const [paymentMethod, setPaymentMethod] = useState<'cash' | 'card' | 'transfer'>('cash');
   const [notes, setNotes] = useState('');
+
+  // Cancel / Void Credit Modal
+  const [creditToCancel, setCreditToCancel] = useState<CreditAccount | null>(null);
+  const [cancelReason, setCancelReason] = useState('');
 
   const loadData = () => {
     const loadedCredits = storage.getCredits() || [];
@@ -31,6 +38,28 @@ export const CreditsPage: React.FC = () => {
   useEffect(() => {
     loadData();
   }, []);
+
+  const isCreditOverdue = (credit: CreditAccount): boolean => {
+    if (credit.status === 'cancelled' || credit.status === 'paid') return false;
+    const remaining = credit.remaining_debt ?? credit.total_debt ?? 0;
+    if (remaining <= 0.01) return false;
+    if (credit.status === 'overdue') return true;
+    if (!credit.due_date) return false;
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const due = new Date(credit.due_date);
+    due.setHours(0, 0, 0, 0);
+    return due < today;
+  };
+
+  const getEffectiveStatus = (credit: CreditAccount): 'pending' | 'overdue' | 'paid' | 'cancelled' => {
+    if (credit.status === 'cancelled') return 'cancelled';
+    const remaining = credit.remaining_debt ?? credit.total_debt ?? 0;
+    if (remaining <= 0.01 || credit.status === 'paid') return 'paid';
+    if (isCreditOverdue(credit)) return 'overdue';
+    return 'pending';
+  };
 
   const handleMakePayment = (e: React.FormEvent) => {
     e.preventDefault();
@@ -103,6 +132,34 @@ export const CreditsPage: React.FC = () => {
     );
   };
 
+  const handleCancelCredit = () => {
+    if (!creditToCancel) return;
+
+    const remaining = creditToCancel.remaining_debt ?? creditToCancel.total_debt ?? 0;
+
+    const updatedCredit: CreditAccount = {
+      ...creditToCancel,
+      status: 'cancelled'
+    };
+
+    storage.saveCredit(updatedCredit);
+
+    // Reducir la deuda del cliente si tenía saldo pendiente
+    const customer = customers.find(c => String(c.id) === String(creditToCancel.customer_id));
+    if (customer && remaining > 0) {
+      storage.saveCustomer({
+        ...customer,
+        current_debt: Math.max(0, (customer.current_debt || 0) - remaining)
+      });
+    }
+
+    setCreditToCancel(null);
+    setCancelReason('');
+    loadData();
+
+    info('Crédito Anulado / Cancelado', `La cuenta ${creditToCancel.ticket_number || creditToCancel.id} ha sido marcada como cancelada`);
+  };
+
   const filteredCredits = credits.filter(c => {
     const s = searchTerm.toLowerCase().trim();
     const matchesSearch = !s ||
@@ -111,19 +168,37 @@ export const CreditsPage: React.FC = () => {
       String(c.id).toLowerCase().includes(s) ||
       (c.customer_phone && c.customer_phone.includes(s));
 
-    const matchesStatus = statusFilter === 'all' || c.status === statusFilter;
+    const effStatus = getEffectiveStatus(c);
+    const matchesStatus = statusFilter === 'all' || effStatus === statusFilter;
     return matchesSearch && matchesStatus;
   });
 
+  // KPIs
   const totalOutstanding = credits
-    .filter(c => c.status === 'pending')
+    .filter(c => {
+      const eff = getEffectiveStatus(c);
+      return eff === 'pending' || eff === 'overdue';
+    })
     .reduce((sum, c) => sum + (c.remaining_debt ?? c.total_debt ?? 0), 0);
 
-  const totalRecovered = credits.reduce((sum, c) => {
-    const total = c.total_debt || 0;
-    const remaining = c.remaining_debt ?? total;
-    return sum + Math.max(0, total - remaining);
-  }, 0);
+  const totalOverdue = credits
+    .filter(c => getEffectiveStatus(c) === 'overdue')
+    .reduce((sum, c) => sum + (c.remaining_debt ?? c.total_debt ?? 0), 0);
+
+  const totalRecovered = credits
+    .filter(c => c.status !== 'cancelled')
+    .reduce((sum, c) => {
+      const total = c.total_debt || 0;
+      const remaining = c.remaining_debt ?? total;
+      return sum + Math.max(0, total - remaining);
+    }, 0);
+
+  // Status counts
+  const countAll = credits.length;
+  const countPending = credits.filter(c => getEffectiveStatus(c) === 'pending').length;
+  const countOverdue = credits.filter(c => getEffectiveStatus(c) === 'overdue').length;
+  const countPaid = credits.filter(c => getEffectiveStatus(c) === 'paid').length;
+  const countCancelled = credits.filter(c => getEffectiveStatus(c) === 'cancelled').length;
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -137,7 +212,7 @@ export const CreditsPage: React.FC = () => {
           </div>
           <div>
             <h1 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">Cuentas por Cobrar y Créditos</h1>
-            <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Control de saldos pendientes, límites de crédito y abonos parciales/totales</p>
+            <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Control de saldos pendientes, vencimientos, abonos y créditos cancelados</p>
           </div>
         </div>
 
@@ -151,49 +226,66 @@ export const CreditsPage: React.FC = () => {
       </div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* Total Pendiente */}
         <div className="glass-card p-5 relative overflow-hidden">
           <div className="flex items-center justify-between text-slate-500 dark:text-slate-400 mb-2">
-            <span className="text-xs font-bold uppercase tracking-wider">Total por Cobrar (Pendiente)</span>
+            <span className="text-xs font-bold uppercase tracking-wider">Total por Cobrar</span>
+            <div className="w-9 h-9 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-600 dark:text-amber-400">
+              <Clock className="w-5 h-5" />
+            </div>
+          </div>
+          <div className="text-2xl lg:text-3xl font-black text-amber-600 dark:text-amber-400 font-mono">
+            C$ {totalOutstanding.toLocaleString('es-NI', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          </div>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Saldos vigentes y en mora</p>
+        </div>
+
+        {/* Total Vencido */}
+        <div className="glass-card p-5 relative overflow-hidden">
+          <div className="flex items-center justify-between text-slate-500 dark:text-slate-400 mb-2">
+            <span className="text-xs font-bold uppercase tracking-wider">Cartera Vencida (Mora)</span>
             <div className="w-9 h-9 rounded-xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center text-rose-600 dark:text-rose-400">
               <AlertTriangle className="w-5 h-5" />
             </div>
           </div>
-          <div className="text-3xl font-black text-rose-600 dark:text-rose-400 font-mono">
-            C$ {totalOutstanding.toLocaleString('es-NI', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          <div className="text-2xl lg:text-3xl font-black text-rose-600 dark:text-rose-400 font-mono">
+            C$ {totalOverdue.toLocaleString('es-NI', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </div>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Capital pendiente de cobro en clientes</p>
+          <p className="text-xs text-rose-500/80 mt-1">{countOverdue} cuenta(s) fuera de fecha límite</p>
         </div>
 
+        {/* Total Recuperado */}
         <div className="glass-card p-5 relative overflow-hidden">
           <div className="flex items-center justify-between text-slate-500 dark:text-slate-400 mb-2">
-            <span className="text-xs font-bold uppercase tracking-wider">Total Recuperado / Cobrado</span>
+            <span className="text-xs font-bold uppercase tracking-wider">Total Recuperado</span>
             <div className="w-9 h-9 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
               <CheckCircle2 className="w-5 h-5" />
             </div>
           </div>
-          <div className="text-3xl font-black text-emerald-600 dark:text-emerald-400 font-mono">
+          <div className="text-2xl lg:text-3xl font-black text-emerald-600 dark:text-emerald-400 font-mono">
             C$ {totalRecovered.toLocaleString('es-NI', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </div>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Abonos recibidos satisfactoriamente</p>
         </div>
 
+        {/* Cuentas Activas */}
         <div className="glass-card p-5 relative overflow-hidden">
           <div className="flex items-center justify-between text-slate-500 dark:text-slate-400 mb-2">
-            <span className="text-xs font-bold uppercase tracking-wider">Cuentas Activas con Saldo</span>
-            <div className="w-9 h-9 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-600 dark:text-amber-400">
+            <span className="text-xs font-bold uppercase tracking-wider">Cuentas con Saldo</span>
+            <div className="w-9 h-9 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-600 dark:text-indigo-400">
               <UserCheck className="w-5 h-5" />
             </div>
           </div>
-          <div className="text-3xl font-black text-slate-900 dark:text-white font-mono">
-            {credits.filter(c => c.status === 'pending').length} cuentas
+          <div className="text-2xl lg:text-3xl font-black text-slate-900 dark:text-white font-mono">
+            {countPending + countOverdue} <span className="text-sm font-normal text-slate-400">cuentas</span>
           </div>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Facturas con saldo deudor pendiente</p>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{countPaid} saldadas • {countCancelled} canceladas</p>
         </div>
       </div>
 
       {/* Filters and Search Bar */}
-      <div className="glass-card p-4 flex flex-col md:flex-row gap-4 items-center justify-between">
+      <div className="glass-card p-4 flex flex-col lg:flex-row gap-4 items-center justify-between">
         <div className="relative flex-1 w-full">
           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
           <input
@@ -205,30 +297,89 @@ export const CreditsPage: React.FC = () => {
           />
         </div>
 
-        <div className="flex bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-1 rounded-xl gap-1 w-full md:w-auto">
-          <button
-            onClick={() => setStatusFilter('pending')}
-            className={`px-4 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
-              statusFilter === 'pending' ? 'bg-amber-600 text-white shadow-xs' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-            }`}
-          >
-            Pendientes
-          </button>
-          <button
-            onClick={() => setStatusFilter('paid')}
-            className={`px-4 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
-              statusFilter === 'paid' ? 'bg-emerald-600 text-white shadow-xs' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-            }`}
-          >
-            Pagados
-          </button>
+        {/* Tab Filters: Todos, Pendientes, Vencidos, Pagados, Cancelados */}
+        <div className="flex flex-wrap bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-1 rounded-xl gap-1 w-full lg:w-auto overflow-x-auto">
           <button
             onClick={() => setStatusFilter('all')}
-            className={`px-4 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
-              statusFilter === 'all' ? 'bg-slate-700 text-white shadow-xs' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+            className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
+              statusFilter === 'all' 
+                ? 'bg-amber-600 text-white shadow-xs' 
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
             }`}
           >
             Todos
+            <span className={`px-1.5 py-0.2 rounded-full text-[10px] ${
+              statusFilter === 'all' ? 'bg-white/25 text-white' : 'bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
+            }`}>
+              {countAll}
+            </span>
+          </button>
+
+          <button
+            onClick={() => setStatusFilter('pending')}
+            className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
+              statusFilter === 'pending' 
+                ? 'bg-amber-600 text-white shadow-xs' 
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+            }`}
+          >
+            Pendientes
+            <span className={`px-1.5 py-0.2 rounded-full text-[10px] ${
+              statusFilter === 'pending' ? 'bg-white/25 text-white' : 'bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
+            }`}>
+              {countPending}
+            </span>
+          </button>
+
+          <button
+            onClick={() => setStatusFilter('overdue')}
+            className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
+              statusFilter === 'overdue' 
+                ? 'bg-rose-600 text-white shadow-xs' 
+                : 'text-rose-600 dark:text-rose-400 hover:text-rose-700 dark:hover:text-rose-300'
+            }`}
+          >
+            <AlertTriangle className="w-3 h-3" />
+            Vencidos
+            <span className={`px-1.5 py-0.2 rounded-full text-[10px] ${
+              statusFilter === 'overdue' ? 'bg-white/25 text-white' : 'bg-rose-500/20 text-rose-600 dark:text-rose-400'
+            }`}>
+              {countOverdue}
+            </span>
+          </button>
+
+          <button
+            onClick={() => setStatusFilter('paid')}
+            className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
+              statusFilter === 'paid' 
+                ? 'bg-emerald-600 text-white shadow-xs' 
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+            }`}
+          >
+            <CheckCircle2 className="w-3 h-3" />
+            Pagados
+            <span className={`px-1.5 py-0.2 rounded-full text-[10px] ${
+              statusFilter === 'paid' ? 'bg-white/25 text-white' : 'bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
+            }`}>
+              {countPaid}
+            </span>
+          </button>
+
+          <button
+            onClick={() => setStatusFilter('cancelled')}
+            className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
+              statusFilter === 'cancelled' 
+                ? 'bg-slate-700 text-white shadow-xs' 
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+            }`}
+          >
+            <Ban className="w-3 h-3" />
+            Cancelados
+            <span className={`px-1.5 py-0.2 rounded-full text-[10px] ${
+              statusFilter === 'cancelled' ? 'bg-white/25 text-white' : 'bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
+            }`}>
+              {countCancelled}
+            </span>
           </button>
         </div>
       </div>
@@ -253,7 +404,7 @@ export const CreditsPage: React.FC = () => {
               {filteredCredits.length === 0 ? (
                 <tr>
                   <td colSpan={8} className="px-6 py-12 text-center text-slate-400">
-                    No se encontraron cuentas de crédito registradas.
+                    No se encontraron cuentas de crédito con el filtro seleccionado.
                   </td>
                 </tr>
               ) : (
@@ -261,6 +412,7 @@ export const CreditsPage: React.FC = () => {
                   const total = credit.total_debt || 0;
                   const remaining = credit.remaining_debt ?? total;
                   const paid = Math.max(0, total - remaining);
+                  const effStatus = getEffectiveStatus(credit);
 
                   return (
                     <tr key={credit.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/30 transition">
@@ -282,9 +434,14 @@ export const CreditsPage: React.FC = () => {
                         )}
                       </td>
                       <td className="px-6 py-4 text-slate-500 dark:text-slate-400 text-xs">
-                        <div className="flex items-center gap-1.5 font-medium">
-                          <Calendar className="w-3.5 h-3.5 text-amber-500" />
+                        <div className={`flex items-center gap-1.5 font-medium ${effStatus === 'overdue' ? 'text-rose-600 dark:text-rose-400 font-bold' : ''}`}>
+                          <Calendar className={`w-3.5 h-3.5 ${effStatus === 'overdue' ? 'text-rose-500' : 'text-amber-500'}`} />
                           {credit.due_date ? new Date(credit.due_date).toLocaleDateString('es-NI') : '30 días'}
+                          {effStatus === 'overdue' && (
+                            <span className="text-[10px] bg-rose-500/10 text-rose-600 dark:text-rose-400 px-1.5 py-0.5 rounded-sm ml-1 font-bold">
+                              Expirado
+                            </span>
+                          )}
                         </div>
                       </td>
                       <td className="px-6 py-4 text-right font-mono font-semibold text-slate-700 dark:text-slate-300">
@@ -293,34 +450,79 @@ export const CreditsPage: React.FC = () => {
                       <td className="px-6 py-4 text-right font-mono font-semibold text-emerald-600 dark:text-emerald-400">
                         C$ {paid.toLocaleString('es-NI', { minimumFractionDigits: 2 })}
                       </td>
-                      <td className="px-6 py-4 text-right font-mono font-black text-rose-600 dark:text-rose-400 text-base">
-                        C$ {remaining.toLocaleString('es-NI', { minimumFractionDigits: 2 })}
-                      </td>
-                      <td className="px-6 py-4 text-center">
-                        <span className={`px-2.5 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${
-                          credit.status === 'paid' || remaining <= 0.01
-                            ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30'
-                            : 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/30'
-                        }`}>
-                          {credit.status === 'paid' || remaining <= 0.01 ? 'Saldado' : 'Pendiente'}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 text-center">
-                        {remaining > 0.01 ? (
-                          <button
-                            onClick={() => {
-                              setSelectedCredit(credit);
-                              setPaymentAmount(remaining.toString());
-                            }}
-                            className="px-3.5 py-1.5 bg-amber-600 hover:bg-amber-500 text-white rounded-xl text-xs font-bold shadow-xs transition inline-flex items-center gap-1.5 cursor-pointer"
-                          >
-                            <DollarSign className="w-3.5 h-3.5" />
-                            Abonar
-                          </button>
+                      <td className="px-6 py-4 text-right font-mono font-black text-base">
+                        {effStatus === 'cancelled' ? (
+                          <span className="text-slate-400 line-through">
+                            C$ {remaining.toLocaleString('es-NI', { minimumFractionDigits: 2 })}
+                          </span>
+                        ) : effStatus === 'paid' ? (
+                          <span className="text-emerald-600 dark:text-emerald-400">
+                            C$ 0.00
+                          </span>
                         ) : (
+                          <span className={effStatus === 'overdue' ? 'text-rose-600 dark:text-rose-400' : 'text-amber-600 dark:text-amber-400'}>
+                            C$ {remaining.toLocaleString('es-NI', { minimumFractionDigits: 2 })}
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 text-center">
+                        {effStatus === 'pending' && (
+                          <span className="px-2.5 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/30 inline-flex items-center gap-1">
+                            <Clock className="w-3 h-3" />
+                            Pendiente
+                          </span>
+                        )}
+                        {effStatus === 'overdue' && (
+                          <span className="px-2.5 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/30 inline-flex items-center gap-1 animate-pulse">
+                            <AlertTriangle className="w-3 h-3 text-rose-500" />
+                            Vencido
+                          </span>
+                        )}
+                        {effStatus === 'paid' && (
+                          <span className="px-2.5 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 inline-flex items-center gap-1">
+                            <CheckCircle2 className="w-3 h-3" />
+                            Pagado
+                          </span>
+                        )}
+                        {effStatus === 'cancelled' && (
+                          <span className="px-2.5 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-slate-500/10 text-slate-500 dark:text-slate-400 border border-slate-500/30 inline-flex items-center gap-1">
+                            <Ban className="w-3 h-3" />
+                            Cancelado
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 text-center">
+                        {effStatus === 'pending' || effStatus === 'overdue' ? (
+                          <div className="flex items-center justify-center gap-2">
+                            <button
+                              onClick={() => {
+                                setSelectedCredit(credit);
+                                setPaymentAmount(remaining.toString());
+                              }}
+                              className="px-3 py-1.5 bg-amber-600 hover:bg-amber-500 text-white rounded-xl text-xs font-bold shadow-xs transition inline-flex items-center gap-1 cursor-pointer"
+                              title="Registrar Abono"
+                            >
+                              <DollarSign className="w-3.5 h-3.5" />
+                              Abonar
+                            </button>
+                            <button
+                              onClick={() => setCreditToCancel(credit)}
+                              className="px-2.5 py-1.5 bg-slate-100 hover:bg-rose-500/10 text-slate-500 hover:text-rose-600 dark:bg-slate-800 dark:hover:bg-rose-500/20 dark:text-slate-400 dark:hover:text-rose-400 border border-slate-200 dark:border-slate-700 hover:border-rose-500/30 rounded-xl text-xs font-bold transition inline-flex items-center gap-1 cursor-pointer"
+                              title="Anular o Cancelar Crédito"
+                            >
+                              <Ban className="w-3.5 h-3.5" />
+                              Anular
+                            </button>
+                          </div>
+                        ) : effStatus === 'paid' ? (
                           <span className="text-xs text-emerald-500 dark:text-emerald-400 font-bold inline-flex items-center gap-1">
                             <CheckCircle2 className="w-3.5 h-3.5" />
-                            Pagado
+                            Saldado
+                          </span>
+                        ) : (
+                          <span className="text-xs text-slate-400 font-medium inline-flex items-center gap-1">
+                            <Ban className="w-3.5 h-3.5" />
+                            Anulado
                           </span>
                         )}
                       </td>
@@ -427,6 +629,57 @@ export const CreditsPage: React.FC = () => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: Anular / Cancelar Crédito */}
+      {creditToCancel && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-150">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl w-full max-w-md p-6 shadow-2xl space-y-5">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-2xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center text-rose-500">
+                <Ban className="w-6 h-6" />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-slate-900 dark:text-white">Anular / Cancelar Cuenta de Crédito</h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400">Esta acción marcará el crédito como cancelado</p>
+              </div>
+            </div>
+
+            <div className="bg-rose-500/10 border border-rose-500/20 rounded-2xl p-4 text-xs text-rose-600 dark:text-rose-400 space-y-1">
+              <div className="font-bold flex items-center gap-1.5">
+                <AlertCircle className="w-4 h-4 shrink-0" />
+                Confirmación de Cancelación
+              </div>
+              <p>
+                Cliente: <span className="font-bold text-slate-900 dark:text-white">{creditToCancel.customer_name}</span>
+              </p>
+              <p>
+                Factura / Ticket: <span className="font-mono font-bold text-slate-900 dark:text-white">{creditToCancel.ticket_number || creditToCancel.id}</span>
+              </p>
+              <p>
+                Saldo a anular: <span className="font-mono font-bold text-rose-600 dark:text-rose-400">C$ {(creditToCancel.remaining_debt ?? creditToCancel.total_debt ?? 0).toFixed(2)}</span>
+              </p>
+            </div>
+
+            <div className="flex gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setCreditToCancel(null)}
+                className="flex-1 px-4 py-2.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl text-sm font-bold transition cursor-pointer"
+              >
+                Volver
+              </button>
+              <button
+                type="button"
+                onClick={handleCancelCredit}
+                className="flex-1 px-4 py-2.5 bg-rose-600 hover:bg-rose-500 text-white rounded-xl text-sm font-bold shadow-lg shadow-rose-600/30 transition cursor-pointer flex items-center justify-center gap-2"
+              >
+                <Ban className="w-4 h-4" />
+                Confirmar Anulación
+              </button>
+            </div>
           </div>
         </div>
       )}

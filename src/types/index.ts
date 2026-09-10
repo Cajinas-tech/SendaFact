@@ -116,7 +116,7 @@ export interface CreditAccount {
   ticket_number: string;
   total_debt: number;
   remaining_debt: number;
-  status: 'pending' | 'paid' | 'overdue';
+  status: 'pending' | 'paid' | 'overdue' | 'cancelled';
   due_date: string;
   created_at: string;
   payments?: CreditPayment[];

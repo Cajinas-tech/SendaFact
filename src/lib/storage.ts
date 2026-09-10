@@ -222,6 +222,47 @@ const DEFAULT_CREDITS: CreditAccount[] = [
     payments: [
       { id: 1, credit_id: 1, amount_cordobas: 2050.00, payment_method: 'Efectivo', receipt_number: 'REC-001', created_at: '2026-09-05' }
     ]
+  },
+  {
+    id: 2,
+    customer_id: 2,
+    customer_name: 'María González',
+    customer_phone: '88776655',
+    ticket_number: 'NOVA-V-0940',
+    total_debt: 4200.00,
+    remaining_debt: 4200.00,
+    status: 'overdue',
+    due_date: '2026-08-15',
+    created_at: '2026-08-01',
+    payments: []
+  },
+  {
+    id: 3,
+    customer_id: 3,
+    customer_name: 'Carlos Mendoza',
+    customer_phone: '89991122',
+    ticket_number: 'NOVA-V-0890',
+    total_debt: 2800.00,
+    remaining_debt: 0.00,
+    status: 'paid',
+    due_date: '2026-08-20',
+    created_at: '2026-08-10',
+    payments: [
+      { id: 2, credit_id: 3, amount_cordobas: 2800.00, payment_method: 'Transferencia', receipt_number: 'REC-002', created_at: '2026-08-18' }
+    ]
+  },
+  {
+    id: 4,
+    customer_id: 4,
+    customer_name: 'Distribuidora Central S.A.',
+    customer_phone: '22774411',
+    ticket_number: 'NOVA-V-0750',
+    total_debt: 6500.00,
+    remaining_debt: 6500.00,
+    status: 'cancelled',
+    due_date: '2026-07-30',
+    created_at: '2026-07-15',
+    payments: []
   }
 ];
 
