@@ -358,10 +358,43 @@ export default function POSPage() {
   return (
     <div className="space-y-4 sm:space-y-6 animate-fade-in pb-20 lg:pb-0">
       
-      <div className="grid grid-cols-12 gap-4 sm:gap-6 items-start">
+      {/* Mobile & Tablet Tab Toggle (only visible on < lg screens) */}
+      <div className="lg:hidden flex p-1.5 rounded-2xl bg-slate-200/80 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 mb-4">
+        <button
+          type="button"
+          onClick={() => setMobileTab('catalog')}
+          className={`flex-1 py-3 rounded-xl text-xs font-black uppercase tracking-wider transition flex items-center justify-center gap-2 cursor-pointer ${
+            mobileTab === 'catalog'
+              ? 'bg-blue-600 text-white shadow-md shadow-blue-500/25'
+              : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+          }`}
+        >
+          <Search className="w-4 h-4" />
+          <span>Catálogo ({filteredProducts.length})</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => setMobileTab('cart')}
+          className={`flex-1 py-3 rounded-xl text-xs font-black uppercase tracking-wider transition flex items-center justify-center gap-2 cursor-pointer ${
+            mobileTab === 'cart'
+              ? 'bg-blue-600 text-white shadow-md shadow-blue-500/25'
+              : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+          }`}
+        >
+          <ShoppingBag className="w-4 h-4" />
+          <span>Orden ({cart.reduce((acc, i) => acc + i.quantity, 0)})</span>
+          {cart.length > 0 && (
+            <span className="font-mono text-[11px] font-black bg-emerald-500 text-white px-2 py-0.5 rounded-full ml-1">
+              C${totalCordobas.toFixed(0)}
+            </span>
+          )}
+        </button>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6 items-start">
         
         {/* PANEL IZQUIERDO: CATÁLOGO Y BUSCADOR */}
-        <div className="col-span-7 xl:col-span-8 space-y-4">
+        <div className={`lg:col-span-7 xl:col-span-8 space-y-4 ${mobileTab === 'cart' ? 'hidden lg:block' : 'block'}`}>
           
           {/* Buscador & Filtro de Categorías */}
           <div className="glass-card rounded-2xl p-3.5 sm:p-4 border border-slate-200/80 dark:border-slate-800 flex flex-col sm:flex-row gap-3">
@@ -431,7 +464,7 @@ export default function POSPage() {
         </div>
 
         {/* PANEL DERECHO: CARRITO Y COBRO */}
-        <div className="col-span-5 xl:col-span-4">
+        <div className={`lg:col-span-5 xl:col-span-4 ${mobileTab === 'catalog' ? 'hidden lg:block' : 'block'}`}>
           <div className="glass-card rounded-3xl p-5 sm:p-6 border border-slate-200/90 dark:border-slate-800 shadow-xl space-y-5">
             
             {/* Cabecera del Carrito */}

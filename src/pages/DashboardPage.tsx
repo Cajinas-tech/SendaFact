@@ -79,66 +79,66 @@ export default function DashboardPage() {
       </div>
 
       {/* 2. 4 TOP KPI CARDS (WITH HOVER MICRO-INTERACTIONS) */}
-      <div className="grid grid-cols-4 gap-5">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-5">
         
         {/* Card 1: Ventas del Día */}
-        <div className="glass-card rounded-2xl p-5 flex items-center justify-between border border-slate-200/80 dark:border-slate-800 hover:border-blue-500/40 hover:shadow-md transition-all group">
-          <div className="space-y-1">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 group-hover:text-blue-500 transition-colors">
+        <div className="glass-card rounded-2xl p-4 sm:p-5 flex items-center justify-between border border-slate-200/80 dark:border-slate-800 hover:border-blue-500/40 hover:shadow-md transition-all group">
+          <div className="space-y-1 min-w-0">
+            <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 group-hover:text-blue-500 transition-colors truncate block">
               VENTAS DEL DÍA
             </span>
-            <h3 className="text-2xl font-black text-slate-800 dark:text-white font-mono">
+            <h3 className="text-lg sm:text-2xl font-black text-slate-800 dark:text-white font-mono truncate">
               C${todaySalesCordobas.toFixed(2)}
             </h3>
           </div>
-          <div className="w-12 h-12 rounded-2xl bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center shadow-xs group-hover:scale-110 transition-transform">
-            <TrendingUp className="w-6 h-6" />
+          <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center shadow-xs group-hover:scale-110 transition-transform shrink-0 ml-2">
+            <TrendingUp className="w-5 h-5 sm:w-6 sm:h-6" />
           </div>
         </div>
 
         {/* Card 2: Total Productos */}
-        <div className="glass-card rounded-2xl p-5 flex items-center justify-between border border-slate-200/80 dark:border-slate-800 hover:border-emerald-500/40 hover:shadow-md transition-all group">
-          <div className="space-y-1">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 group-hover:text-emerald-500 transition-colors">
+        <div className="glass-card rounded-2xl p-4 sm:p-5 flex items-center justify-between border border-slate-200/80 dark:border-slate-800 hover:border-emerald-500/40 hover:shadow-md transition-all group">
+          <div className="space-y-1 min-w-0">
+            <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 group-hover:text-emerald-500 transition-colors truncate block">
               TOTAL PRODUCTOS
             </span>
-            <h3 className="text-2xl font-black text-slate-800 dark:text-white font-mono">
+            <h3 className="text-lg sm:text-2xl font-black text-slate-800 dark:text-white font-mono truncate">
               {totalProducts}
             </h3>
           </div>
-          <div className="w-12 h-12 rounded-2xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shadow-xs group-hover:scale-110 transition-transform">
-            <Package className="w-6 h-6" />
+          <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shadow-xs group-hover:scale-110 transition-transform shrink-0 ml-2">
+            <Package className="w-5 h-5 sm:w-6 sm:h-6" />
           </div>
         </div>
 
         {/* Card 3: Próximos a Vencer */}
-        <div className="glass-card rounded-2xl p-5 flex items-center justify-between border border-slate-200/80 dark:border-slate-800 hover:border-rose-500/40 hover:shadow-md transition-all group">
-          <div className="space-y-1">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 group-hover:text-rose-500 transition-colors">
+        <div className="glass-card rounded-2xl p-4 sm:p-5 flex items-center justify-between border border-slate-200/80 dark:border-slate-800 hover:border-rose-500/40 hover:shadow-md transition-all group">
+          <div className="space-y-1 min-w-0">
+            <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 group-hover:text-rose-500 transition-colors truncate block">
               PRÓXIMOS A VENCER
             </span>
-            <div className="flex items-baseline gap-2">
-              <h3 className="text-2xl font-black text-slate-800 dark:text-white font-mono">{expiringProducts.length}</h3>
-              <span className="text-xs font-semibold text-slate-400">productos</span>
+            <div className="flex items-baseline gap-1.5 truncate">
+              <h3 className="text-lg sm:text-2xl font-black text-slate-800 dark:text-white font-mono">{expiringProducts.length}</h3>
+              <span className="text-[10px] sm:text-xs font-semibold text-slate-400">items</span>
             </div>
           </div>
-          <div className="w-12 h-12 rounded-2xl bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 flex items-center justify-center shadow-xs group-hover:scale-110 transition-transform">
-            <AlertCircle className="w-6 h-6" />
+          <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 flex items-center justify-center shadow-xs group-hover:scale-110 transition-transform shrink-0 ml-2">
+            <AlertCircle className="w-5 h-5 sm:w-6 sm:h-6" />
           </div>
         </div>
 
         {/* Card 4: Estado de Caja */}
-        <div className="glass-card rounded-2xl p-5 flex items-center justify-between border border-slate-200/80 dark:border-slate-800 hover:border-purple-500/40 hover:shadow-md transition-all group">
-          <div className="space-y-1">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 group-hover:text-purple-500 transition-colors">
+        <div className="glass-card rounded-2xl p-4 sm:p-5 flex items-center justify-between border border-slate-200/80 dark:border-slate-800 hover:border-purple-500/40 hover:shadow-md transition-all group">
+          <div className="space-y-1 min-w-0">
+            <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 group-hover:text-purple-500 transition-colors truncate block">
               ESTADO DE CAJA
             </span>
-            <h3 className={`text-2xl font-black flex items-center gap-1.5 ${
+            <h3 className={`text-base sm:text-2xl font-black flex items-center gap-1.5 truncate ${
               activeRegister 
                 ? 'text-emerald-600 dark:text-emerald-400' 
                 : 'text-rose-600 dark:text-rose-400'
             }`}>
-              <span className={`w-2 h-2 rounded-full inline-block ${
+              <span className={`w-2 h-2 rounded-full inline-block shrink-0 ${
                 activeRegister 
                   ? 'bg-emerald-500 animate-ping' 
                   : 'bg-rose-500'
@@ -146,19 +146,19 @@ export default function DashboardPage() {
               {activeRegister ? 'Abierta' : 'Cerrada'}
             </h3>
           </div>
-          <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shadow-xs group-hover:scale-110 transition-transform ${
+          <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-2xl flex items-center justify-center shadow-xs group-hover:scale-110 transition-transform shrink-0 ml-2 ${
             activeRegister 
               ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400' 
               : 'bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400'
           }`}>
-            <Wallet className="w-6 h-6" />
+            <Wallet className="w-5 h-5 sm:w-6 sm:h-6" />
           </div>
         </div>
 
       </div>
 
       {/* 3. 3 CHARTS ROW (CIRCULAR & DOUGHNUT) */}
-      <div className="grid grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 sm:gap-6">
         
         {/* Chart 1: Resumen del Sistema */}
         <div className="glass-card rounded-2xl p-6 border border-slate-200/80 dark:border-slate-800 flex flex-col justify-between hover:shadow-md transition-shadow">
@@ -302,7 +302,7 @@ export default function DashboardPage() {
       </div>
 
       {/* 4. BOTTOM ROW: ALERTS */}
-      <div className="grid grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 sm:gap-6">
         
         {/* Left: Productos con Stock Bajo */}
         <div className="glass-card rounded-2xl p-6 border border-slate-200/80 dark:border-slate-800">

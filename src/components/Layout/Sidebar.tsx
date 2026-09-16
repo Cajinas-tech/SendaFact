@@ -88,7 +88,7 @@ export default function Sidebar({ collapsed, setCollapsed, mobileOpen, setMobile
       <aside
         className={`fixed inset-y-0 left-0 z-50 flex flex-col h-screen bg-white dark:bg-[#070b14] border-r border-slate-200 dark:border-slate-800/80 transition-all duration-300 shadow-xl lg:shadow-none ${
           collapsed ? 'w-20' : 'w-64'
-        } translate-x-0`}
+        } ${mobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}
       >
         {/* 1. LOGO & BRAND HEADER (Fixed, shrink-0) */}
         <div className={`relative border-b border-slate-100 dark:border-slate-800/80 shrink-0 ${collapsed ? 'p-3 flex justify-center' : 'p-4'}`}>
@@ -184,7 +184,7 @@ export default function Sidebar({ collapsed, setCollapsed, mobileOpen, setMobile
             <button
               type="button"
               onClick={() => setCollapsed(!collapsed)}
-              className={`w-full flex items-center ${collapsed ? 'justify-center p-2.5' : 'gap-3 px-3.5 py-2'} rounded-xl text-[11px] font-bold uppercase tracking-wider text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800/60 transition cursor-pointer`}
+              className={`w-full hidden lg:flex items-center ${collapsed ? 'justify-center p-2.5' : 'gap-3 px-3.5 py-2'} rounded-xl text-[11px] font-bold uppercase tracking-wider text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800/60 transition cursor-pointer`}
               title={collapsed ? 'Expandir barra' : 'Contraer barra'}
             >
               {collapsed ? (

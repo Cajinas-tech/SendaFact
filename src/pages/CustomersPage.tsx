@@ -121,7 +121,7 @@ export const CustomersPage: React.FC = () => {
       </div>
 
       {/* Customers Grid */}
-      <div className="grid grid-cols-3 gap-5">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
         {filteredCustomers.map((c) => (
           <div key={c.id} className="glass-card p-5 relative overflow-hidden group hover:border-blue-500/50 transition">
             <div className="flex items-start justify-between mb-3">

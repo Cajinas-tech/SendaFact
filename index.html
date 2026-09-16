@@ -3,34 +3,8 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/png" href="/images/logo/senda-logo.png" />
-    <meta name="viewport" id="viewport-meta" content="width=1280, initial-scale=0.3, minimum-scale=0.1, maximum-scale=5.0, user-scalable=yes" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#070b14" />
-    <script>
-      (function() {
-        function ensureDesktopView() {
-          var targetWidth = 1280;
-          var meta = document.getElementById('viewport-meta');
-          if (!meta) {
-            meta = document.createElement('meta');
-            meta.id = 'viewport-meta';
-            meta.name = 'viewport';
-            document.head.appendChild(meta);
-          }
-          var screenW = window.innerWidth || document.documentElement.clientWidth || window.screen.width;
-          if (screenW < targetWidth) {
-            var scale = (screenW / targetWidth).toFixed(4);
-            meta.setAttribute('content', 'width=' + targetWidth + ', initial-scale=' + scale + ', minimum-scale=0.1, maximum-scale=5.0, user-scalable=yes');
-          } else {
-            meta.setAttribute('content', 'width=1280, initial-scale=1.0, user-scalable=yes');
-          }
-        }
-        ensureDesktopView();
-        window.addEventListener('resize', ensureDesktopView);
-        window.addEventListener('orientationchange', function() {
-          setTimeout(ensureDesktopView, 150);
-        });
-      })();
-    </script>
     <title>SendaFact V3.0 | Sistema POS & Facturación</title>
     <script>
       try {
