@@ -52,14 +52,6 @@ export default function Header({ titleBadge = 'DASHBOARD / ESTADÍSTICAS', onOpe
       
       {/* LEFT: MOBILE MENU & TITLE */}
       <div className="flex items-center gap-3">
-        <button
-          type="button"
-          onClick={onOpenMobileMenu}
-          className="p-2 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 lg:hidden"
-        >
-          <Menu className="w-5 h-5" />
-        </button>
-
         <h2 className="text-xs sm:text-sm font-black uppercase tracking-wider text-slate-700 dark:text-slate-200">
           {titleBadge}
         </h2>
@@ -72,7 +64,7 @@ export default function Header({ titleBadge = 'DASHBOARD / ESTADÍSTICAS', onOpe
         <button
           type="button"
           onClick={() => info('Instalar SendaFact POS', 'Para instalar SendaFact POS como App de escritorio, haz clic en el ícono de instalar (+) en la barra de direcciones de tu navegador Chrome o Edge.')}
-          className="hidden md:flex items-center gap-1.5 px-3.5 py-1.5 rounded-full border border-blue-200 dark:border-blue-900 bg-blue-50/60 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/60 text-xs font-bold uppercase tracking-wider transition cursor-pointer"
+          className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full border border-blue-200 dark:border-blue-900 bg-blue-50/60 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/60 text-xs font-bold uppercase tracking-wider transition cursor-pointer"
         >
           <CloudDownload className="w-3.5 h-3.5" />
           <span>INSTALAR APP</span>
@@ -89,7 +81,7 @@ export default function Header({ titleBadge = 'DASHBOARD / ESTADÍSTICAS', onOpe
         </button>
 
         {/* Caja Lista Badge */}
-        <div className={`hidden sm:flex items-center gap-1.5 px-3 py-1 rounded-full border text-xs font-bold uppercase tracking-wider ${
+        <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full border text-xs font-bold uppercase tracking-wider ${
           activeRegister
             ? 'bg-emerald-50 dark:bg-emerald-950/50 border-emerald-200 dark:border-emerald-800 text-emerald-600 dark:text-emerald-400'
             : 'bg-rose-50 dark:bg-rose-950/50 border-rose-200 dark:border-rose-800 text-rose-600 dark:text-rose-400'
@@ -103,7 +95,7 @@ export default function Header({ titleBadge = 'DASHBOARD / ESTADÍSTICAS', onOpe
           <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300 font-bold text-xs flex items-center justify-center">
             {getInitials(currentUser?.name || 'Jairo Cajina')}
           </div>
-          <div className="hidden sm:block text-left leading-tight">
+          <div className="block text-left leading-tight">
             <p className="text-xs font-black text-slate-800 dark:text-white capitalize">
               {(currentUser?.name || 'Administrador').split(' ')[0]}
             </p>

@@ -79,7 +79,7 @@ export default function DashboardPage() {
       </div>
 
       {/* 2. 4 TOP KPI CARDS (WITH HOVER MICRO-INTERACTIONS) */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+      <div className="grid grid-cols-4 gap-5">
         
         {/* Card 1: Ventas del Día */}
         <div className="glass-card rounded-2xl p-5 flex items-center justify-between border border-slate-200/80 dark:border-slate-800 hover:border-blue-500/40 hover:shadow-md transition-all group">
@@ -158,7 +158,7 @@ export default function DashboardPage() {
       </div>
 
       {/* 3. 3 CHARTS ROW (CIRCULAR & DOUGHNUT) */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-3 gap-6">
         
         {/* Chart 1: Resumen del Sistema */}
         <div className="glass-card rounded-2xl p-6 border border-slate-200/80 dark:border-slate-800 flex flex-col justify-between hover:shadow-md transition-shadow">
@@ -302,7 +302,7 @@ export default function DashboardPage() {
       </div>
 
       {/* 4. BOTTOM ROW: ALERTS */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-2 gap-6">
         
         {/* Left: Productos con Stock Bajo */}
         <div className="glass-card rounded-2xl p-6 border border-slate-200/80 dark:border-slate-800">

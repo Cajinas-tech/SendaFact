@@ -226,7 +226,7 @@ export const CreditsPage: React.FC = () => {
       </div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-4 gap-4">
         {/* Total Pendiente */}
         <div className="glass-card p-5 relative overflow-hidden">
           <div className="flex items-center justify-between text-slate-500 dark:text-slate-400 mb-2">

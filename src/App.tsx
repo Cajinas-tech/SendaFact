@@ -60,7 +60,7 @@ export default function App() {
         />
 
         {/* Main Content Area */}
-        <div className={`flex-1 flex flex-col transition-all duration-300 ${collapsed ? 'lg:pl-20' : 'lg:pl-64'}`}>
+        <div className={`flex-1 flex flex-col transition-all duration-300 ${collapsed ? 'pl-20' : 'pl-64'}`}>
           <Header 
             titleBadge={getPageTitle(location.pathname)}
             onOpenMobileMenu={() => setMobileOpen(true)}

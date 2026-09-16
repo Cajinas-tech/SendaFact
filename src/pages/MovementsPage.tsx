@@ -138,7 +138,7 @@ export const MovementsPage: React.FC = () => {
       </div>
 
       {/* Summary KPI Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+      <div className="grid grid-cols-3 gap-5">
         <div className="glass-card p-5 relative overflow-hidden">
           <div className="flex items-center justify-between text-slate-500 dark:text-slate-400 mb-2">
             <span className="text-xs font-bold uppercase tracking-wider">Unidades Ingresadas</span>
