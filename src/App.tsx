@@ -51,7 +51,7 @@ export default function App() {
 
   return (
     <ToastProvider>
-      <div className="min-h-screen bg-slate-50 dark:bg-[#060911] text-slate-800 dark:text-slate-100 flex flex-col font-sans transition-colors duration-200">
+      <div className="min-h-screen bg-slate-50 dark:bg-[#060911] text-slate-800 dark:text-slate-100 flex flex-col font-sans transition-colors duration-200 min-w-[1280px]">
         <Sidebar
           collapsed={collapsed}
           setCollapsed={setCollapsed}
