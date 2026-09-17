@@ -209,6 +209,16 @@
 
                 <!-- Right Header Controls -->
                 <div class="flex items-center gap-3">
+                    <!-- Botón Alertas -->
+                    <button type="button" 
+                            class="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#161426] dark:bg-[#121020] hover:bg-[#231e3d] border border-[#3e345c] text-white text-xs font-bold transition shadow-sm cursor-pointer">
+                        <i data-lucide="bell" class="w-3.5 h-3.5 text-pink-400"></i>
+                        <span class="text-[11px] font-bold text-pink-100">Alertas</span>
+                        <span class="bg-[#e11d48] text-white text-[10px] font-black px-1.5 py-0.5 rounded-full min-w-[18px] h-[18px] flex items-center justify-center leading-none">
+                            3
+                        </span>
+                    </button>
+
                     <!-- Modo Claro / Modo Oscuro Toggle -->
                     <button @click="darkMode = !darkMode; localStorage.setItem('theme', darkMode ? 'dark' : 'light')" 
                             class="flex items-center gap-2 px-3 py-1.5 rounded-full border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition">

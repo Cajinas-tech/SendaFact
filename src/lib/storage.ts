@@ -44,7 +44,6 @@ const DEFAULT_PRODUCTS: Product[] = [
     is_finished_good: true,
     unit: 'UNIDAD',
     status: 'active',
-    expiry_date: '2026-09-05',
     created_at: '2026-09-01T10:00:00Z',
     updated_at: '2026-09-05T12:00:00Z'
   },
@@ -67,7 +66,6 @@ const DEFAULT_PRODUCTS: Product[] = [
     is_finished_good: true,
     unit: 'UNIDAD',
     status: 'active',
-    expiry_date: '2026-09-05',
     created_at: '2026-09-01T10:00:00Z',
     updated_at: '2026-09-05T12:00:00Z'
   },
@@ -89,7 +87,7 @@ const DEFAULT_PRODUCTS: Product[] = [
     is_finished_good: true,
     unit: 'UN LITRO',
     status: 'active',
-    expiry_date: '2026-10-15',
+    expiry_date: '2026-11-15',
     created_at: '2026-09-01T10:00:00Z',
     updated_at: '2026-09-05T12:00:00Z'
   },
@@ -111,7 +109,7 @@ const DEFAULT_PRODUCTS: Product[] = [
     is_finished_good: true,
     unit: 'UN LITRO',
     status: 'active',
-    expiry_date: '2026-10-20',
+    expiry_date: '2026-11-20',
     created_at: '2026-09-01T10:00:00Z',
     updated_at: '2026-09-05T12:00:00Z'
   },
@@ -133,6 +131,72 @@ const DEFAULT_PRODUCTS: Product[] = [
     is_finished_good: true,
     status: 'active',
     expiry_date: '2028-12-31',
+    created_at: '2026-09-01T10:00:00Z',
+    updated_at: '2026-09-05T12:00:00Z'
+  },
+  {
+    id: 6,
+    category_id: 4,
+    sku: 'SKU-3291',
+    barcode: '74010003291',
+    name: 'BIG COLA 500ML',
+    subtitle: 'General • Gaseosas • BIG COLA 500ML',
+    description: 'Bebida gaseosa Big Cola 500ml',
+    dimensions: '500ml',
+    cost_price: 15.00,
+    price_cordobas: 25.00,
+    price_usd: 0.68,
+    stock: 10,
+    min_stock: 5,
+    image_url: null,
+    is_finished_good: true,
+    unit: 'UNIDAD',
+    status: 'active',
+    expiry_date: '2026-10-11',
+    created_at: '2026-09-01T10:00:00Z',
+    updated_at: '2026-09-05T12:00:00Z'
+  },
+  {
+    id: 7,
+    category_id: 4,
+    sku: 'SKU-8589',
+    barcode: '74010008589',
+    name: 'COCA COLA 500ML',
+    subtitle: 'General • Gaseosas • COCA COLA 500ML',
+    description: 'Bebida gaseosa Coca Cola 500ml',
+    dimensions: '500ml',
+    cost_price: 18.00,
+    price_cordobas: 30.00,
+    price_usd: 0.82,
+    stock: 10,
+    min_stock: 5,
+    image_url: null,
+    is_finished_good: true,
+    unit: 'UNIDAD',
+    status: 'active',
+    expiry_date: '2026-10-11',
+    created_at: '2026-09-01T10:00:00Z',
+    updated_at: '2026-09-05T12:00:00Z'
+  },
+  {
+    id: 8,
+    category_id: 4,
+    sku: 'SKU-3914',
+    barcode: '74010003914',
+    name: 'AGUA FUENTE PURA 600ML',
+    subtitle: 'General • Aguas • AGUA FUENTE PURA 600ML',
+    description: 'Agua purificada Fuente Pura 600ml',
+    dimensions: '600ml',
+    cost_price: 10.00,
+    price_cordobas: 18.00,
+    price_usd: 0.49,
+    stock: 10,
+    min_stock: 5,
+    image_url: null,
+    is_finished_good: true,
+    unit: 'UNIDAD',
+    status: 'active',
+    expiry_date: '2026-10-11',
     created_at: '2026-09-01T10:00:00Z',
     updated_at: '2026-09-05T12:00:00Z'
   }
@@ -284,7 +348,23 @@ export const storage = {
       this.setProducts(DEFAULT_PRODUCTS);
       return DEFAULT_PRODUCTS;
     }
-    try { return JSON.parse(raw) || DEFAULT_PRODUCTS; } catch (e) { return DEFAULT_PRODUCTS; }
+    try {
+      const prods: Product[] = JSON.parse(raw) || DEFAULT_PRODUCTS;
+      let changed = false;
+      const existingSkus = new Set(prods.map(p => p.sku));
+      for (const dp of DEFAULT_PRODUCTS) {
+        if (!existingSkus.has(dp.sku)) {
+          prods.push(dp);
+          changed = true;
+        }
+      }
+      if (changed) {
+        this.setProducts(prods);
+      }
+      return prods;
+    } catch (e) {
+      return DEFAULT_PRODUCTS;
+    }
   },
   setProducts(products: Product[]) {
     localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify(products));

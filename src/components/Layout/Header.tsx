@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Menu, Moon, Sun } from 'lucide-react';
+import { Menu, Moon, Sun, Bell } from 'lucide-react';
 import { storage } from '../../lib/storage';
 import { User } from '../../types';
+import { VencimientoCriticoModal } from '../Alertas/VencimientoCriticoModal';
 
 interface HeaderProps {
   titleBadge?: string;
@@ -13,6 +14,8 @@ export default function Header({ titleBadge = 'DASHBOARD / ESTADÍSTICAS', onOpe
     return document.documentElement.classList.contains('dark');
   });
   const [currentUser, setCurrentUser] = useState<User>(() => storage.getCurrentUser());
+  const [modalAlertasAbierto, setModalAlertasAbierto] = useState(false);
+  const [alertasCount, setAlertasCount] = useState(0);
   const activeRegister = storage.getActiveCashRegister();
 
   const toggleDarkMode = () => {
@@ -38,6 +41,29 @@ export default function Header({ titleBadge = 'DASHBOARD / ESTADÍSTICAS', onOpe
     }
   }, []);
 
+  useEffect(() => {
+    try {
+      const prods = storage.getProducts();
+      const hoy = new Date();
+      hoy.setHours(0, 0, 0, 0);
+
+      let count = 0;
+      prods.forEach(p => {
+        const minStock = p.min_stock !== undefined ? p.min_stock : 5;
+        if (p.stock <= minStock) count++;
+        if (p.expiry_date) {
+          const vto = new Date(p.expiry_date);
+          vto.setHours(0, 0, 0, 0);
+          const dias = Math.ceil((vto.getTime() - hoy.getTime()) / (1000 * 60 * 60 * 24));
+          if (dias <= 30) count++;
+        }
+      });
+      setAlertasCount(count);
+    } catch (e) {
+      setAlertasCount(0);
+    }
+  }, [modalAlertasAbierto]);
+
   const getInitials = (name: string) => {
     if (!name) return 'JA';
     const parts = name.split(' ');
@@ -46,6 +72,7 @@ export default function Header({ titleBadge = 'DASHBOARD / ESTADÍSTICAS', onOpe
   };
 
   return (
+    <>
     <header className="sticky top-0 z-30 flex items-center justify-between px-4 sm:px-8 py-3 bg-white/90 dark:bg-[#070b14]/90 backdrop-blur-md border-b border-slate-200/80 dark:border-slate-800 transition-colors">
       
       {/* LEFT: MOBILE MENU & TITLE */}
@@ -67,6 +94,26 @@ export default function Header({ titleBadge = 'DASHBOARD / ESTADÍSTICAS', onOpe
       {/* RIGHT: BUTTONS & USER PILL */}
       <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
         
+        {/* Botón de Alertas */}
+        <button
+          type="button"
+          onClick={() => setModalAlertasAbierto(true)}
+          className="flex items-center space-x-1 sm:space-x-1.5 px-2.5 sm:px-3 py-1.5 rounded-full bg-[#161426] dark:bg-[#121020] hover:bg-[#231e3d] dark:hover:bg-[#201a38] border border-[#3e345c] dark:border-[#4a3e6f] text-white text-xs font-bold transition-all shadow-sm cursor-pointer group active:scale-95"
+          title="Ver alertas de stock bajo y lotes próximos a vencer"
+        >
+          <Bell className="w-3.5 h-3.5 text-pink-400 group-hover:rotate-12 transition-transform duration-200" />
+          <span className="text-[11px] sm:text-xs font-bold text-pink-100/95 tracking-wide hidden xs:inline sm:inline">Alertas</span>
+          {alertasCount > 0 ? (
+            <span className="bg-[#e11d48] text-white text-[10px] sm:text-[11px] font-black px-1.5 py-0.5 rounded-full min-w-[18px] sm:min-w-[20px] h-[18px] sm:h-[20px] flex items-center justify-center leading-none shadow-sm animate-pulse">
+              {alertasCount}
+            </span>
+          ) : (
+            <span className="bg-slate-700 text-slate-300 text-[9px] sm:text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[16px] sm:min-w-[18px] h-[16px] sm:h-[18px] flex items-center justify-center leading-none">
+              0
+            </span>
+          )}
+        </button>
+
         {/* Modo Claro / Oscuro Button */}
         <button
           type="button"
@@ -106,5 +153,11 @@ export default function Header({ titleBadge = 'DASHBOARD / ESTADÍSTICAS', onOpe
       </div>
 
     </header>
+
+    <VencimientoCriticoModal
+      isOpen={modalAlertasAbierto}
+      onClose={() => setModalAlertasAbierto(false)}
+    />
+  </>
   );
 }

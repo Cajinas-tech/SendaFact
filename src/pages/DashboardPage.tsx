@@ -2,10 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { 
   TrendingUp, Package, AlertCircle, Wallet, 
   CheckCircle, PieChart, CalendarClock, AlertTriangle, Calendar,
-  Sparkles, ShieldCheck, ArrowUpRight
+  Sparkles, ShieldCheck, ArrowUpRight, Bell
 } from 'lucide-react';
 import { storage } from '../lib/storage';
 import { Product, Category, Sale, CashRegister, User } from '../types';
+import { VencimientoCriticoModal } from '../components/Alertas/VencimientoCriticoModal';
 
 export default function DashboardPage() {
   const [sales, setSales] = useState<Sale[]>([]);
@@ -13,6 +14,7 @@ export default function DashboardPage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [activeRegister, setActiveRegister] = useState<CashRegister | null>(null);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [modalAlertasAbierto, setModalAlertasAbierto] = useState(false);
 
   useEffect(() => {
     try {
@@ -352,15 +354,24 @@ export default function DashboardPage() {
                 PRODUCTOS PRÓXIMOS A VENCER (30-45 DÍAS)
               </h4>
             </div>
-            <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
-              {expiringProducts.length} próximos
-            </span>
+            <button
+              type="button"
+              onClick={() => setModalAlertasAbierto(true)}
+              className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-[#161426] hover:bg-[#231e3d] text-white transition cursor-pointer shadow-xs active:scale-95"
+            >
+              <Bell className="w-3.5 h-3.5 text-pink-400" />
+              <span>Ver Alertas ({expiringProducts.length})</span>
+            </button>
           </div>
 
           {expiringProducts.length > 0 ? (
             <div className="space-y-3">
               {expiringProducts.map((prod) => (
-                <div key={prod.id} className="flex items-center justify-between p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/60 dark:border-slate-700/60 hover:scale-[1.01] transition-transform">
+                <div
+                  key={prod.id}
+                  onClick={() => setModalAlertasAbierto(true)}
+                  className="flex items-center justify-between p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/60 dark:border-slate-700/60 hover:scale-[1.01] transition-transform cursor-pointer"
+                >
                   <div>
                     <h5 className="text-sm font-bold text-slate-800 dark:text-white">{prod.name}</h5>
                     <p className="text-xs text-slate-400 mt-0.5">Vence: {prod.expiry_date} • Stock: {prod.stock} unid.</p>
@@ -380,6 +391,11 @@ export default function DashboardPage() {
         </div>
 
       </div>
+
+      <VencimientoCriticoModal
+        isOpen={modalAlertasAbierto}
+        onClose={() => setModalAlertasAbierto(false)}
+      />
 
     </div>
   );
