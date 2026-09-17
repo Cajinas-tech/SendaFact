@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Menu, Moon, Sun, CloudDownload } from 'lucide-react';
+import { Menu, Moon, Sun } from 'lucide-react';
 import { storage } from '../../lib/storage';
 import { User } from '../../types';
-import { useToast } from '../UI/Toast';
 
 interface HeaderProps {
   titleBadge?: string;
@@ -10,7 +9,6 @@ interface HeaderProps {
 }
 
 export default function Header({ titleBadge = 'DASHBOARD / ESTADÍSTICAS', onOpenMobileMenu }: HeaderProps) {
-  const { info } = useToast();
   const [darkMode, setDarkMode] = useState(() => {
     return document.documentElement.classList.contains('dark');
   });
@@ -69,16 +67,6 @@ export default function Header({ titleBadge = 'DASHBOARD / ESTADÍSTICAS', onOpe
       {/* RIGHT: BUTTONS & USER PILL */}
       <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
         
-        {/* Instalar App Pill Button */}
-        <button
-          type="button"
-          onClick={() => info('Instalar SendaFact POS', 'Para instalar SendaFact POS como App de escritorio, haz clic en el ícono de instalar (+) en la barra de direcciones de tu navegador Chrome o Edge.')}
-          className="hidden md:flex items-center gap-1.5 px-3.5 py-1.5 rounded-full border border-blue-200 dark:border-blue-900 bg-blue-50/60 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/60 text-xs font-bold uppercase tracking-wider transition cursor-pointer"
-        >
-          <CloudDownload className="w-3.5 h-3.5" />
-          <span>INSTALAR APP</span>
-        </button>
-
         {/* Modo Claro / Oscuro Button */}
         <button
           type="button"

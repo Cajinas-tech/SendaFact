@@ -209,13 +209,6 @@
 
                 <!-- Right Header Controls -->
                 <div class="flex items-center gap-3">
-                    <!-- Botón Instalar App (PWA) -->
-                    <button id="btnInstallPwa" style="display: none;" 
-                            class="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950/60 text-xs font-bold text-blue-600 dark:text-blue-400 hover:bg-blue-100 transition shadow-2xs">
-                        <i data-lucide="download-cloud" class="w-3.5 h-3.5"></i>
-                        <span>INSTALAR APP</span>
-                    </button>
-
                     <!-- Modo Claro / Modo Oscuro Toggle -->
                     <button @click="darkMode = !darkMode; localStorage.setItem('theme', darkMode ? 'dark' : 'light')" 
                             class="flex items-center gap-2 px-3 py-1.5 rounded-full border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition">
