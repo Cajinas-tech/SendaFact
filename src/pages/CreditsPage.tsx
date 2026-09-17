@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  CreditCard, Search, DollarSign, 
+  CreditCard, Search, 
   Clock, CheckCircle2, AlertTriangle, 
   Receipt, RefreshCw, UserCheck, Calendar, Phone,
   Ban, XCircle, AlertCircle, Trash2, History
@@ -502,7 +502,7 @@ export const CreditsPage: React.FC = () => {
                               className="px-3 py-1.5 bg-amber-600 hover:bg-amber-500 text-white rounded-xl text-xs font-bold shadow-xs transition inline-flex items-center gap-1 cursor-pointer"
                               title="Registrar Abono"
                             >
-                              <DollarSign className="w-3.5 h-3.5" />
+                              <span className="font-black text-xs leading-none">C$</span>
                               Abonar
                             </button>
                             <button
