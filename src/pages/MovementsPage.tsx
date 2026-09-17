@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { 
   ArrowLeftRight, ArrowUpRight, ArrowDownRight, 
   Search, Filter, Download, PlusCircle, 
-  Calendar, Layers
+  Calendar, Layers, X
 } from 'lucide-react';
 import { storage } from '../lib/storage';
 import { Movement, Product } from '../types';
@@ -16,11 +16,14 @@ export const MovementsPage: React.FC = () => {
   const [showModal, setShowModal] = useState(false);
   const { success, info } = useToast();
 
-  // New movement form
+  // Formulario de movimiento según el diseño objetivo
   const [selectedProductId, setSelectedProductId] = useState('');
-  const [movementType, setMovementType] = useState<'in' | 'out' | 'adjust'>('in');
-  const [quantity, setQuantity] = useState('1');
-  const [reason, setReason] = useState('');
+  const [tipoOperacion, setTipoOperacion] = useState<'ENTRADA' | 'MERMA' | 'AJUSTE'>('ENTRADA');
+  const [idLote, setIdLote] = useState('LOT-2026-170');
+  const [quantity, setQuantity] = useState('10');
+  const [fechaVencimiento, setFechaVencimiento] = useState('2027-03-17');
+  const [costoCompra, setCostoCompra] = useState('20');
+  const [reason, setReason] = useState('Inventario Inicial');
 
   const loadData = () => {
     setMovements(storage.getMovements());
@@ -31,34 +34,91 @@ export const MovementsPage: React.FC = () => {
     loadData();
   }, []);
 
+  const abrirModalOperacion = () => {
+    const prods = storage.getProducts();
+    const prodDef = prods[0];
+    const defDate = new Date();
+    defDate.setFullYear(defDate.getFullYear() + 1);
+    const dateStr = defDate.toISOString().split('T')[0];
+
+    setSelectedProductId(prodDef ? String(prodDef.id) : '');
+    setTipoOperacion('ENTRADA');
+    setIdLote(prodDef?.sku ? `LOT-${prodDef.sku.replace('#', '')}` : 'LOT-2026-170');
+    setQuantity('10');
+    setFechaVencimiento(prodDef?.expiry_date || dateStr);
+    setCostoCompra(prodDef?.cost_price ? String(prodDef.cost_price) : '20');
+    setReason('Inventario Inicial');
+    setShowModal(true);
+  };
+
+  const handleProductChange = (productId: string) => {
+    setSelectedProductId(productId);
+    const prod = products.find(p => String(p.id) === String(productId));
+    if (prod) {
+      if (prod.sku) {
+        setIdLote(`LOT-${prod.sku.replace('#', '')}`);
+      }
+      if (prod.cost_price) {
+        setCostoCompra(String(prod.cost_price));
+      }
+      if (prod.expiry_date) {
+        setFechaVencimiento(prod.expiry_date);
+      }
+    }
+  };
+
+  const handleCambiarTipo = (tipo: 'ENTRADA' | 'MERMA' | 'AJUSTE') => {
+    setTipoOperacion(tipo);
+    if (tipo === 'ENTRADA') {
+      setReason('Inventario Inicial');
+    } else if (tipo === 'MERMA') {
+      setReason('Baja por daño / rotura / vencido');
+    } else {
+      setReason('Ajuste de conteo físico');
+    }
+  };
+
   const handleCreateMovement = (e: React.FormEvent) => {
     e.preventDefault();
-    const prod = products.find(p => p.id === selectedProductId);
+    const prod = products.find(p => String(p.id) === String(selectedProductId));
     if (!prod) return;
 
     const qty = parseInt(quantity) || 1;
     let newStock = prod.stock;
 
-    if (movementType === 'in') {
+    if (tipoOperacion === 'ENTRADA') {
       newStock += qty;
-    } else if (movementType === 'out') {
+    } else if (tipoOperacion === 'MERMA') {
       newStock = Math.max(0, newStock - qty);
-    } else if (movementType === 'adjust') {
+    } else if (tipoOperacion === 'AJUSTE') {
       newStock = qty;
     }
 
-    storage.saveProduct({
+    const updatedProd: Product = {
       ...prod,
       stock: newStock
-    });
+    };
 
+    if (tipoOperacion === 'ENTRADA') {
+      if (fechaVencimiento) {
+        updatedProd.expiry_date = fechaVencimiento;
+      }
+      const costo = parseFloat(costoCompra);
+      if (!isNaN(costo) && costo > 0) {
+        updatedProd.cost_price = costo;
+      }
+    }
+
+    storage.saveProduct(updatedProd);
+
+    const movType = tipoOperacion === 'ENTRADA' ? 'in' : (tipoOperacion === 'MERMA' ? 'out' : 'adjust');
     const newMov: Movement = {
       id: 'MOV-' + Date.now().toString().slice(-6),
       product_id: prod.id,
       product_name: prod.name,
-      type: movementType,
+      type: movType,
       quantity: qty,
-      reason: reason || (movementType === 'in' ? 'Entrada por compra/reposición' : movementType === 'out' ? 'Baja/merma' : 'Ajuste físico de inventario'),
+      reason: reason || (tipoOperacion === 'ENTRADA' ? 'Inventario Inicial' : tipoOperacion === 'MERMA' ? 'Baja por daño / rotura / vencido' : 'Ajuste de conteo físico'),
       user: 'Jairo Cajina',
       created_at: new Date().toISOString()
     };
@@ -66,13 +126,10 @@ export const MovementsPage: React.FC = () => {
     storage.saveMovement(newMov);
 
     setShowModal(false);
-    setSelectedProductId('');
-    setQuantity('1');
-    setReason('');
     loadData();
     success(
       '¡Movimiento Registrado!',
-      `${movementType === 'in' ? 'Entrada de' : movementType === 'out' ? 'Salida de' : 'Ajuste a'} ${qty} unid. de ${prod.name}`
+      `${tipoOperacion === 'ENTRADA' ? 'Entrada de' : tipoOperacion === 'MERMA' ? 'Salida/Merma de' : 'Ajuste a'} ${qty} unid. de ${prod.name}`
     );
   };
 
@@ -128,8 +185,8 @@ export const MovementsPage: React.FC = () => {
             Exportar CSV
           </button>
           <button
-            onClick={() => setShowModal(true)}
-            className="px-5 py-2.5 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white rounded-xl text-sm font-bold shadow-lg shadow-blue-600/30 flex items-center gap-2 transition"
+            onClick={abrirModalOperacion}
+            className="px-5 py-2.5 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white rounded-xl text-sm font-bold shadow-lg shadow-blue-600/30 flex items-center gap-2 transition cursor-pointer"
           >
             <PlusCircle className="w-4 h-4" />
             Registrar Ajuste / Entrada
@@ -287,105 +344,195 @@ export const MovementsPage: React.FC = () => {
         </div>
       </div>
 
-      {/* MODAL: Registrar Entrada / Salida / Ajuste */}
+      {/* MODAL: REGISTRAR MOVIMIENTO DE INVENTARIO */}
       {showModal && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl w-full max-w-lg p-6 shadow-2xl space-y-5 animate-in fade-in zoom-in-95 duration-200">
-            <h3 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
-              <ArrowLeftRight className="w-5 h-5 text-cyan-500" />
-              Registrar Movimiento de Inventario
-            </h3>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 backdrop-blur-xs p-4 animate-in fade-in duration-200">
+          <div className="bg-white dark:bg-slate-900 rounded-[28px] border border-slate-200 dark:border-slate-800 shadow-2xl w-full max-w-lg overflow-hidden flex flex-col max-h-[92vh]">
+            {/* Encabezado */}
+            <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <div className="w-8 h-8 rounded-xl bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center font-bold">
+                  <PlusCircle className="w-4 h-4 stroke-[2.5]" />
+                </div>
+                <h3 className="text-sm sm:text-base font-black text-slate-900 dark:text-white uppercase tracking-tight">
+                  REGISTRAR MOVIMIENTO DE INVENTARIO
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowModal(false)}
+                className="w-7 h-7 rounded-full text-slate-400 hover:text-slate-600 dark:hover:text-white flex items-center justify-center transition-colors cursor-pointer"
+                title="Cerrar"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
 
-            <form onSubmit={handleCreateMovement} className="space-y-4">
+            <form onSubmit={handleCreateMovement} className="p-6 overflow-y-auto space-y-4 flex-1">
+              {/* TIPO DE MOVIMIENTO */}
               <div>
-                <label className="block text-xs font-bold uppercase text-slate-600 dark:text-slate-400 mb-1.5">Producto</label>
+                <label className="block text-[11px] font-black uppercase tracking-wider text-slate-800 dark:text-slate-200 mb-1.5">
+                  TIPO DE MOVIMIENTO
+                </label>
+                <div className="grid grid-cols-3 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => handleCambiarTipo('ENTRADA')}
+                    className={`py-2.5 px-2 rounded-xl text-xs font-bold border flex flex-col items-center justify-center transition-all cursor-pointer ${
+                      tipoOperacion === 'ENTRADA'
+                        ? 'bg-emerald-50 dark:bg-emerald-950/60 border-emerald-500 text-emerald-700 dark:text-emerald-300 shadow-xs'
+                        : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-50'
+                    }`}
+                  >
+                    <ArrowUpRight className="w-4 h-4 mb-1" />
+                    <span>ENTRADA</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handleCambiarTipo('MERMA')}
+                    className={`py-2.5 px-2 rounded-xl text-xs font-bold border flex flex-col items-center justify-center transition-all cursor-pointer ${
+                      tipoOperacion === 'MERMA'
+                        ? 'bg-rose-50 dark:bg-rose-950/60 border-rose-500 text-rose-700 dark:text-rose-300 shadow-xs'
+                        : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-50'
+                    }`}
+                  >
+                    <ArrowDownRight className="w-4 h-4 mb-1" />
+                    <span>MERMA / SALIDA</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handleCambiarTipo('AJUSTE')}
+                    className={`py-2.5 px-2 rounded-xl text-xs font-bold border flex flex-col items-center justify-center transition-all cursor-pointer ${
+                      tipoOperacion === 'AJUSTE'
+                        ? 'bg-amber-50 dark:bg-amber-950/60 border-amber-500 text-amber-700 dark:text-amber-300 shadow-xs'
+                        : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-50'
+                    }`}
+                  >
+                    <Layers className="w-4 h-4 mb-1" />
+                    <span>AJUSTE FÍSICO</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* PRODUCTO * */}
+              <div>
+                <label className="block text-[11px] font-black uppercase tracking-wider text-slate-800 dark:text-slate-200 mb-1.5">
+                  PRODUCTO *
+                </label>
                 <select
                   required
                   value={selectedProductId}
-                  onChange={(e) => setSelectedProductId(e.target.value)}
-                  className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-slate-900 dark:text-white text-sm focus:outline-none focus:border-cyan-500"
+                  onChange={(e) => handleProductChange(e.target.value)}
+                  className="w-full px-4 py-2.5 bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
                 >
                   <option value="">Selecciona un producto...</option>
                   {products.map(p => (
                     <option key={p.id} value={p.id}>
-                      {p.name} (Stock Actual: {p.stock} {p.unit})
+                      {p.name} ({p.dimensions || p.measurements_spec || p.name}) - Stock actual: {p.stock}
                     </option>
                   ))}
                 </select>
               </div>
 
-              <div>
-                <label className="block text-xs font-bold uppercase text-slate-600 dark:text-slate-400 mb-1.5">Tipo de Movimiento</label>
-                <div className="grid grid-cols-3 gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setMovementType('in')}
-                    className={`py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition ${
-                      movementType === 'in' ? 'bg-emerald-600 text-white shadow-xs' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-                    }`}
-                  >
-                    <ArrowUpRight className="w-3.5 h-3.5" /> Entrada
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setMovementType('out')}
-                    className={`py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition ${
-                      movementType === 'out' ? 'bg-rose-600 text-white shadow-xs' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-                    }`}
-                  >
-                    <ArrowDownRight className="w-3.5 h-3.5" /> Salida
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setMovementType('adjust')}
-                    className={`py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition ${
-                      movementType === 'adjust' ? 'bg-amber-600 text-white shadow-xs' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-                    }`}
-                  >
-                    <Layers className="w-3.5 h-3.5" /> Ajuste Físico
-                  </button>
+              {/* N° LOTE / CÓDIGO * y CANTIDAD * */}
+              <div className="grid grid-cols-2 gap-3.5">
+                <div>
+                  <label className="block text-[11px] font-black uppercase tracking-wider text-slate-800 dark:text-slate-200 mb-1.5">
+                    N° LOTE / CÓDIGO *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={idLote}
+                    onChange={(e) => setIdLote(e.target.value)}
+                    placeholder="LOT-2026-170"
+                    className="w-full px-4 py-2.5 bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-semibold text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-black uppercase tracking-wider text-slate-800 dark:text-slate-200 mb-1.5">
+                    CANTIDAD *
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    required
+                    value={quantity}
+                    onChange={(e) => setQuantity(e.target.value)}
+                    className="w-full px-4 py-2.5 bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
                 </div>
               </div>
 
-              <div>
-                <label className="block text-xs font-bold uppercase text-slate-600 dark:text-slate-400 mb-1.5">
-                  {movementType === 'adjust' ? 'Nuevo Stock Total' : 'Cantidad a Mover'}
-                </label>
-                <input
-                  type="number"
-                  min="1"
-                  required
-                  value={quantity}
-                  onChange={(e) => setQuantity(e.target.value)}
-                  className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-slate-900 dark:text-white font-mono font-bold focus:outline-none focus:border-cyan-500"
-                />
-              </div>
+              {/* FECHA DE VENCIMIENTO y COSTO UNIT. (C$) - Solo para ENTRADA */}
+              {tipoOperacion === 'ENTRADA' && (
+                <div className="grid grid-cols-2 gap-3.5">
+                  <div>
+                    <label className="block text-[11px] font-black uppercase tracking-wider text-slate-800 dark:text-slate-200 mb-1.5">
+                      FECHA DE VENCIMIENTO
+                    </label>
+                    <input
+                      type="date"
+                      value={fechaVencimiento}
+                      onChange={(e) => setFechaVencimiento(e.target.value)}
+                      className="w-full px-4 py-2.5 bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-semibold text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
 
+                  <div>
+                    <label className="block text-[11px] font-black uppercase tracking-wider text-slate-800 dark:text-slate-200 mb-1.5">
+                      COSTO UNIT. (C$)
+                    </label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={costoCompra}
+                      onChange={(e) => setCostoCompra(e.target.value)}
+                      placeholder="0.00"
+                      className="w-full px-4 py-2.5 bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* MOTIVO / DETALLE */}
               <div>
-                <label className="block text-xs font-bold uppercase text-slate-600 dark:text-slate-400 mb-1.5">Motivo / Comentario</label>
+                <label className="block text-[11px] font-black uppercase tracking-wider text-slate-800 dark:text-slate-200 mb-1.5">
+                  MOTIVO / DETALLE
+                </label>
                 <input
                   type="text"
                   required
                   value={reason}
                   onChange={(e) => setReason(e.target.value)}
-                  placeholder="Ej. Factura compra #5432, merma por rotura, inventario mensual..."
-                  className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-slate-900 dark:text-white text-sm focus:outline-none focus:border-cyan-500"
+                  placeholder={
+                    tipoOperacion === 'ENTRADA'
+                      ? 'Inventario Inicial'
+                      : tipoOperacion === 'MERMA'
+                      ? 'Baja por daño / rotura / vencido'
+                      : 'Ajuste de conteo físico'
+                  }
+                  className="w-full px-4 py-2.5 bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-semibold text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
 
-              <div className="flex gap-3 pt-2">
+              {/* Botones */}
+              <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-end space-x-3">
                 <button
                   type="button"
                   onClick={() => setShowModal(false)}
-                  className="flex-1 px-4 py-2.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl text-sm font-bold transition"
+                  className="px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 px-4 py-2.5 bg-cyan-600 hover:bg-cyan-500 text-white rounded-xl text-sm font-bold shadow-lg shadow-cyan-600/30 transition"
+                  className="px-6 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-black uppercase shadow-md shadow-blue-500/25 transition-all active:scale-95 cursor-pointer"
                 >
-                  Guardar Movimiento
+                  GUARDAR MOVIMIENTO
                 </button>
               </div>
             </form>
