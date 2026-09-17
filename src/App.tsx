@@ -31,7 +31,7 @@ export default function App() {
       case '/caja': return 'CONTROL DE CAJA & ARQUEO';
       case '/productos': return 'GESTIÓN DE PRODUCTOS';
       case '/categorias': return 'CATEGORÍAS DE PRODUCTOS';
-      case '/movimientos': return 'KARDEX DE INVENTARIO';
+      case '/movimientos': return 'INVENTARIO & MOVIMIENTOS';
       case '/creditos': return 'CUENTAS POR COBRAR';
       case '/clientes': return 'DIRECTORIO DE CLIENTES';
       case '/ajustes': return 'AJUSTES DEL SISTEMA';

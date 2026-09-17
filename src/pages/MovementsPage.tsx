@@ -583,7 +583,7 @@ export const MovementsPage: React.FC = () => {
                 </div>
               </div>
               <div>
-                <h1 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">Kardex de Inventario y Movimientos</h1>
+                <h1 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">Inventario & Movimientos</h1>
                 <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Auditoría completa de entradas, mermas, salidas por venta y ajustes físicos</p>
               </div>
             </div>
