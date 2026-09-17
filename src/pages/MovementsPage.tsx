@@ -51,8 +51,8 @@ const getEstadoLote = (diasRestantes: number): {
 };
 
 export const MovementsPage: React.FC = () => {
-  // Sub-vistas: 'LOTES' (Control de Lotes & Stock PEPS) vs 'KARDEX' (Kardex de Movimientos)
-  const [vista, setVista] = useState<'LOTES' | 'KARDEX'>('LOTES');
+  // Sub-vistas: 'KARDEX' (Kardex de Movimientos) vs 'LOTES' (Control de Lotes & Stock PEPS)
+  const [vista, setVista] = useState<'LOTES' | 'KARDEX'>('KARDEX');
 
   const [movements, setMovements] = useState<Movement[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
@@ -413,14 +413,14 @@ export const MovementsPage: React.FC = () => {
   return (
     <div className="space-y-6 animate-fade-in">
       {/* 1. BARRA SUPERIOR CON SEGMENTED TOGGLE Y LOS BOTONES EXACTOS */}
-      <div className="bg-white dark:bg-slate-900 p-3 sm:p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+      <div className="bg-white dark:bg-slate-900 p-3 sm:p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
         {/* Lado Izquierdo: Botones Segmentados (Control de Lotes & Kardex) */}
         <div className="flex bg-slate-100 dark:bg-slate-800/80 p-1 rounded-xl text-xs font-bold w-full sm:w-auto">
           <button
             onClick={() => setVista('LOTES')}
-            className={`flex-1 sm:flex-initial px-3 sm:px-5 py-2 rounded-lg transition-all text-xs text-center cursor-pointer ${
+            className={`flex-1 sm:flex-initial px-3 sm:px-4 py-2 rounded-lg transition-all text-xs text-center cursor-pointer font-bold ${
               vista === 'LOTES'
-                ? 'bg-blue-600 text-white shadow-sm font-black'
+                ? 'bg-blue-600 text-white shadow-sm'
                 : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
             }`}
           >
@@ -428,9 +428,9 @@ export const MovementsPage: React.FC = () => {
           </button>
           <button
             onClick={() => setVista('KARDEX')}
-            className={`flex-1 sm:flex-initial px-3 sm:px-5 py-2 rounded-lg transition-all text-xs text-center cursor-pointer ${
+            className={`flex-1 sm:flex-initial px-3 sm:px-4 py-2 rounded-lg transition-all text-xs text-center cursor-pointer font-bold ${
               vista === 'KARDEX'
-                ? 'bg-blue-600 text-white shadow-sm font-black'
+                ? 'bg-blue-600 text-white shadow-sm'
                 : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
             }`}
           >
@@ -439,18 +439,18 @@ export const MovementsPage: React.FC = () => {
         </div>
 
         {/* Lado Derecho: Botones Registrar Merma / Ajuste & + Entrada de Mercancía */}
-        <div className="flex flex-col xs:flex-row items-stretch xs:items-center gap-2">
+        <div className="flex flex-col xs:flex-row items-stretch xs:items-center gap-2.5">
           <button
             onClick={abrirModalMerma}
-            className="flex items-center justify-center space-x-2 px-4 py-2 bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 dark:hover:bg-rose-900/60 text-rose-700 dark:text-rose-400 border border-rose-200 dark:border-rose-800/80 rounded-xl text-xs font-bold transition shadow-xs cursor-pointer active:scale-95"
+            className="flex items-center justify-center space-x-1.5 px-3.5 sm:px-4 py-2 bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 dark:hover:bg-rose-900/60 text-[#be123c] dark:text-rose-400 border border-rose-200 dark:border-rose-800/80 rounded-xl text-xs font-bold transition shadow-2xs cursor-pointer active:scale-95"
           >
-            <ShieldAlert className="w-4 h-4 text-rose-600 dark:text-rose-400" />
+            <ShieldAlert className="w-4 h-4 text-rose-600 dark:text-rose-400 stroke-[2]" />
             <span>Registrar Merma / Ajuste</span>
           </button>
 
           <button
             onClick={abrirModalEntrada}
-            className="flex items-center justify-center space-x-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition shadow-sm shadow-emerald-600/20 cursor-pointer active:scale-95"
+            className="flex items-center justify-center space-x-1.5 px-4 py-2 bg-[#00875a] hover:bg-[#00704a] dark:bg-emerald-600 dark:hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition shadow-sm shadow-emerald-600/20 cursor-pointer active:scale-95"
           >
             <Plus className="w-4 h-4 stroke-[2.5]" />
             <span>+ Entrada de Mercancía</span>
