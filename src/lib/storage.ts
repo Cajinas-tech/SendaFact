@@ -142,6 +142,7 @@ const DEFAULT_PRODUCTS: Product[] = [
     name: 'BIG COLA 500ML',
     subtitle: 'General • Gaseosas • BIG COLA 500ML',
     description: 'Bebida gaseosa Big Cola 500ml',
+    brand: 'AJE',
     dimensions: '500ml',
     cost_price: 15.00,
     price_cordobas: 25.00,
@@ -153,6 +154,9 @@ const DEFAULT_PRODUCTS: Product[] = [
     unit: 'UNIDAD',
     status: 'active',
     expiry_date: '2026-10-11',
+    lotes: [
+      { idLote: 'LOT-2026-170', cantidad: 10, fechaVencimiento: '2026-10-11', costoCompra: 15.00 }
+    ],
     created_at: '2026-09-01T10:00:00Z',
     updated_at: '2026-09-05T12:00:00Z'
   },
@@ -164,17 +168,21 @@ const DEFAULT_PRODUCTS: Product[] = [
     name: 'COCA COLA 500ML',
     subtitle: 'General • Gaseosas • COCA COLA 500ML',
     description: 'Bebida gaseosa Coca Cola 500ml',
+    brand: 'Coca Cola Company',
     dimensions: '500ml',
     cost_price: 18.00,
-    price_cordobas: 30.00,
-    price_usd: 0.82,
-    stock: 10,
+    price_cordobas: 28.00,
+    price_usd: 0.76,
+    stock: 8,
     min_stock: 5,
     image_url: null,
     is_finished_good: true,
     unit: 'UNIDAD',
     status: 'active',
     expiry_date: '2026-10-11',
+    lotes: [
+      { idLote: 'LOT-2026-171', cantidad: 8, fechaVencimiento: '2026-10-11', costoCompra: 18.00 }
+    ],
     created_at: '2026-09-01T10:00:00Z',
     updated_at: '2026-09-05T12:00:00Z'
   },
@@ -186,17 +194,21 @@ const DEFAULT_PRODUCTS: Product[] = [
     name: 'AGUA FUENTE PURA 600ML',
     subtitle: 'General • Aguas • AGUA FUENTE PURA 600ML',
     description: 'Agua purificada Fuente Pura 600ml',
+    brand: 'Fuente Pura',
     dimensions: '600ml',
     cost_price: 10.00,
     price_cordobas: 18.00,
     price_usd: 0.49,
-    stock: 10,
+    stock: 15,
     min_stock: 5,
     image_url: null,
     is_finished_good: true,
     unit: 'UNIDAD',
     status: 'active',
     expiry_date: '2026-10-11',
+    lotes: [
+      { idLote: 'LOT-2026-172', cantidad: 15, fechaVencimiento: '2026-10-11', costoCompra: 10.00 }
+    ],
     created_at: '2026-09-01T10:00:00Z',
     updated_at: '2026-09-05T12:00:00Z'
   }
@@ -355,6 +367,22 @@ export const storage = {
       for (const dp of DEFAULT_PRODUCTS) {
         if (!existingSkus.has(dp.sku)) {
           prods.push(dp);
+          changed = true;
+        }
+      }
+      for (const p of prods) {
+        const dp = DEFAULT_PRODUCTS.find(d => d.sku === p.sku);
+        if (dp) {
+          if (!p.brand && dp.brand) { p.brand = dp.brand; changed = true; }
+          if ((!p.lotes || p.lotes.length === 0) && dp.lotes) { p.lotes = dp.lotes; changed = true; }
+        }
+        if (!p.lotes || p.lotes.length === 0) {
+          p.lotes = [{
+            idLote: p.sku.startsWith('#') ? 'LOT-' + p.sku.replace('#', '') : (p.sku.startsWith('LOT-') ? p.sku : 'LOT-' + p.sku),
+            cantidad: p.stock,
+            fechaVencimiento: p.expiry_date || '2026-10-11',
+            costoCompra: p.cost_price
+          }];
           changed = true;
         }
       }

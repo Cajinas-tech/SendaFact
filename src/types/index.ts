@@ -29,6 +29,13 @@ export interface Product {
   is_finished_good?: boolean;
   unit?: string;
   expiry_date?: string;
+  brand?: string;
+  lotes?: {
+    idLote: string;
+    cantidad: number;
+    fechaVencimiento: string;
+    costoCompra?: number;
+  }[];
   status: 'active' | 'inactive';
   created_at?: string;
   updated_at?: string;
@@ -95,16 +102,17 @@ export interface CashRegister {
 }
 
 export interface Movement {
-  id: number;
+  id: number | string;
   product_id: number;
   product_name: string;
-  sku: string;
-  type: 'in' | 'out' | 'adjustment';
+  sku?: string;
+  type: 'in' | 'out' | 'adjust' | 'adjustment';
   quantity: number;
-  previous_stock: number;
-  new_stock: number;
+  previous_stock?: number;
+  new_stock?: number;
   reason: string;
-  user_name: string;
+  user_name?: string;
+  user?: string;
   created_at: string;
 }
 
