@@ -363,13 +363,6 @@ export const storage = {
     try {
       const prods: Product[] = JSON.parse(raw) || DEFAULT_PRODUCTS;
       let changed = false;
-      const existingSkus = new Set(prods.map(p => p.sku));
-      for (const dp of DEFAULT_PRODUCTS) {
-        if (!existingSkus.has(dp.sku)) {
-          prods.push(dp);
-          changed = true;
-        }
-      }
       for (const p of prods) {
         const dp = DEFAULT_PRODUCTS.find(d => d.sku === p.sku);
         if (dp) {
@@ -399,7 +392,7 @@ export const storage = {
   },
   saveProduct(product: Product) {
     const prods = this.getProducts();
-    const idx = prods.findIndex(p => p.id === product.id);
+    const idx = prods.findIndex(p => String(p.id) === String(product.id));
     if (idx >= 0) {
       prods[idx] = product;
     } else {
@@ -407,9 +400,10 @@ export const storage = {
     }
     this.setProducts(prods);
   },
-  deleteProduct(id: number) {
-    const prods = this.getProducts().filter(p => p.id !== id);
+  deleteProduct(id: number | string): Product[] {
+    const prods = this.getProducts().filter(p => String(p.id) !== String(id));
     this.setProducts(prods);
+    return prods;
   },
 
   // CATEGORIES

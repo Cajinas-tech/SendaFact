@@ -24,7 +24,7 @@ export default function ProductsPage() {
   // Modales
   const [createModal, setCreateModal] = useState(false);
   const [editModal, setEditModal] = useState(false);
-  const [deleteTarget, setDeleteTarget] = useState<{ id: number; name: string } | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<{ id: number | string; name: string } | null>(null);
   const [currentProduct, setCurrentProduct] = useState<Partial<Product>>({});
 
   // Form State
@@ -191,8 +191,7 @@ export default function ProductsPage() {
   const confirmDelete = () => {
     if (!deleteTarget) return;
     const { id, name } = deleteTarget;
-    const updated = products.filter(p => p.id !== id);
-    storage.setProducts(updated);
+    const updated = storage.deleteProduct(id);
     setProducts(updated);
     warning('Producto Eliminado', `"${name}" fue retirado permanentemente del catálogo`);
     setDeleteTarget(null);
