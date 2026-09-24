@@ -375,32 +375,32 @@
                 </div>
             </div>
 
-            <!-- 3. Footer Fijo (Siempre Visible, Nunca Cortado) -->
-            <div class="shrink-0 flex items-center justify-between pt-3 border-t border-slate-100 dark:border-slate-800/80">
+            <!-- 3. Footer Fijo (Fondo Blanco Limpio, Sin Borde Artificial) -->
+            <div class="shrink-0 flex items-center justify-between pt-6 mt-2">
                 <div>
                     <button type="button" 
-                            class="flex items-center gap-1.5 px-3.5 py-2 rounded-2xl text-xs font-bold text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 border border-rose-200 dark:border-rose-900/60 bg-white dark:bg-slate-900 transition cursor-pointer">
-                        <i data-lucide="ban" class="w-3.5 h-3.5 text-rose-500"></i>
+                            class="flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs font-bold text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 border border-rose-200 dark:border-rose-900/60 bg-white dark:bg-slate-900 transition cursor-pointer">
+                        <i data-lucide="ban" class="w-4 h-4 text-rose-500"></i>
                         <span>Anular Factura</span>
                     </button>
                 </div>
 
-                <div class="flex items-center gap-2">
+                <div class="flex items-center gap-2.5">
                     <button type="button" 
-                            class="flex items-center gap-1.5 px-4 py-2 bg-[#059669] hover:bg-[#047857] text-white rounded-2xl text-xs font-bold transition shadow-xs cursor-pointer">
-                        <i data-lucide="message-square" class="w-3.5 h-3.5"></i>
+                            class="flex items-center gap-2 px-5 py-2.5 bg-[#059669] hover:bg-[#047857] text-white rounded-2xl text-xs font-bold transition shadow-xs cursor-pointer">
+                        <i data-lucide="message-square" class="w-4 h-4"></i>
                         <span>WhatsApp</span>
                     </button>
 
                     <button type="button" 
-                            class="flex items-center gap-1.5 px-4 py-2 bg-[#2563eb] hover:bg-[#1d4ed8] text-white rounded-2xl text-xs font-bold transition shadow-xs cursor-pointer">
-                        <i data-lucide="printer" class="w-3.5 h-3.5"></i>
+                            class="flex items-center gap-2 px-5 py-2.5 bg-[#2563eb] hover:bg-[#1d4ed8] text-white rounded-2xl text-xs font-bold transition shadow-xs cursor-pointer">
+                        <i data-lucide="printer" class="w-4 h-4"></i>
                         <span>Imprimir Ticket</span>
                     </button>
 
                     <button type="button" 
                             @click="invoiceModalOpen = false" 
-                            class="px-4 py-2 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-2xl text-xs font-bold transition cursor-pointer">
+                            class="px-5 py-2.5 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-2xl text-xs font-bold transition cursor-pointer">
                         Cerrar
                     </button>
                 </div>
