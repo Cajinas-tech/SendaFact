@@ -737,38 +737,43 @@ export const InvoicesPage: React.FC = () => {
         </div>
       </div>
 
-      {/* 4. MODAL: DETALLE COMPLETO DE FACTURA */}
+      {/* 4. MODAL: DETALLE COMPLETO DE FACTURA (DISEÑO EXACTO ACOPLADO) */}
       {showDetailModal && selectedSale && (() => {
         const isCancelled = selectedSale.status === 'cancelled';
         const role = getUserRole(selectedSale);
         const itemsCount = selectedSale.items?.length || 1;
 
         return (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 dark:bg-black/80 backdrop-blur-sm animate-in fade-in">
-            <div className="bg-white dark:bg-[#0E1526] border border-slate-100 dark:border-[#1E293B] rounded-3xl w-full max-w-2xl p-6 sm:p-7 shadow-2xl space-y-5 text-xs transition-colors my-auto max-h-[95vh] overflow-y-auto">
+          <div 
+            onClick={(e) => {
+              if (e.target === e.currentTarget) setShowDetailModal(false);
+            }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-2.5 sm:p-4 bg-black/60 dark:bg-black/80 backdrop-blur-xs overflow-hidden animate-in fade-in"
+          >
+            <div className="relative bg-white dark:bg-slate-900 rounded-[28px] sm:rounded-[32px] shadow-2xl max-w-2xl w-full p-5 sm:p-6 border border-slate-100 dark:border-slate-800 text-slate-800 dark:text-slate-100 my-auto max-h-[92vh] sm:max-h-[88vh] flex flex-col justify-between">
               
-              {/* Modal Header */}
-              <div className="flex items-start justify-between">
-                <div className="flex items-center gap-3.5">
-                  <div className="w-12 h-12 rounded-2xl bg-blue-50 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400 flex items-center justify-center flex-shrink-0 border border-blue-100/50 dark:border-blue-900/30 shadow-sm">
-                    <FileText className="w-6 h-6 stroke-[2.2]" />
+              {/* 1. Encabezado Fijo Superior */}
+              <div className="shrink-0 flex items-start justify-between pb-2">
+                <div className="flex items-center gap-3">
+                  <div className="w-11 h-11 rounded-2xl bg-blue-50 dark:bg-blue-950/60 border border-blue-100 dark:border-blue-800/70 flex items-center justify-center text-blue-600 dark:text-blue-400 shrink-0">
+                    <FileText className="w-5.5 h-5.5" />
                   </div>
                   <div>
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <h3 className="text-base sm:text-lg font-black text-slate-900 dark:text-white font-mono tracking-tight">
-                        Factura {selectedSale.ticket_number || `#FACT-${selectedSale.id}`}
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-base sm:text-lg font-black text-slate-900 dark:text-white tracking-tight">
+                        Factura {selectedSale.ticket_number ? (selectedSale.ticket_number.startsWith('#') ? selectedSale.ticket_number : '#' + selectedSale.ticket_number) : `#FACT-${selectedSale.id}`}
                       </h3>
                       {isCancelled ? (
-                        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase bg-rose-100 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 tracking-wider">
+                        <span className="text-[10px] font-black uppercase px-2.5 py-0.5 rounded-full bg-rose-100 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300 tracking-wider">
                           ANULADA
                         </span>
                       ) : (
-                        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 tracking-wider">
+                        <span className="text-[10px] font-black uppercase px-2.5 py-0.5 rounded-full bg-[#def7ec] text-[#03543f] dark:bg-emerald-950/60 dark:text-emerald-300 tracking-wider">
                           COMPLETADA
                         </span>
                       )}
                     </div>
-                    <p className="text-xs text-slate-400 dark:text-slate-400 font-medium mt-0.5">
+                    <p className="text-xs text-slate-400 dark:text-slate-500 font-normal mt-0.5">
                       {formatDateTime(selectedSale.created_at)}
                     </p>
                   </div>
@@ -777,149 +782,156 @@ export const InvoicesPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setShowDetailModal(false)}
-                  className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                  className="p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition rounded-xl cursor-pointer"
                 >
                   <X className="w-5 h-5" />
                 </button>
               </div>
 
-              {/* Two Info Cards Grid (CLIENTE & EMISOR / CAJERO) */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {/* CLIENTE Card */}
-                <div className="bg-slate-50/70 dark:bg-[#0A0F1D] border border-slate-100 dark:border-[#182338] rounded-2xl p-4">
-                  <span className="text-[10px] font-bold text-slate-400 dark:text-slate-400 tracking-wider uppercase block mb-1">
-                    CLIENTE
-                  </span>
-                  <h4 className="text-sm font-bold text-slate-900 dark:text-white">
-                    {selectedSale.customer?.name || (selectedSale as any).customer_name || 'Consumidor Final'}
-                  </h4>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                    Tel: {selectedSale.customer?.phone || (selectedSale as any).customer_phone || '50588888888'}
-                  </p>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                    Dir: {selectedSale.customer?.address || (selectedSale as any).customer_address || 'Venta de Mostrador'}
-                  </p>
-                </div>
-
-                {/* EMISOR / CAJERO Card */}
-                <div className="bg-slate-50/70 dark:bg-[#0A0F1D] border border-slate-100 dark:border-[#182338] rounded-2xl p-4">
-                  <span className="text-[10px] font-bold text-slate-400 dark:text-slate-400 tracking-wider uppercase block mb-1">
-                    EMISOR / CAJERO
-                  </span>
-                  <div className="flex items-center gap-1.5 flex-wrap">
-                    <h4 className="text-sm font-bold text-slate-900 dark:text-white">
-                      {selectedSale.user_name || 'Jairo Cajina (Admin)'}
-                    </h4>
-                    {role === 'admin' && (
-                      <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-purple-100 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 uppercase tracking-wide">
-                        ADMIN
-                      </span>
-                    )}
-                    {role === 'cajero' && (
-                      <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 uppercase tracking-wide">
-                        CAJERO
-                      </span>
-                    )}
-                    {role === 'vendedor' && (
-                      <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 uppercase tracking-wide">
-                        VENDEDOR
-                      </span>
-                    )}
+              {/* 2. Cuerpo Scrollable Independiente */}
+              <div className="flex-1 overflow-y-auto min-h-0 pr-1 space-y-3.5 my-2 [scrollbar-width:thin]">
+                {/* Info Grid (Cliente y Emisor / Cajero) */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {/* Card Cliente */}
+                  <div className="bg-[#f8fafc] dark:bg-slate-800/50 p-3.5 rounded-2xl border border-slate-100/90 dark:border-slate-800 space-y-1">
+                    <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider block">
+                      CLIENTE
+                    </span>
+                    <p className="font-extrabold text-sm text-slate-900 dark:text-white truncate">
+                      {selectedSale.customer?.name || (selectedSale as any).customer_name || 'Consumidor Final'}
+                    </p>
+                    <p className="text-xs text-slate-400 dark:text-slate-500 truncate">
+                      Tel: {selectedSale.customer?.phone || (selectedSale as any).customer_phone || '50588888888'}
+                    </p>
+                    <p className="text-xs text-slate-400 dark:text-slate-500 truncate">
+                      Dir: {selectedSale.customer?.address || (selectedSale as any).customer_address || 'Venta de Mostrador'}
+                    </p>
                   </div>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1.5">
-                    Método: <span className="font-medium text-slate-700 dark:text-slate-300">{formatPaymentMethod(selectedSale.payment_method || 'Efectivo')}</span>
-                  </p>
-                </div>
-              </div>
 
-              {/* DETALLE DE PRODUCTOS Section */}
-              <div className="pt-1">
-                <h4 className="text-[11px] font-bold text-slate-400 dark:text-slate-400 uppercase tracking-wider mb-2.5">
-                  DETALLE DE PRODUCTOS ({itemsCount} {itemsCount === 1 ? 'ÍTEM' : 'ÍTEMS'})
-                </h4>
-
-                <div className="overflow-x-auto rounded-xl">
-                  <table className="w-full text-left text-xs">
-                    <thead>
-                      <tr className="bg-slate-50/70 dark:bg-[#0A0F1D] text-slate-500 dark:text-slate-400 font-bold text-[11px] border-b border-slate-100 dark:border-[#182338]">
-                        <th className="py-2.5 px-4 text-left font-bold w-16">Cant</th>
-                        <th className="py-2.5 px-4 text-left font-bold">Descripción</th>
-                        <th className="py-2.5 px-4 text-center font-bold">P. Unitario</th>
-                        <th className="py-2.5 px-4 text-center font-bold">Descuento</th>
-                        <th className="py-2.5 px-4 text-right font-bold">Subtotal</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100 dark:divide-[#182338]">
-                      {selectedSale.items && selectedSale.items.length > 0 ? (
-                        selectedSale.items.map((it, idx) => (
-                          <tr key={idx} className="hover:bg-slate-50/50 dark:hover:bg-[#111A2D]">
-                            <td className="py-3.5 px-4 font-bold text-slate-900 dark:text-white">
-                              {it.quantity}
-                            </td>
-                            <td className="py-3.5 px-4">
-                              <div className="font-bold text-slate-900 dark:text-white">
-                                {it.product_name}
-                              </div>
-                              <div className="text-[11px] text-slate-400 dark:text-slate-400 mt-0.5">
-                                {(it as any).category || (it as any).brand || 'General'}
-                              </div>
-                            </td>
-                            <td className="py-3.5 px-4 text-center font-mono text-slate-700 dark:text-slate-300">
-                              C${it.unit_price_cordobas.toFixed(2)}
-                            </td>
-                            <td className="py-3.5 px-4 text-center text-slate-400 font-medium">
-                              -
-                            </td>
-                            <td className="py-3.5 px-4 text-right font-mono font-bold text-slate-900 dark:text-white">
-                              C${it.total_cordobas.toFixed(2)}
-                            </td>
-                          </tr>
-                        ))
-                      ) : (
-                        <tr>
-                          <td className="py-3.5 px-4 font-bold text-slate-900 dark:text-white">1</td>
-                          <td className="py-3.5 px-4">
-                            <div className="font-bold text-slate-900 dark:text-white">Gaseosa Pepsi Cola 3 Litros</div>
-                            <div className="text-[11px] text-slate-400 mt-0.5">Pepsi • Gaseosas</div>
-                          </td>
-                          <td className="py-3.5 px-4 text-center font-mono text-slate-700 dark:text-slate-300">C$68.00</td>
-                          <td className="py-3.5 px-4 text-center text-slate-400 font-medium">-</td>
-                          <td className="py-3.5 px-4 text-right font-mono font-bold text-slate-900 dark:text-white">C$68.00</td>
-                        </tr>
+                  {/* Card Emisor / Cajero */}
+                  <div className="bg-[#f8fafc] dark:bg-slate-800/50 p-3.5 rounded-2xl border border-slate-100/90 dark:border-slate-800 space-y-1">
+                    <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider block">
+                      EMISOR / CAJERO
+                    </span>
+                    <div className="flex items-center gap-2">
+                      <p className="font-extrabold text-sm text-slate-900 dark:text-white truncate">
+                        {selectedSale.user_name || 'Jairo Cajina (Admin)'}
+                      </p>
+                      {role === 'admin' && (
+                        <span className="text-[9px] font-black uppercase px-2 py-0.5 rounded-full bg-[#f3e8ff] text-[#7e22ce] dark:bg-purple-950/60 dark:text-purple-300">
+                          ADMIN
+                        </span>
                       )}
-                    </tbody>
-                  </table>
+                      {role === 'cajero' && (
+                        <span className="text-[9px] font-black uppercase px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300">
+                          CAJERO
+                        </span>
+                      )}
+                      {role === 'vendedor' && (
+                        <span className="text-[9px] font-black uppercase px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300">
+                          VENDEDOR
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-xs text-slate-400 dark:text-slate-500 truncate">
+                      Método: <span className="text-slate-600 dark:text-slate-300 font-medium">{formatPaymentMethod(selectedSale.payment_method || 'Efectivo')}</span>
+                    </p>
+                  </div>
                 </div>
 
-                {/* Subtotal & Total Section */}
-                <div className="mt-4 pt-3 flex flex-col items-end pr-2 space-y-1.5 border-t border-slate-100 dark:border-[#182338]">
-                  <div className="flex items-center justify-end gap-10 text-xs text-slate-600 dark:text-slate-400">
-                    <span className="font-medium">Subtotal Bruto:</span>
-                    <span className="font-mono font-semibold text-slate-800 dark:text-slate-200">
-                      C${(selectedSale.subtotal_cordobas || selectedSale.total_cordobas || 0).toFixed(2)}
-                    </span>
+                {/* Sección de Detalle de Productos */}
+                <div className="space-y-2">
+                  <span className="text-[10px] sm:text-[11px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider block">
+                    DETALLE DE PRODUCTOS ({itemsCount} {itemsCount === 1 ? 'ÍTEM' : 'ÍTEMS'})
+                  </span>
+
+                  <div className="border border-slate-100 dark:border-slate-800 rounded-2xl overflow-hidden bg-white dark:bg-slate-900">
+                    <div className="max-h-[160px] sm:max-h-[190px] overflow-y-auto [scrollbar-width:thin]">
+                      <table className="w-full text-left text-xs">
+                        <thead className="sticky top-0 z-10 bg-[#f8fafc] dark:bg-slate-800 text-slate-500 dark:text-slate-400 font-bold border-b border-slate-100 dark:border-slate-800">
+                          <tr>
+                            <th className="py-2.5 px-3 text-left w-12 font-bold">Cant</th>
+                            <th className="py-2.5 px-3 text-left font-bold">Descripción</th>
+                            <th className="py-2.5 px-3 text-right font-bold">P. Unitario</th>
+                            <th className="py-2.5 px-3 text-center font-bold">Descuento</th>
+                            <th className="py-2.5 px-3 text-right font-bold">Subtotal</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100/80 dark:divide-slate-800/80">
+                          {selectedSale.items && selectedSale.items.length > 0 ? (
+                            selectedSale.items.map((it, idx) => (
+                              <tr key={idx} className="hover:bg-slate-50/40 dark:hover:bg-slate-800/40 transition">
+                                <td className="py-2.5 px-3 font-black text-slate-900 dark:text-white text-xs align-middle">
+                                  {it.quantity}
+                                </td>
+                                <td className="py-2.5 px-3 align-middle">
+                                  <p className="font-extrabold text-slate-900 dark:text-white text-xs leading-snug">
+                                    {it.product_name}
+                                  </p>
+                                  <p className="text-[10px] text-slate-400 dark:text-slate-500 font-normal">
+                                    {(it as any).brand || 'Pepsi'} • {(it as any).category || 'Gaseosas'}
+                                  </p>
+                                </td>
+                                <td className="py-2.5 px-3 text-right font-semibold text-slate-800 dark:text-slate-200 text-xs align-middle">
+                                  C${(it.unit_price_cordobas || 0).toFixed(2)}
+                                </td>
+                                <td className="py-2.5 px-3 text-center text-xs align-middle font-bold text-emerald-500">
+                                  -
+                                </td>
+                                <td className="py-2.5 px-3 text-right font-black text-slate-900 dark:text-white text-xs align-middle">
+                                  C${(it.total_cordobas || 0).toFixed(2)}
+                                </td>
+                              </tr>
+                            ))
+                          ) : (
+                            <tr className="hover:bg-slate-50/40 dark:hover:bg-slate-800/40 transition">
+                              <td className="py-2.5 px-3 font-black text-slate-900 dark:text-white text-xs align-middle">1</td>
+                              <td className="py-2.5 px-3 align-middle">
+                                <p className="font-extrabold text-slate-900 dark:text-white text-xs leading-snug">Gaseosa Pepsi Cola 3 Litros</p>
+                                <p className="text-[10px] text-slate-400 dark:text-slate-500 font-normal">Pepsi • Gaseosas</p>
+                              </td>
+                              <td className="py-2.5 px-3 text-right font-semibold text-slate-800 dark:text-slate-200 text-xs align-middle">C$68.00</td>
+                              <td className="py-2.5 px-3 text-center text-xs align-middle font-bold text-emerald-500">-</td>
+                              <td className="py-2.5 px-3 text-right font-black text-slate-900 dark:text-white text-xs align-middle">C$68.00</td>
+                            </tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
                   </div>
 
-                  {selectedSale.discount_amount && selectedSale.discount_amount > 0 ? (
-                    <div className="flex items-center justify-end gap-10 text-xs text-rose-500">
-                      <span className="font-medium">Descuento:</span>
-                      <span className="font-mono font-bold">-C${selectedSale.discount_amount.toFixed(2)}</span>
-                    </div>
-                  ) : null}
+                  {/* Desglose de Totales */}
+                  <div className="flex justify-end pt-2 pr-1">
+                    <div className="w-56 sm:w-64 space-y-1 text-right text-xs">
+                      <div className="flex justify-between text-slate-500 dark:text-slate-400">
+                        <span>Subtotal Bruto:</span>
+                        <span className="font-bold text-slate-800 dark:text-slate-200">
+                          C${(selectedSale.subtotal_cordobas || selectedSale.total_cordobas || 0).toFixed(2)}
+                        </span>
+                      </div>
 
-                  <div className="flex items-center justify-end gap-10 pt-2">
-                    <span className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-wider">
-                      TOTAL:
-                    </span>
-                    <span className="text-2xl font-black font-mono text-[#0284c7] dark:text-[#38bdf8]">
-                      C${(selectedSale.total_cordobas || 0).toFixed(2)}
-                    </span>
+                      {selectedSale.discount_amount && selectedSale.discount_amount > 0 ? (
+                        <div className="flex justify-between text-rose-500">
+                          <span>Descuento:</span>
+                          <span className="font-bold">-C${selectedSale.discount_amount.toFixed(2)}</span>
+                        </div>
+                      ) : null}
+
+                      <div className="pt-1.5 flex justify-between items-baseline">
+                        <span className="text-xs sm:text-sm font-black text-slate-900 dark:text-white uppercase tracking-tight">
+                          TOTAL:
+                        </span>
+                        <span className="text-xl sm:text-2xl font-black text-[#2563eb] tracking-tight">
+                          C${(selectedSale.total_cordobas || 0).toFixed(2)}
+                        </span>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
 
-              {/* Bottom Action Buttons Row */}
-              <div className="flex flex-wrap items-center justify-between gap-3 pt-5 mt-6 border-t border-slate-100 dark:border-[#182338]">
+              {/* 3. Footer Fijo (Fondo Limpio, Sin Borde Artificial) */}
+              <div className="shrink-0 flex items-center justify-between pt-6 mt-2">
                 {/* Left: Anular Factura Button */}
                 <div>
                   {!isCancelled && (
@@ -929,9 +941,9 @@ export const InvoicesPage: React.FC = () => {
                         setSaleToCancel(selectedSale);
                         setShowCancelModal(true);
                       }}
-                      className="border border-rose-200 dark:border-rose-900/60 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-full px-4.5 py-2 text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
+                      className="flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs font-bold text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 border border-rose-200 dark:border-rose-900/60 bg-white dark:bg-slate-900 transition cursor-pointer"
                     >
-                      <Ban className="w-3.5 h-3.5" />
+                      <Ban className="w-4 h-4 text-rose-500" />
                       <span>Anular Factura</span>
                     </button>
                   )}
@@ -942,9 +954,9 @@ export const InvoicesPage: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => handleSendWhatsApp(selectedSale)}
-                    className="bg-[#00a884] hover:bg-[#008f6f] text-white rounded-full px-5 py-2 text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer shadow-sm"
+                    className="flex items-center gap-2 px-5 py-2.5 bg-[#059669] hover:bg-[#047857] text-white rounded-2xl text-xs font-bold transition shadow-xs cursor-pointer"
                   >
-                    <MessageCircle className="w-4 h-4 fill-white" />
+                    <MessageCircle className="w-4 h-4" />
                     <span>WhatsApp</span>
                   </button>
 
@@ -954,7 +966,7 @@ export const InvoicesPage: React.FC = () => {
                       setShowDetailModal(false);
                       handleDirectPrint(selectedSale);
                     }}
-                    className="bg-[#2563eb] hover:bg-[#1d4ed8] text-white rounded-full px-5 py-2 text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer shadow-sm"
+                    className="flex items-center gap-2 px-5 py-2.5 bg-[#2563eb] hover:bg-[#1d4ed8] text-white rounded-2xl text-xs font-bold transition shadow-xs cursor-pointer"
                   >
                     <Printer className="w-4 h-4" />
                     <span>Imprimir Ticket</span>
@@ -963,12 +975,13 @@ export const InvoicesPage: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => setShowDetailModal(false)}
-                    className="bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-full px-5 py-2 text-xs font-bold transition-colors cursor-pointer"
+                    className="px-5 py-2.5 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-2xl text-xs font-bold transition cursor-pointer"
                   >
-                    <span>Cerrar</span>
+                    Cerrar
                   </button>
                 </div>
               </div>
+
             </div>
           </div>
         );
