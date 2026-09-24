@@ -251,23 +251,23 @@
         </div>
     </div>
 
-    <!-- MODAL DETALLE DE FACTURA (DISEÑO EXACTO) -->
+    <!-- MODAL DETALLE DE FACTURA (DISEÑO EXACTO ACOPLADO) -->
     <div x-show="invoiceModalOpen" 
-         class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-3 sm:p-4 overflow-y-auto animate-in fade-in" 
+         class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-2.5 sm:p-4 overflow-hidden animate-in fade-in" 
          x-cloak>
         <div @click.away="invoiceModalOpen = false" 
-             class="relative bg-white dark:bg-slate-900 rounded-[28px] sm:rounded-[32px] shadow-2xl max-w-2xl w-full p-6 sm:p-7 border border-slate-100 dark:border-slate-800 text-slate-800 dark:text-slate-100 my-auto max-h-[92vh] overflow-y-auto">
+             class="relative bg-white dark:bg-slate-900 rounded-[28px] sm:rounded-[32px] shadow-2xl max-w-2xl w-full p-5 sm:p-6 border border-slate-100 dark:border-slate-800 text-slate-800 dark:text-slate-100 my-auto max-h-[92vh] sm:max-h-[88vh] flex flex-col justify-between">
             
-            <!-- Encabezado Principal -->
-            <div class="flex items-start justify-between">
-                <div class="flex items-center gap-3.5">
-                    <div class="w-12 h-12 rounded-2xl bg-blue-50 dark:bg-blue-950/60 border border-blue-100 dark:border-blue-800/70 flex items-center justify-center text-blue-600 dark:text-blue-400 shrink-0">
-                        <i data-lucide="file-text" class="w-6 h-6"></i>
+            <!-- 1. Encabezado Fijo Superior -->
+            <div class="shrink-0 flex items-start justify-between pb-2">
+                <div class="flex items-center gap-3">
+                    <div class="w-11 h-11 rounded-2xl bg-blue-50 dark:bg-blue-950/60 border border-blue-100 dark:border-blue-800/70 flex items-center justify-center text-blue-600 dark:text-blue-400 shrink-0">
+                        <i data-lucide="file-text" class="w-5.5 h-5.5"></i>
                     </div>
                     <div>
-                        <div class="flex items-center gap-2.5">
-                            <h3 class="text-lg sm:text-xl font-black text-slate-900 dark:text-white tracking-tight">
-                                Factura #<span x-text="selectedInvoice?.ticket || 'NOVA-V-9827'"></span>
+                        <div class="flex items-center gap-2">
+                            <h3 class="text-base sm:text-lg font-black text-slate-900 dark:text-white tracking-tight">
+                                Factura <span x-text="selectedInvoice?.ticket ? (selectedInvoice.ticket.startsWith('#') ? selectedInvoice.ticket : '#' + selectedInvoice.ticket) : '#NOVA-V-9827'"></span>
                             </h3>
                             <span class="text-[10px] font-black uppercase px-2.5 py-0.5 rounded-full bg-[#def7ec] text-[#03543f] dark:bg-emerald-950/60 dark:text-emerald-300">
                                 COMPLETADA
@@ -283,119 +283,124 @@
                 </button>
             </div>
 
-            <!-- Info Grid (Cliente y Emisor / Cajero) -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5 mt-5">
-                <!-- Card Cliente -->
-                <div class="bg-[#f8fafc] dark:bg-slate-800/50 p-4 rounded-2xl border border-slate-100/90 dark:border-slate-800 space-y-1">
-                    <span class="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider block">
-                        CLIENTE
-                    </span>
-                    <p class="font-extrabold text-sm text-slate-900 dark:text-white truncate" x-text="selectedInvoice?.client || 'Consumidor Final'">
-                    </p>
-                    <p class="text-xs text-slate-400 dark:text-slate-500 truncate" x-text="'Tel: ' + (selectedInvoice?.client_phone || '50588888888')">
-                    </p>
-                    <p class="text-xs text-slate-400 dark:text-slate-500 truncate" x-text="'Dir: ' + (selectedInvoice?.client_address || 'Venta de Mostrador')">
-                    </p>
-                </div>
-
-                <!-- Card Emisor / Cajero -->
-                <div class="bg-[#f8fafc] dark:bg-slate-800/50 p-4 rounded-2xl border border-slate-100/90 dark:border-slate-800 space-y-1">
-                    <span class="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider block">
-                        EMISOR / CAJERO
-                    </span>
-                    <div class="flex items-center gap-2">
-                        <p class="font-extrabold text-sm text-slate-900 dark:text-white truncate" x-text="selectedInvoice?.cashier || 'Jairo Cajina (Admin)'">
-                        </p>
-                        <span class="text-[9px] font-black uppercase px-2 py-0.5 rounded-full bg-[#f3e8ff] text-[#7e22ce] dark:bg-purple-950/60 dark:text-purple-300" x-text="selectedInvoice?.role || 'ADMIN'">
+            <!-- 2. Cuerpo Scrollable Independiente -->
+            <div class="flex-1 overflow-y-auto min-h-0 pr-1 space-y-3.5 my-2 [scrollbar-width:thin]">
+                <!-- Info Grid (Cliente y Emisor / Cajero) -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <!-- Card Cliente -->
+                    <div class="bg-[#f8fafc] dark:bg-slate-800/50 p-3.5 rounded-2xl border border-slate-100/90 dark:border-slate-800 space-y-1">
+                        <span class="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider block">
+                            CLIENTE
                         </span>
+                        <p class="font-extrabold text-sm text-slate-900 dark:text-white truncate" x-text="selectedInvoice?.client || 'Consumidor Final'">
+                        </p>
+                        <p class="text-xs text-slate-400 dark:text-slate-500 truncate" x-text="'Tel: ' + (selectedInvoice?.client_phone || '50588888888')">
+                        </p>
+                        <p class="text-xs text-slate-400 dark:text-slate-500 truncate" x-text="'Dir: ' + (selectedInvoice?.client_address || 'Venta de Mostrador')">
+                        </p>
                     </div>
-                    <p class="text-xs text-slate-400 dark:text-slate-500 truncate">
-                        Método: <span class="text-slate-600 dark:text-slate-300 font-medium" x-text="selectedInvoice?.payment_method || 'Efectivo'"></span> (CONTADO)
-                    </p>
+
+                    <!-- Card Emisor / Cajero -->
+                    <div class="bg-[#f8fafc] dark:bg-slate-800/50 p-3.5 rounded-2xl border border-slate-100/90 dark:border-slate-800 space-y-1">
+                        <span class="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider block">
+                            EMISOR / CAJERO
+                        </span>
+                        <div class="flex items-center gap-2">
+                            <p class="font-extrabold text-sm text-slate-900 dark:text-white truncate" x-text="selectedInvoice?.cashier || 'Jairo Cajina (Admin)'">
+                            </p>
+                            <span class="text-[9px] font-black uppercase px-2 py-0.5 rounded-full bg-[#f3e8ff] text-[#7e22ce] dark:bg-purple-950/60 dark:text-purple-300" x-text="selectedInvoice?.role || 'ADMIN'">
+                            </span>
+                        </div>
+                        <p class="text-xs text-slate-400 dark:text-slate-500 truncate">
+                            Método: <span class="text-slate-600 dark:text-slate-300 font-medium" x-text="selectedInvoice?.payment_method || 'Efectivo'"></span> (CONTADO)
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Sección de Detalle de Productos -->
+                <div class="space-y-2">
+                    <span class="text-[10px] sm:text-[11px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider block">
+                        DETALLE DE PRODUCTOS (1 ÍTEM)
+                    </span>
+
+                    <div class="border border-slate-100 dark:border-slate-800 rounded-2xl overflow-hidden bg-white dark:bg-slate-900">
+                        <div class="max-h-[160px] sm:max-h-[190px] overflow-y-auto [scrollbar-width:thin]">
+                            <table class="w-full text-left text-xs">
+                                <thead class="sticky top-0 z-10 bg-[#f8fafc] dark:bg-slate-800 text-slate-500 dark:text-slate-400 font-bold border-b border-slate-100 dark:border-slate-800">
+                                    <tr>
+                                        <th class="py-2.5 px-3 text-left w-12 font-bold">Cant</th>
+                                        <th class="py-2.5 px-3 text-left font-bold">Descripción</th>
+                                        <th class="py-2.5 px-3 text-right font-bold">P. Unitario</th>
+                                        <th class="py-2.5 px-3 text-center font-bold">Descuento</th>
+                                        <th class="py-2.5 px-3 text-right font-bold">Subtotal</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-slate-100/80 dark:divide-slate-800/80">
+                                    <tr class="hover:bg-slate-50/40 dark:hover:bg-slate-800/40 transition">
+                                        <td class="py-2.5 px-3 font-black text-slate-900 dark:text-white text-xs align-middle" x-text="selectedInvoice?.quantity || 1">
+                                        </td>
+                                        <td class="py-2.5 px-3 align-middle">
+                                            <p class="font-extrabold text-slate-900 dark:text-white text-xs leading-snug" x-text="selectedInvoice?.product_name || 'Gaseosa Pepsi Cola 3 Litros'">
+                                            </p>
+                                            <p class="text-[10px] text-slate-400 dark:text-slate-500 font-normal">
+                                                <span x-text="selectedInvoice?.brand || 'Pepsi'"></span> • <span x-text="selectedInvoice?.category || 'Gaseosas'"></span>
+                                            </p>
+                                        </td>
+                                        <td class="py-2.5 px-3 text-right font-semibold text-slate-800 dark:text-slate-200 text-xs align-middle" x-text="'C$' + parseFloat(selectedInvoice?.unit_price || 68).toFixed(2)">
+                                        </td>
+                                        <td class="py-2.5 px-3 text-center text-xs align-middle font-bold text-emerald-500">
+                                            -
+                                        </td>
+                                        <td class="py-2.5 px-3 text-right font-black text-slate-900 dark:text-white text-xs align-middle" x-text="'C$' + parseFloat(selectedInvoice?.subtotal || 68).toFixed(2)">
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Desglose de Totales -->
+                    <div class="flex justify-end pt-2 pr-1">
+                        <div class="w-56 sm:w-64 space-y-1 text-right text-xs">
+                            <div class="flex justify-between text-slate-500 dark:text-slate-400">
+                                <span>Subtotal Bruto:</span>
+                                <span class="font-bold text-slate-800 dark:text-slate-200" x-text="'C$' + parseFloat(selectedInvoice?.subtotal || 68).toFixed(2)"></span>
+                            </div>
+                            <div class="pt-1.5 flex justify-between items-baseline">
+                                <span class="text-xs sm:text-sm font-black text-slate-900 dark:text-white uppercase tracking-tight">TOTAL:</span>
+                                <span class="text-xl sm:text-2xl font-black text-[#2563eb] tracking-tight" x-text="'C$' + parseFloat(selectedInvoice?.total || 68).toFixed(2)"></span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            <!-- Sección de Detalle de Productos -->
-            <div class="mt-5 space-y-2.5">
-                <span class="text-[11px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider block">
-                    DETALLE DE PRODUCTOS (1 ÍTEM)
-                </span>
-
-                <div class="border border-slate-100 dark:border-slate-800 rounded-2xl overflow-hidden bg-white dark:bg-slate-900">
-                    <table class="w-full text-left text-xs">
-                        <thead class="bg-[#f8fafc] dark:bg-slate-800/60 text-slate-500 dark:text-slate-400 font-bold border-b border-slate-100 dark:border-slate-800">
-                            <tr>
-                                <th class="py-3 px-4 text-left w-14 font-bold">Cant</th>
-                                <th class="py-3 px-4 text-left font-bold">Descripción</th>
-                                <th class="py-3 px-4 text-right font-bold">P. Unitario</th>
-                                <th class="py-3 px-4 text-center font-bold">Descuento</th>
-                                <th class="py-3 px-4 text-right font-bold">Subtotal</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-slate-100/80 dark:divide-slate-800/80">
-                            <tr class="hover:bg-slate-50/40 dark:hover:bg-slate-800/40 transition">
-                                <td class="py-3.5 px-4 font-black text-slate-900 dark:text-white text-xs align-top" x-text="selectedInvoice?.quantity || 1">
-                                </td>
-                                <td class="py-3.5 px-4 align-top">
-                                    <p class="font-extrabold text-slate-900 dark:text-white text-xs leading-snug" x-text="selectedInvoice?.product_name || 'Gaseosa Pepsi Cola 3 Litros'">
-                                    </p>
-                                    <p class="text-[11px] text-slate-400 dark:text-slate-500 font-normal mt-0.5">
-                                        <span x-text="selectedInvoice?.brand || 'Pepsi'"></span> • <span x-text="selectedInvoice?.category || 'Gaseosas'"></span>
-                                    </p>
-                                </td>
-                                <td class="py-3.5 px-4 text-right font-semibold text-slate-800 dark:text-slate-200 text-xs align-top" x-text="'C$' + parseFloat(selectedInvoice?.unit_price || 68).toFixed(2)">
-                                </td>
-                                <td class="py-3.5 px-4 text-center text-xs align-top font-bold text-emerald-500">
-                                    -
-                                </td>
-                                <td class="py-3.5 px-4 text-right font-black text-slate-900 dark:text-white text-xs align-top" x-text="'C$' + parseFloat(selectedInvoice?.subtotal || 68).toFixed(2)">
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-
-                <!-- Desglose de Totales -->
-                <div class="flex justify-end pt-3 pr-2">
-                    <div class="w-64 space-y-1.5 text-right text-xs">
-                        <div class="flex justify-between text-slate-500 dark:text-slate-400">
-                            <span>Subtotal Bruto:</span>
-                            <span class="font-bold text-slate-800 dark:text-slate-200" x-text="'C$' + parseFloat(selectedInvoice?.subtotal || 68).toFixed(2)"></span>
-                        </div>
-                        <div class="pt-2 flex justify-between items-baseline">
-                            <span class="text-sm font-black text-slate-900 dark:text-white uppercase tracking-tight">TOTAL:</span>
-                            <span class="text-2xl font-black text-[#2563eb] tracking-tight" x-text="'C$' + parseFloat(selectedInvoice?.total || 68).toFixed(2)"></span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Acciones de Footer -->
-            <div class="flex items-center justify-between pt-6 mt-2">
+            <!-- 3. Footer Fijo (Siempre Visible, Nunca Cortado) -->
+            <div class="shrink-0 flex items-center justify-between pt-3 border-t border-slate-100 dark:border-slate-800/80">
                 <div>
                     <button type="button" 
-                            class="flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs font-bold text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 border border-rose-200 dark:border-rose-900/60 bg-white dark:bg-slate-900 transition cursor-pointer">
-                        <i data-lucide="ban" class="w-4 h-4 text-rose-500"></i>
+                            class="flex items-center gap-1.5 px-3.5 py-2 rounded-2xl text-xs font-bold text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 border border-rose-200 dark:border-rose-900/60 bg-white dark:bg-slate-900 transition cursor-pointer">
+                        <i data-lucide="ban" class="w-3.5 h-3.5 text-rose-500"></i>
                         <span>Anular Factura</span>
                     </button>
                 </div>
 
-                <div class="flex items-center gap-2.5">
+                <div class="flex items-center gap-2">
                     <button type="button" 
-                            class="flex items-center gap-2 px-5 py-2.5 bg-[#059669] hover:bg-[#047857] text-white rounded-2xl text-xs font-bold transition shadow-xs cursor-pointer">
-                        <i data-lucide="message-square" class="w-4 h-4"></i>
+                            class="flex items-center gap-1.5 px-4 py-2 bg-[#059669] hover:bg-[#047857] text-white rounded-2xl text-xs font-bold transition shadow-xs cursor-pointer">
+                        <i data-lucide="message-square" class="w-3.5 h-3.5"></i>
                         <span>WhatsApp</span>
                     </button>
 
                     <button type="button" 
-                            class="flex items-center gap-2 px-5 py-2.5 bg-[#2563eb] hover:bg-[#1d4ed8] text-white rounded-2xl text-xs font-bold transition shadow-xs cursor-pointer">
-                        <i data-lucide="printer" class="w-4 h-4"></i>
+                            class="flex items-center gap-1.5 px-4 py-2 bg-[#2563eb] hover:bg-[#1d4ed8] text-white rounded-2xl text-xs font-bold transition shadow-xs cursor-pointer">
+                        <i data-lucide="printer" class="w-3.5 h-3.5"></i>
                         <span>Imprimir Ticket</span>
                     </button>
 
                     <button type="button" 
                             @click="invoiceModalOpen = false" 
-                            class="px-5 py-2.5 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-2xl text-xs font-bold transition cursor-pointer">
+                            class="px-4 py-2 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-2xl text-xs font-bold transition cursor-pointer">
                         Cerrar
                     </button>
                 </div>
