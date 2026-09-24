@@ -15,7 +15,8 @@ import {
   AlertCircle,
   RefreshCw,
   Ban,
-  ArrowUpDown
+  ArrowUpDown,
+  MessageCircle
 } from 'lucide-react';
 import { storage } from '../lib/storage';
 import { Sale, CompanySetting, User } from '../types';
@@ -309,6 +310,40 @@ export const InvoicesPage: React.FC = () => {
   const handleDirectPrint = (sale: Sale) => {
     setPrintSale(sale);
     setShowPrintModal(true);
+  };
+
+  const formatPaymentMethod = (method: string) => {
+    if (method === 'Efectivo') return 'Efectivo (CONTADO)';
+    if (method === 'Crédito' || method === 'credito') return 'Crédito (Abonos)';
+    if (method === 'Transferencia' || method === 'transferencia') return 'Transferencia Bancaria';
+    if (method === 'Tarjeta' || method === 'tarjeta') return 'Tarjeta Débito/Crédito';
+    return method;
+  };
+
+  const handleSendWhatsApp = (sale: Sale) => {
+    const rawPhone = sale.customer?.phone || (sale as any).customer_phone || '50588888888';
+    const cleanPhone = rawPhone.replace(/\D/g, '');
+    const phone = cleanPhone.startsWith('505') ? cleanPhone : `505${cleanPhone}`;
+
+    const itemsText =
+      sale.items && sale.items.length > 0
+        ? sale.items.map(it => `• ${it.quantity}x ${it.product_name} - C$${it.total_cordobas.toFixed(2)}`).join('\n')
+        : `• 1x Consumo de artículos - C$${(sale.total_cordobas || 0).toFixed(2)}`;
+
+    const message =
+      `🧾 *COMPROBANTE DE FACTURA - SENDA SISTEMAS*\n\n` +
+      `*Factura:* ${sale.ticket_number || `#FACT-${sale.id}`}\n` +
+      `*Fecha:* ${formatDateTime(sale.created_at)}\n` +
+      `*Cliente:* ${sale.customer?.name || (sale as any).customer_name || 'Consumidor Final'}\n` +
+      `*Atendido por:* ${sale.user_name || 'Usuario'}\n` +
+      `*Método:* ${formatPaymentMethod(sale.payment_method || 'Efectivo')}\n` +
+      `--------------------------------\n` +
+      `*DETALLE DE PRODUCTOS:*\n${itemsText}\n` +
+      `--------------------------------\n` +
+      `*TOTAL: C$ ${(sale.total_cordobas || 0).toFixed(2)}*\n\n` +
+      `¡Muchas gracias por su preferencia!`;
+
+    window.open(`https://wa.me/${phone}?text=${encodeURIComponent(message)}`, '_blank');
   };
 
   // Confirm cancel sale
@@ -703,197 +738,241 @@ export const InvoicesPage: React.FC = () => {
       </div>
 
       {/* 4. MODAL: DETALLE COMPLETO DE FACTURA */}
-      {showDetailModal && selectedSale && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/70 backdrop-blur-xs animate-in fade-in duration-150 overflow-y-auto">
-          <div className="w-full max-w-2xl bg-white dark:bg-[#0b1329] rounded-3xl p-5 sm:p-6 border border-slate-200 dark:border-slate-800 shadow-2xl space-y-5 my-auto max-h-[90vh] flex flex-col">
-            
-            {/* Modal Header */}
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-2xl bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
-                  <FileText className="w-5 h-5" />
-                </div>
-                <div>
-                  <h3 className="text-base font-black text-slate-900 dark:text-white uppercase tracking-tight">
-                    Factura {selectedSale.ticket_number || `#FACT-${selectedSale.id}`}
-                  </h3>
-                  <p className="text-xs text-slate-500 dark:text-slate-400">
-                    Emitida el {formatDateTime(selectedSale.created_at)}
-                  </p>
-                </div>
-              </div>
+      {showDetailModal && selectedSale && (() => {
+        const isCancelled = selectedSale.status === 'cancelled';
+        const role = getUserRole(selectedSale);
+        const itemsCount = selectedSale.items?.length || 1;
 
-              <div className="flex items-center gap-2">
-                {selectedSale.status === 'cancelled' ? (
-                  <span className="px-2.5 py-1 rounded-full text-xs font-black uppercase bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300 border border-rose-200">
-                    ANULADA
-                  </span>
-                ) : (
-                  <span className="px-2.5 py-1 rounded-full text-xs font-black uppercase bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300 border border-emerald-200">
-                    COMPLETADA
-                  </span>
-                )}
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 dark:bg-black/80 backdrop-blur-sm animate-in fade-in">
+            <div className="bg-white dark:bg-[#0E1526] border border-slate-100 dark:border-[#1E293B] rounded-3xl w-full max-w-2xl p-6 sm:p-7 shadow-2xl space-y-5 text-xs transition-colors my-auto max-h-[95vh] overflow-y-auto">
+              
+              {/* Modal Header */}
+              <div className="flex items-start justify-between">
+                <div className="flex items-center gap-3.5">
+                  <div className="w-12 h-12 rounded-2xl bg-blue-50 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400 flex items-center justify-center flex-shrink-0 border border-blue-100/50 dark:border-blue-900/30 shadow-sm">
+                    <FileText className="w-6 h-6 stroke-[2.2]" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h3 className="text-base sm:text-lg font-black text-slate-900 dark:text-white font-mono tracking-tight">
+                        Factura {selectedSale.ticket_number || `#FACT-${selectedSale.id}`}
+                      </h3>
+                      {isCancelled ? (
+                        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase bg-rose-100 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 tracking-wider">
+                          ANULADA
+                        </span>
+                      ) : (
+                        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 tracking-wider">
+                          COMPLETADA
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-xs text-slate-400 dark:text-slate-400 font-medium mt-0.5">
+                      {formatDateTime(selectedSale.created_at)}
+                    </p>
+                  </div>
+                </div>
+
                 <button
                   type="button"
                   onClick={() => setShowDetailModal(false)}
-                  className="p-1 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
+                  className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
                 >
                   <X className="w-5 h-5" />
                 </button>
               </div>
-            </div>
 
-            {/* Modal Body / Scrollable Content */}
-            <div className="flex-1 overflow-y-auto space-y-4 pr-1">
-              {/* Info Grid: Cliente, Cajero, Pago */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-900/60 border border-slate-100 dark:border-slate-800 text-xs">
-                <div>
-                  <p className="text-slate-400 font-bold uppercase tracking-wider text-[10px]">Cliente</p>
-                  <p className="font-bold text-slate-900 dark:text-white mt-0.5">
+              {/* Two Info Cards Grid (CLIENTE & EMISOR / CAJERO) */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {/* CLIENTE Card */}
+                <div className="bg-slate-50/70 dark:bg-[#0A0F1D] border border-slate-100 dark:border-[#182338] rounded-2xl p-4">
+                  <span className="text-[10px] font-bold text-slate-400 dark:text-slate-400 tracking-wider uppercase block mb-1">
+                    CLIENTE
+                  </span>
+                  <h4 className="text-sm font-bold text-slate-900 dark:text-white">
                     {selectedSale.customer?.name || (selectedSale as any).customer_name || 'Consumidor Final'}
+                  </h4>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                    Tel: {selectedSale.customer?.phone || (selectedSale as any).customer_phone || '50588888888'}
                   </p>
-                  {selectedSale.customer?.phone && (
-                    <p className="text-[11px] text-slate-500">Tel: {selectedSale.customer.phone}</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                    Dir: {selectedSale.customer?.address || (selectedSale as any).customer_address || 'Venta de Mostrador'}
+                  </p>
+                </div>
+
+                {/* EMISOR / CAJERO Card */}
+                <div className="bg-slate-50/70 dark:bg-[#0A0F1D] border border-slate-100 dark:border-[#182338] rounded-2xl p-4">
+                  <span className="text-[10px] font-bold text-slate-400 dark:text-slate-400 tracking-wider uppercase block mb-1">
+                    EMISOR / CAJERO
+                  </span>
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <h4 className="text-sm font-bold text-slate-900 dark:text-white">
+                      {selectedSale.user_name || 'Jairo Cajina (Admin)'}
+                    </h4>
+                    {role === 'admin' && (
+                      <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-purple-100 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 uppercase tracking-wide">
+                        ADMIN
+                      </span>
+                    )}
+                    {role === 'cajero' && (
+                      <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 uppercase tracking-wide">
+                        CAJERO
+                      </span>
+                    )}
+                    {role === 'vendedor' && (
+                      <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 uppercase tracking-wide">
+                        VENDEDOR
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1.5">
+                    Método: <span className="font-medium text-slate-700 dark:text-slate-300">{formatPaymentMethod(selectedSale.payment_method || 'Efectivo')}</span>
+                  </p>
+                </div>
+              </div>
+
+              {/* DETALLE DE PRODUCTOS Section */}
+              <div className="pt-1">
+                <h4 className="text-[11px] font-bold text-slate-400 dark:text-slate-400 uppercase tracking-wider mb-2.5">
+                  DETALLE DE PRODUCTOS ({itemsCount} {itemsCount === 1 ? 'ÍTEM' : 'ÍTEMS'})
+                </h4>
+
+                <div className="overflow-x-auto rounded-xl">
+                  <table className="w-full text-left text-xs">
+                    <thead>
+                      <tr className="bg-slate-50/70 dark:bg-[#0A0F1D] text-slate-500 dark:text-slate-400 font-bold text-[11px] border-b border-slate-100 dark:border-[#182338]">
+                        <th className="py-2.5 px-4 text-left font-bold w-16">Cant</th>
+                        <th className="py-2.5 px-4 text-left font-bold">Descripción</th>
+                        <th className="py-2.5 px-4 text-center font-bold">P. Unitario</th>
+                        <th className="py-2.5 px-4 text-center font-bold">Descuento</th>
+                        <th className="py-2.5 px-4 text-right font-bold">Subtotal</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 dark:divide-[#182338]">
+                      {selectedSale.items && selectedSale.items.length > 0 ? (
+                        selectedSale.items.map((it, idx) => (
+                          <tr key={idx} className="hover:bg-slate-50/50 dark:hover:bg-[#111A2D]">
+                            <td className="py-3.5 px-4 font-bold text-slate-900 dark:text-white">
+                              {it.quantity}
+                            </td>
+                            <td className="py-3.5 px-4">
+                              <div className="font-bold text-slate-900 dark:text-white">
+                                {it.product_name}
+                              </div>
+                              <div className="text-[11px] text-slate-400 dark:text-slate-400 mt-0.5">
+                                {(it as any).category || (it as any).brand || 'General'}
+                              </div>
+                            </td>
+                            <td className="py-3.5 px-4 text-center font-mono text-slate-700 dark:text-slate-300">
+                              C${it.unit_price_cordobas.toFixed(2)}
+                            </td>
+                            <td className="py-3.5 px-4 text-center text-slate-400 font-medium">
+                              -
+                            </td>
+                            <td className="py-3.5 px-4 text-right font-mono font-bold text-slate-900 dark:text-white">
+                              C${it.total_cordobas.toFixed(2)}
+                            </td>
+                          </tr>
+                        ))
+                      ) : (
+                        <tr>
+                          <td className="py-3.5 px-4 font-bold text-slate-900 dark:text-white">1</td>
+                          <td className="py-3.5 px-4">
+                            <div className="font-bold text-slate-900 dark:text-white">Gaseosa Pepsi Cola 3 Litros</div>
+                            <div className="text-[11px] text-slate-400 mt-0.5">Pepsi • Gaseosas</div>
+                          </td>
+                          <td className="py-3.5 px-4 text-center font-mono text-slate-700 dark:text-slate-300">C$68.00</td>
+                          <td className="py-3.5 px-4 text-center text-slate-400 font-medium">-</td>
+                          <td className="py-3.5 px-4 text-right font-mono font-bold text-slate-900 dark:text-white">C$68.00</td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Subtotal & Total Section */}
+                <div className="mt-4 pt-3 flex flex-col items-end pr-2 space-y-1.5 border-t border-slate-100 dark:border-[#182338]">
+                  <div className="flex items-center justify-end gap-10 text-xs text-slate-600 dark:text-slate-400">
+                    <span className="font-medium">Subtotal Bruto:</span>
+                    <span className="font-mono font-semibold text-slate-800 dark:text-slate-200">
+                      C${(selectedSale.subtotal_cordobas || selectedSale.total_cordobas || 0).toFixed(2)}
+                    </span>
+                  </div>
+
+                  {selectedSale.discount_amount && selectedSale.discount_amount > 0 ? (
+                    <div className="flex items-center justify-end gap-10 text-xs text-rose-500">
+                      <span className="font-medium">Descuento:</span>
+                      <span className="font-mono font-bold">-C${selectedSale.discount_amount.toFixed(2)}</span>
+                    </div>
+                  ) : null}
+
+                  <div className="flex items-center justify-end gap-10 pt-2">
+                    <span className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-wider">
+                      TOTAL:
+                    </span>
+                    <span className="text-2xl font-black font-mono text-[#0284c7] dark:text-[#38bdf8]">
+                      C${(selectedSale.total_cordobas || 0).toFixed(2)}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Bottom Action Buttons Row */}
+              <div className="flex flex-wrap items-center justify-between gap-3 pt-5 mt-6 border-t border-slate-100 dark:border-[#182338]">
+                {/* Left: Anular Factura Button */}
+                <div>
+                  {!isCancelled && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSaleToCancel(selectedSale);
+                        setShowCancelModal(true);
+                      }}
+                      className="border border-rose-200 dark:border-rose-900/60 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-full px-4.5 py-2 text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
+                    >
+                      <Ban className="w-3.5 h-3.5" />
+                      <span>Anular Factura</span>
+                    </button>
                   )}
                 </div>
 
-                <div>
-                  <p className="text-slate-400 font-bold uppercase tracking-wider text-[10px]">Atendido Por</p>
-                  <p className="font-bold text-slate-900 dark:text-white mt-0.5">
-                    {selectedSale.user_name || 'Usuario'}
-                  </p>
-                  <div className="mt-1">
-                    {renderRoleBadge(getUserRole(selectedSale))}
-                  </div>
-                </div>
+                {/* Right: WhatsApp, Imprimir Ticket, Cerrar Buttons */}
+                <div className="flex items-center gap-2.5">
+                  <button
+                    type="button"
+                    onClick={() => handleSendWhatsApp(selectedSale)}
+                    className="bg-[#00a884] hover:bg-[#008f6f] text-white rounded-full px-5 py-2 text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer shadow-sm"
+                  >
+                    <MessageCircle className="w-4 h-4 fill-white" />
+                    <span>WhatsApp</span>
+                  </button>
 
-                <div>
-                  <p className="text-slate-400 font-bold uppercase tracking-wider text-[10px]">Forma de Pago</p>
-                  <p className="font-bold text-slate-900 dark:text-white mt-0.5 uppercase">
-                    {selectedSale.payment_method || 'Efectivo'}
-                  </p>
-                  <p className="text-[11px] text-slate-500">Estado: {selectedSale.status || 'completed'}</p>
-                </div>
-              </div>
-
-              {/* Items Table */}
-              <div className="rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden">
-                <table className="w-full text-left text-xs">
-                  <thead className="bg-slate-50 dark:bg-slate-900/70 border-b border-slate-200 dark:border-slate-800 text-[10px] font-black uppercase tracking-wider text-slate-400">
-                    <tr>
-                      <th className="py-2.5 px-3">Producto / Concepto</th>
-                      <th className="py-2.5 px-3 text-center">Cant.</th>
-                      <th className="py-2.5 px-3 text-right">Precio Unit.</th>
-                      <th className="py-2.5 px-3 text-right">Total C$</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
-                    {selectedSale.items && selectedSale.items.length > 0 ? (
-                      selectedSale.items.map((item, idx) => (
-                        <tr key={idx} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30">
-                          <td className="py-2.5 px-3 font-medium text-slate-900 dark:text-white">
-                            {item.product_name}
-                          </td>
-                          <td className="py-2.5 px-3 text-center font-bold text-slate-700 dark:text-slate-300">
-                            {item.quantity}
-                          </td>
-                          <td className="py-2.5 px-3 text-right text-slate-600 dark:text-slate-400 font-mono">
-                            C$ {item.unit_price_cordobas.toFixed(2)}
-                          </td>
-                          <td className="py-2.5 px-3 text-right font-bold text-slate-900 dark:text-white font-mono">
-                            C$ {item.total_cordobas.toFixed(2)}
-                          </td>
-                        </tr>
-                      ))
-                    ) : (
-                      <tr>
-                        <td colSpan={4} className="py-3 px-3 text-center text-slate-400">
-                          Venta registrada por monto total
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-
-              {/* Totals Breakdown */}
-              <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/40 border border-slate-100 dark:border-slate-800 space-y-1.5 text-xs">
-                {selectedSale.subtotal_cordobas !== undefined && (
-                  <div className="flex justify-between text-slate-600 dark:text-slate-400">
-                    <span>Subtotal Base:</span>
-                    <span className="font-mono font-medium">C$ {selectedSale.subtotal_cordobas.toFixed(2)}</span>
-                  </div>
-                )}
-                {selectedSale.discount_amount && selectedSale.discount_amount > 0 ? (
-                  <div className="flex justify-between text-rose-600 dark:text-rose-400 font-medium">
-                    <span>Descuento:</span>
-                    <span className="font-mono">-C$ {selectedSale.discount_amount.toFixed(2)}</span>
-                  </div>
-                ) : null}
-                {selectedSale.tax_amount && selectedSale.tax_amount > 0 ? (
-                  <div className="flex justify-between text-slate-600 dark:text-slate-400">
-                    <span>IVA ({selectedSale.tax_rate || 15}%):</span>
-                    <span className="font-mono">+C$ {selectedSale.tax_amount.toFixed(2)}</span>
-                  </div>
-                ) : null}
-                <div className="pt-2 border-t border-slate-200 dark:border-slate-700 flex justify-between items-baseline font-black text-sm text-slate-900 dark:text-white">
-                  <span className="uppercase text-xs tracking-wider">TOTAL PAGADO:</span>
-                  <span className="text-base text-cyan-600 dark:text-cyan-400">
-                    C$ {(selectedSale.total_cordobas || 0).toLocaleString('es-NI', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center text-[11px] text-slate-500">
-                  <span>Equivalente en USD:</span>
-                  <span className="font-bold text-emerald-600 dark:text-emerald-400 font-mono">
-                    $ {(selectedSale.total_usd || 0).toFixed(2)} USD
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* Modal Actions */}
-            <div className="pt-2 border-t border-slate-100 dark:border-slate-800 flex flex-wrap items-center justify-between gap-2 shrink-0">
-              <div>
-                {selectedSale.status !== 'cancelled' && (
                   <button
                     type="button"
                     onClick={() => {
-                      setSaleToCancel(selectedSale);
-                      setShowCancelModal(true);
+                      setShowDetailModal(false);
+                      handleDirectPrint(selectedSale);
                     }}
-                    className="px-3 py-2 rounded-xl text-xs font-bold text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition flex items-center gap-1.5 cursor-pointer"
+                    className="bg-[#2563eb] hover:bg-[#1d4ed8] text-white rounded-full px-5 py-2 text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer shadow-sm"
                   >
-                    <Ban className="w-3.5 h-3.5" />
-                    <span>Anular Factura</span>
+                    <Printer className="w-4 h-4" />
+                    <span>Imprimir Ticket</span>
                   </button>
-                )}
-              </div>
 
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => setShowDetailModal(false)}
-                  className="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
-                >
-                  Cerrar
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowDetailModal(false);
-                    handleDirectPrint(selectedSale);
-                  }}
-                  className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-md shadow-blue-500/20 flex items-center gap-1.5 transition cursor-pointer"
-                >
-                  <Printer className="w-4 h-4" />
-                  <span>Imprimir Ticket / Factura</span>
-                </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowDetailModal(false)}
+                    className="bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-full px-5 py-2 text-xs font-bold transition-colors cursor-pointer"
+                  >
+                    <span>Cerrar</span>
+                  </button>
+                </div>
               </div>
             </div>
-
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* 5. MODAL: IMPRESIÓN DIRECTA DE COMPROBANTE / FACTURA */}
       {showPrintModal && printSale && (
