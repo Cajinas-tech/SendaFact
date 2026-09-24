@@ -235,42 +235,176 @@ const DEFAULT_SETTINGS: CompanySetting = {
 };
 
 const DEFAULT_USERS: User[] = [
-  { id: 1, name: 'Jairo Cajina (Admin)', email: 'jairotten84@gmail.com', role: 'admin', phone: '+505 8888 0001', status: 'active', created_at: '2026-09-01' },
-  { id: 2, name: 'Administrador Senda', email: 'admin@sendasistemas.com', role: 'admin', phone: '+505 8888 0001', status: 'active', created_at: '2026-09-01' },
-  { id: 3, name: 'Cajero Principal', email: 'caja@sendasistemas.com', role: 'cajero', phone: '+505 8888 0002', status: 'active', created_at: '2026-09-02' },
-  { id: 4, name: 'Vendedor Sala de Ventas', email: 'ventas@sendasistemas.com', role: 'vendedor', phone: '+505 8888 0003', status: 'active', created_at: '2026-09-03' },
+  { id: 1, name: 'jairotten84 (ADMINISTRADOR)', email: 'jairotten84@gmail.com', role: 'admin', phone: '+505 8888 0001', status: 'active', created_at: '2026-01-01' },
+  { id: 2, name: 'admin', email: 'admin@sendasistemas.com', role: 'admin', phone: '+505 8888 0002', status: 'active', created_at: '2026-01-01' },
+  { id: 3, name: 'Loira', email: 'loira@sendasistemas.com', role: 'cajero', phone: '+505 8888 0003', status: 'active', created_at: '2026-01-15' },
+  { id: 4, name: 'Dylan', email: 'dylan@sendasistemas.com', role: 'vendedor', phone: '+505 8888 0004', status: 'active', created_at: '2026-02-01' },
+  { id: 5, name: 'Cajero Principal', email: 'caja@sendasistemas.com', role: 'cajero', phone: '+505 8888 0005', status: 'active', created_at: '2026-02-10' },
+  { id: 6, name: 'Vendedor Sala de Ventas', email: 'ventas@sendasistemas.com', role: 'vendedor', phone: '+505 8888 0006', status: 'active', created_at: '2026-02-15' },
 ];
 
 const DEFAULT_SALES: Sale[] = [
   {
-    id: 1,
-    ticket_number: 'NOVA-V-1001',
-    customer_id: 1,
-    customer: DEFAULT_CUSTOMERS[0],
-    user_name: 'Jairo Cajina',
+    id: 12,
+    ticket_number: '#FACT-20260905-000012',
+    customer_id: 4,
+    customer: { id: 4, name: 'Cliente General', credit_limit: 0, current_debt: 0 },
+    user_name: 'jairotten84 (ADMINISTRADOR)',
+    user_role: 'admin',
     payment_method: 'efectivo',
-    total_cordobas: 3500.00,
-    total_usd: 95.11,
+    subtotal_cordobas: 22.00,
+    tax_rate: 15,
+    tax_amount: 3.30,
+    total_cordobas: 25.30,
+    total_usd: 0.69,
     status: 'completed',
     items: [
-      { product_name: 'PUERTA DE ALUMINIO-VIDRIO', quantity: 1, unit_price_cordobas: 3500.00, total_cordobas: 3500.00 }
+      { product_name: 'BIG COLA 500ML', quantity: 1, unit_price_cordobas: 25.30, total_cordobas: 25.30 }
     ],
-    created_at: new Date(Date.now() - 3600000).toISOString()
+    created_at: '2026-09-05T04:05:02'
   },
   {
-    id: 2,
-    ticket_number: 'NOVA-V-1002',
-    customer_id: 4,
-    customer: DEFAULT_CUSTOMERS[3],
-    user_name: 'Cajero Principal',
-    payment_method: 'tarjeta',
-    total_cordobas: 8000.00,
-    total_usd: 217.39,
+    id: 16,
+    ticket_number: '#FACT-20260624-000016',
+    customer_id: 1,
+    customer: { id: 1, name: 'jairo cajina', phone: '444334405', credit_limit: 5000, current_debt: 0 },
+    user_name: 'jairotten84',
+    user_role: 'admin',
+    payment_method: 'efectivo',
+    subtotal_cordobas: 131.00,
+    total_cordobas: 131.00,
+    total_usd: 3.56,
     status: 'completed',
     items: [
-      { product_name: 'VENTANA ALUMINIO-VIDRIO', quantity: 1, unit_price_cordobas: 8000.00, total_cordobas: 8000.00 }
+      { product_name: 'Tornillos Galvanizados 2"', quantity: 1, unit_price_cordobas: 130.00, total_cordobas: 130.00 },
+      { product_name: 'Empaque de Goma', quantity: 1, unit_price_cordobas: 1.00, total_cordobas: 1.00 }
     ],
-    created_at: new Date(Date.now() - 7200000).toISOString()
+    created_at: '2026-06-24T23:08:36'
+  },
+  {
+    id: 15,
+    ticket_number: '#FACT-20260624-000015',
+    customer_id: 1,
+    customer: { id: 1, name: 'jairo cajina', phone: '444334405', credit_limit: 5000, current_debt: 0 },
+    user_name: 'jairotten84',
+    user_role: 'admin',
+    payment_method: 'tarjeta',
+    subtotal_cordobas: 87.00,
+    total_cordobas: 87.00,
+    total_usd: 2.36,
+    status: 'completed',
+    items: [
+      { product_name: 'Jugo de Naranja Natural 1L', quantity: 1, unit_price_cordobas: 45.00, total_cordobas: 45.00 },
+      { product_name: 'Leche Entera Pasteurizada 1L', quantity: 1, unit_price_cordobas: 42.00, total_cordobas: 42.00 }
+    ],
+    created_at: '2026-05-24T23:07:31'
+  },
+  {
+    id: 14,
+    ticket_number: '#FACT-20260624-000014',
+    customer_id: 5,
+    customer: { id: 5, name: 'loira rivas', credit_limit: 2000, current_debt: 0 },
+    user_name: 'jairotten84',
+    user_role: 'admin',
+    payment_method: 'efectivo',
+    subtotal_cordobas: 58.00,
+    total_cordobas: 58.00,
+    total_usd: 1.58,
+    status: 'completed',
+    items: [
+      { product_name: 'COCA COLA 500ML', quantity: 2, unit_price_cordobas: 29.00, total_cordobas: 58.00 }
+    ],
+    created_at: '2026-05-24T23:05:16'
+  },
+  {
+    id: 13,
+    ticket_number: '#FACT-20260624-000013',
+    customer_id: 5,
+    customer: { id: 5, name: 'loira rivas', credit_limit: 2000, current_debt: 0 },
+    user_name: 'jairotten84',
+    user_role: 'admin',
+    payment_method: 'efectivo',
+    subtotal_cordobas: 40.00,
+    total_cordobas: 40.00,
+    total_usd: 1.09,
+    status: 'completed',
+    items: [
+      { product_name: 'Leche Entera Pasteurizada 1L', quantity: 1, unit_price_cordobas: 40.00, total_cordobas: 40.00 }
+    ],
+    created_at: '2026-06-24T23:03:42'
+  },
+  {
+    id: 120,
+    ticket_number: '#FACT-20260624-000012',
+    customer_id: 1,
+    customer: { id: 1, name: 'jairo cajina', phone: '444334405', credit_limit: 5000, current_debt: 0 },
+    user_name: 'jairotten84',
+    user_role: 'admin',
+    payment_method: 'transferencia',
+    subtotal_cordobas: 40.00,
+    total_cordobas: 40.00,
+    total_usd: 1.09,
+    status: 'completed',
+    items: [
+      { product_name: 'Leche Entera Pasteurizada 1L', quantity: 1, unit_price_cordobas: 40.00, total_cordobas: 40.00 }
+    ],
+    created_at: '2026-06-24T23:01:48'
+  },
+  {
+    id: 11,
+    ticket_number: '#FACT-20260331-000011',
+    customer_id: 6,
+    customer: { id: 6, name: 'Consumidor Final', credit_limit: 0, current_debt: 0 },
+    user_name: 'Loira',
+    user_role: 'cajero',
+    payment_method: 'efectivo',
+    subtotal_cordobas: 311.00,
+    total_cordobas: 311.00,
+    total_usd: 8.45,
+    status: 'completed',
+    items: [
+      { product_name: 'Tornillos Galvanizados 2"', quantity: 2, unit_price_cordobas: 130.00, total_cordobas: 260.00 },
+      { product_name: 'Jugo de Naranja Natural 1L', quantity: 1, unit_price_cordobas: 45.00, total_cordobas: 45.00 },
+      { product_name: 'Bolsa Ecológica', quantity: 1, unit_price_cordobas: 6.00, total_cordobas: 6.00 }
+    ],
+    created_at: '2026-03-31T22:51:36'
+  },
+  {
+    id: 10,
+    ticket_number: '#FACT-20260331-000010',
+    customer_id: 6,
+    customer: { id: 6, name: 'Consumidor Final', credit_limit: 0, current_debt: 0 },
+    user_name: 'Dylan',
+    user_role: 'vendedor',
+    payment_method: 'tarjeta',
+    subtotal_cordobas: 88.00,
+    total_cordobas: 88.00,
+    total_usd: 2.39,
+    status: 'completed',
+    items: [
+      { product_name: 'COCA COLA 500ML', quantity: 2, unit_price_cordobas: 28.00, total_cordobas: 56.00 },
+      { product_name: 'BIG COLA 500ML', quantity: 1, unit_price_cordobas: 25.00, total_cordobas: 25.00 },
+      { product_name: 'Empaque biodegradable', quantity: 1, unit_price_cordobas: 7.00, total_cordobas: 7.00 }
+    ],
+    created_at: '2026-03-31T22:23:39'
+  },
+  {
+    id: 9,
+    ticket_number: '#FACT-20260328-000009',
+    customer_id: 6,
+    customer: { id: 6, name: 'Consumidor Final', credit_limit: 0, current_debt: 0 },
+    user_name: 'admin',
+    user_role: 'admin',
+    payment_method: 'efectivo',
+    subtotal_cordobas: 70.00,
+    total_cordobas: 70.00,
+    total_usd: 1.90,
+    status: 'completed',
+    items: [
+      { product_name: 'BIG COLA 500ML', quantity: 1, unit_price_cordobas: 25.00, total_cordobas: 25.00 },
+      { product_name: 'Jugo de Naranja Natural 1L', quantity: 1, unit_price_cordobas: 45.00, total_cordobas: 45.00 }
+    ],
+    created_at: '2026-03-28T22:36:41'
   }
 ];
 
@@ -485,10 +619,39 @@ export const storage = {
       this.setSales(DEFAULT_SALES);
       return DEFAULT_SALES;
     }
-    try { return JSON.parse(raw) || DEFAULT_SALES; } catch (e) { return DEFAULT_SALES; }
+    try {
+      const parsed: Sale[] = JSON.parse(raw) || DEFAULT_SALES;
+      const hasFact = parsed.some(s => s.ticket_number && s.ticket_number.includes('FACT'));
+      if (!hasFact && parsed.length < 5) {
+        const merged = [...parsed, ...DEFAULT_SALES];
+        this.setSales(merged);
+        return merged;
+      }
+      return parsed;
+    } catch (e) {
+      return DEFAULT_SALES;
+    }
   },
   setSales(sales: Sale[]) {
     localStorage.setItem(STORAGE_KEYS.SALES, JSON.stringify(sales));
+  },
+  saveSale(sale: Sale) {
+    const sales = this.getSales();
+    const idx = sales.findIndex(s => s.id === sale.id);
+    if (idx >= 0) {
+      sales[idx] = sale;
+    } else {
+      sales.unshift(sale);
+    }
+    this.setSales(sales);
+  },
+  cancelSale(id: number): boolean {
+    const sales = this.getSales();
+    const sale = sales.find(s => s.id === id);
+    if (!sale) return false;
+    sale.status = 'cancelled';
+    this.setSales(sales);
+    return true;
   },
 
   // CASH REGISTER

@@ -14,7 +14,8 @@ import {
   LogOut,
   ChevronLeft,
   ChevronRight,
-  X
+  X,
+  FileText
 } from 'lucide-react';
 import { storage } from '../../lib/storage';
 import ConfirmModal from '../UI/ConfirmModal';
@@ -38,6 +39,7 @@ export default function Sidebar({ collapsed, setCollapsed, mobileOpen, setMobile
         { path: '/', icon: LayoutDashboard, label: 'Panel Central' },
         { path: '/catalogo', icon: BookOpen, label: 'Catálogo de Productos' },
         { path: '/pos', icon: ShoppingCart, label: 'Ventas (POS)' },
+        { path: '/facturas', icon: FileText, label: 'Facturas' },
         { path: '/caja', icon: Banknote, label: 'Control de Caja' },
       ]
     },

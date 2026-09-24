@@ -152,7 +152,10 @@ export default function POSPage() {
     setIsProcessing(true);
 
     try {
-      const ticketNumber = 'NOVA-V-' + Math.floor(1000 + Math.random() * 9000);
+      const now = new Date();
+      const ymd = now.getFullYear().toString() + String(now.getMonth() + 1).padStart(2, '0') + String(now.getDate()).padStart(2, '0');
+      const seq = String(Math.floor(1 + Math.random() * 999999)).padStart(6, '0');
+      const ticketNumber = `#FACT-${ymd}-${seq}`;
       const currentUser = storage.getCurrentUser();
       const customer = customers.find(c => String(c.id) === String(selectedCustomerId));
 
@@ -163,6 +166,7 @@ export default function POSPage() {
         customer: customer,
         user_id: currentUser.id,
         user_name: currentUser.name,
+        user_role: currentUser.role,
         payment_method: paymentMethod,
         subtotal_cordobas: subtotal,
         discount_type: discountValue > 0 ? discountType : undefined,

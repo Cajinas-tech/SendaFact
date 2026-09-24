@@ -72,6 +72,7 @@ export interface Sale {
   customer?: Customer;
   user_id?: number;
   user_name?: string;
+  user_role?: 'admin' | 'cajero' | 'vendedor' | string;
   payment_method: 'efectivo' | 'tarjeta' | 'transferencia' | 'credito';
   subtotal_cordobas?: number;
   discount_type?: 'percentage' | 'fixed';
