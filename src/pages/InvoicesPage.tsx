@@ -20,7 +20,7 @@ import {
   MessageCircle
 } from 'lucide-react';
 import { storage } from '../lib/storage';
-import { Sale, CompanySetting, User } from '../types';
+import { Sale, CompanySetting, User, CreditAccount } from '../types';
 import { useToast } from '../components/UI/Toast';
 import ConfirmModal from '../components/UI/ConfirmModal';
 
@@ -28,6 +28,7 @@ export const InvoicesPage: React.FC = () => {
   const [sales, setSales] = useState<Sale[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [company, setCompany] = useState<CompanySetting | null>(null);
+  const [credits, setCredits] = useState<CreditAccount[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [roleFilter, setRoleFilter] = useState<'all' | 'admin' | 'cajero' | 'vendedor'>('all');
   const [userFilter, setUserFilter] = useState<string>('all');
@@ -56,6 +57,7 @@ export const InvoicesPage: React.FC = () => {
     setSales(loadedSales);
     setUsers(storage.getUsers());
     setCompany(storage.getCompanySettings());
+    setCredits(storage.getCredits() || []);
   };
 
   useEffect(() => {
@@ -171,7 +173,19 @@ export const InvoicesPage: React.FC = () => {
 
       // Payment filter
       if (paymentFilter !== 'all') {
-        if (s.payment_method !== paymentFilter) return false;
+        const saleMethod = (s.payment_method || '').toLowerCase().trim();
+        const filter = paymentFilter.toLowerCase().trim();
+        if (filter === 'efectivo') {
+          if (saleMethod !== 'efectivo' && saleMethod !== 'cash') return false;
+        } else if (filter === 'tarjeta') {
+          if (saleMethod !== 'tarjeta' && saleMethod !== 'card') return false;
+        } else if (filter === 'transferencia') {
+          if (saleMethod !== 'transferencia' && saleMethod !== 'transfer') return false;
+        } else if (filter === 'credito') {
+          if (saleMethod !== 'credito' && saleMethod !== 'crédito' && saleMethod !== 'credit') return false;
+        } else {
+          if (saleMethod !== filter) return false;
+        }
       }
 
       // Status filter
@@ -313,12 +327,48 @@ export const InvoicesPage: React.FC = () => {
     setShowPrintModal(true);
   };
 
-  const formatPaymentMethod = (method: string) => {
-    if (method === 'Efectivo') return 'Efectivo (CONTADO)';
-    if (method === 'Crédito' || method === 'credito') return 'Crédito (Abonos)';
-    if (method === 'Transferencia' || method === 'transferencia') return 'Transferencia Bancaria';
-    if (method === 'Tarjeta' || method === 'tarjeta') return 'Tarjeta Débito/Crédito';
+  const formatPaymentMethod = (method?: string) => {
+    if (!method) return 'Efectivo (CONTADO)';
+    const m = method.toLowerCase().trim();
+    if (m === 'efectivo' || m === 'cash') return 'Efectivo (CONTADO)';
+    if (m === 'credito' || m === 'crédito' || m === 'credit') return 'Crédito (Abonos / Plazo)';
+    if (m === 'transferencia' || m === 'transfer') return 'Transferencia Bancaria';
+    if (m === 'tarjeta' || m === 'card') return 'Tarjeta Débito / Crédito';
     return method;
+  };
+
+  const renderPaymentBadge = (method?: string) => {
+    const m = (method || 'efectivo').toLowerCase().trim();
+    if (m === 'transferencia' || m === 'transfer') {
+      return (
+        <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-black bg-blue-100 text-blue-800 dark:bg-blue-950/70 dark:text-blue-300 border border-blue-200 dark:border-blue-800/60 uppercase tracking-wider">
+          <ArrowUpDown className="w-3 h-3 text-blue-600 dark:text-blue-400" />
+          Transferencia
+        </span>
+      );
+    }
+    if (m === 'credito' || m === 'crédito' || m === 'credit') {
+      return (
+        <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-black bg-amber-100 text-amber-800 dark:bg-amber-950/70 dark:text-amber-300 border border-amber-200 dark:border-amber-800/60 uppercase tracking-wider">
+          <Calendar className="w-3 h-3 text-amber-600 dark:text-amber-400" />
+          Crédito
+        </span>
+      );
+    }
+    if (m === 'tarjeta' || m === 'card') {
+      return (
+        <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-black bg-indigo-100 text-indigo-800 dark:bg-indigo-950/70 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800/60 uppercase tracking-wider">
+          <CreditCard className="w-3 h-3 text-indigo-600 dark:text-indigo-400" />
+          Tarjeta
+        </span>
+      );
+    }
+    return (
+      <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-800 dark:bg-emerald-950/70 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60 uppercase tracking-wider">
+        <CheckCircle2 className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
+        Efectivo
+      </span>
+    );
   };
 
   const handleSendWhatsApp = (sale: Sale) => {
@@ -619,6 +669,7 @@ export const InvoicesPage: React.FC = () => {
                 <th className="py-3.5 px-4 sm:px-6">Nº FACTURA</th>
                 <th className="py-3.5 px-4">FECHA / HORA</th>
                 <th className="py-3.5 px-4">CLIENTE</th>
+                <th className="py-3.5 px-4">MÉTODO</th>
                 <th className="py-3.5 px-4">CAJERO / EMISOR</th>
                 <th className="py-3.5 px-4">TOTAL</th>
                 <th className="py-3.5 px-4 sm:px-6 text-center">ACCIONES</th>
@@ -656,6 +707,11 @@ export const InvoicesPage: React.FC = () => {
                       {/* CLIENTE */}
                       <td className="py-3.5 px-4 font-bold text-slate-900 dark:text-white">
                         <span className="capitalize">{clientName}</span>
+                      </td>
+
+                      {/* MÉTODO */}
+                      <td className="py-3.5 px-4 whitespace-nowrap">
+                        {renderPaymentBadge(sale.payment_method)}
                       </td>
 
                       {/* CAJERO / EMISOR */}
@@ -705,7 +761,7 @@ export const InvoicesPage: React.FC = () => {
                 })
               ) : (
                 <tr>
-                  <td colSpan={6} className="py-12 text-center text-slate-400">
+                  <td colSpan={7} className="py-12 text-center text-slate-400">
                     <div className="flex flex-col items-center justify-center space-y-2">
                       <FileText className="w-10 h-10 text-slate-300 dark:text-slate-600" />
                       <p className="text-sm font-semibold text-slate-600 dark:text-slate-300">
@@ -760,7 +816,7 @@ export const InvoicesPage: React.FC = () => {
                     <FileText className="w-5.5 h-5.5" />
                   </div>
                   <div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
                       <h3 className="text-base sm:text-lg font-black text-slate-900 dark:text-white tracking-tight">
                         Factura {selectedSale.ticket_number ? (selectedSale.ticket_number.startsWith('#') ? selectedSale.ticket_number : '#' + selectedSale.ticket_number) : `#FACT-${selectedSale.id}`}
                       </h3>
@@ -773,6 +829,7 @@ export const InvoicesPage: React.FC = () => {
                           COMPLETADA
                         </span>
                       )}
+                      {renderPaymentBadge(selectedSale.payment_method)}
                     </div>
                     <p className="text-xs text-slate-400 dark:text-slate-500 font-normal mt-0.5">
                       {formatDateTime(selectedSale.created_at)}
@@ -844,6 +901,115 @@ export const InvoicesPage: React.FC = () => {
                     )}
                   </div>
                 </div>
+
+                {/* Banner Contextual de Método de Pago (Créditos / Transferencias / Tarjeta) */}
+                {(() => {
+                  const mLower = (selectedSale.payment_method || '').toLowerCase().trim();
+                  const isCredit = mLower === 'credito' || mLower === 'crédito' || mLower === 'credit';
+                  const isTransfer = mLower === 'transferencia' || mLower === 'transfer';
+                  const isCard = mLower === 'tarjeta' || mLower === 'card';
+                  const linkedCredit = credits.find(
+                    c => (selectedSale.ticket_number && c.ticket_number === selectedSale.ticket_number) ||
+                         (selectedSale.id && c.sale_id === selectedSale.id)
+                  );
+
+                  if (isCredit) {
+                    const days = linkedCredit?.dias_plazo || (selectedSale as any).credit_term_days || 30;
+                    const remaining = linkedCredit ? (linkedCredit.remaining_debt ?? linkedCredit.total_debt ?? 0) : 0;
+                    const isFullyPaid = linkedCredit ? remaining <= 0.01 : false;
+
+                    return (
+                      <div className="bg-amber-500/10 border border-amber-500/30 rounded-2xl p-3 sm:p-3.5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
+                        <div className="flex items-center gap-3">
+                          <div className="w-9 h-9 rounded-xl bg-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
+                            <Calendar className="w-4.5 h-4.5" />
+                          </div>
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <p className="font-extrabold text-amber-950 dark:text-amber-200 text-xs sm:text-sm">
+                                Venta Registrada al Crédito
+                              </p>
+                              <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-full ${
+                                isFullyPaid 
+                                  ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300'
+                                  : 'bg-amber-200 text-amber-900 dark:bg-amber-900/60 dark:text-amber-200'
+                              }`}>
+                                {isFullyPaid ? 'Crédito Saldado' : 'Pendiente de Pago'}
+                              </span>
+                            </div>
+                            <p className="text-[11px] text-amber-700 dark:text-amber-300 mt-0.5">
+                              Plazo acordado: <strong className="font-bold">{days} días</strong>
+                              {linkedCredit?.due_date && ` • Fecha límite: ${new Date(linkedCredit.due_date).toLocaleDateString('es-NI')}`}
+                            </p>
+                          </div>
+                        </div>
+
+                        {linkedCredit && (
+                          <div className="sm:text-right shrink-0 bg-white/80 dark:bg-slate-900/80 px-3 py-1.5 rounded-xl border border-amber-200/60 dark:border-amber-800/40">
+                            <span className="text-[10px] text-slate-500 dark:text-slate-400 block uppercase font-bold tracking-wider">
+                              Saldo Pendiente
+                            </span>
+                            <span className={`font-mono font-black text-sm ${isFullyPaid ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
+                              C$ {remaining.toLocaleString('es-NI', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  }
+
+                  if (isTransfer) {
+                    return (
+                      <div className="bg-blue-500/10 border border-blue-500/30 rounded-2xl p-3 sm:p-3.5 flex items-center justify-between gap-3 text-xs">
+                        <div className="flex items-center gap-3">
+                          <div className="w-9 h-9 rounded-xl bg-blue-500/20 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
+                            <ArrowUpDown className="w-4.5 h-4.5" />
+                          </div>
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <p className="font-extrabold text-blue-950 dark:text-blue-200 text-xs sm:text-sm">
+                                Pago por Transferencia Bancaria
+                              </p>
+                              <span className="text-[9px] font-black uppercase px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900/60 dark:text-blue-200">
+                                Transf. Verificada
+                              </span>
+                            </div>
+                            <p className="text-[11px] text-blue-700 dark:text-blue-300 mt-0.5">
+                              Operación bancaria electrónica registrada y conciliada
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  }
+
+                  if (isCard) {
+                    return (
+                      <div className="bg-indigo-500/10 border border-indigo-500/30 rounded-2xl p-3 sm:p-3.5 flex items-center justify-between gap-3 text-xs">
+                        <div className="flex items-center gap-3">
+                          <div className="w-9 h-9 rounded-xl bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0">
+                            <CreditCard className="w-4.5 h-4.5" />
+                          </div>
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <p className="font-extrabold text-indigo-950 dark:text-indigo-200 text-xs sm:text-sm">
+                                Pago con Tarjeta Débito / Crédito
+                              </p>
+                              <span className="text-[9px] font-black uppercase px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-800 dark:bg-indigo-900/60 dark:text-indigo-200">
+                                POS Aprobado
+                              </span>
+                            </div>
+                            <p className="text-[11px] text-indigo-700 dark:text-indigo-300 mt-0.5">
+                              Transacción electrónica procesada mediante terminal de venta
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  }
+
+                  return null;
+                })()}
 
                 {/* Sección de Detalle de Productos */}
                 <div className="space-y-2">
@@ -1066,8 +1232,14 @@ export const InvoicesPage: React.FC = () => {
                 </div>
                 <div className="flex justify-between text-slate-600 dark:text-slate-400">
                   <span>Forma de Pago:</span>
-                  <span className="uppercase font-semibold">{printSale.payment_method || 'Efectivo'}</span>
+                  <span className="uppercase font-semibold">{formatPaymentMethod(printSale.payment_method)}</span>
                 </div>
+                {((printSale.payment_method || '').toLowerCase().includes('cred') || (printSale as any).credit_term_days) && (
+                  <div className="flex justify-between text-amber-700 dark:text-amber-400 font-semibold">
+                    <span>Plazo de Crédito:</span>
+                    <span>{(printSale as any).credit_term_days || 30} DÍAS</span>
+                  </div>
+                )}
                 {printSale.status === 'cancelled' && (
                   <div className="flex justify-center text-rose-600 font-bold py-1 border border-rose-300 rounded uppercase">
                     *** FACTURA ANULADA ***

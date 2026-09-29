@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Printer, CheckCircle2, X, Building2 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { Sale, CompanySetting } from '../../types';
@@ -52,8 +53,18 @@ export default function TicketModal({
     second: '2-digit'
   });
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/70 backdrop-blur-xs animate-in fade-in duration-150 overflow-y-auto">
+  const formatPaymentName = (method?: string) => {
+    if (!method) return 'EFECTIVO';
+    const m = method.toLowerCase().trim();
+    if (m === 'efectivo' || m === 'cash') return 'EFECTIVO (CONTADO)';
+    if (m === 'credito' || m === 'crédito' || m === 'credit') return 'CRÉDITO (A PLAZO)';
+    if (m === 'transferencia' || m === 'transfer') return 'TRANSFERENCIA BANCARIA';
+    if (m === 'tarjeta' || m === 'card') return 'TARJETA DÉBITO/CRÉDITO';
+    return method.toUpperCase();
+  };
+
+  return createPortal(
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-4 bg-black/70 backdrop-blur-xs animate-in fade-in duration-150 overflow-y-auto">
       <div className="w-full max-w-md glass-card rounded-3xl p-5 sm:p-6 border border-slate-200 dark:border-slate-800 shadow-2xl space-y-4 bg-white dark:bg-[#0b1329] my-auto">
         
         {/* Modal Top Header (No print) */}
@@ -135,8 +146,14 @@ export default function TicketModal({
             </div>
             <div className="flex justify-between text-slate-600 dark:text-slate-400">
               <span>Forma de Pago:</span>
-              <span className="uppercase font-semibold">{sale?.payment_method || 'Efectivo'}</span>
+              <span className="uppercase font-semibold">{formatPaymentName(sale?.payment_method)}</span>
             </div>
+            {((sale?.payment_method || '').toLowerCase().includes('cred') || (sale as any)?.credit_term_days) && (
+              <div className="flex justify-between text-amber-700 dark:text-amber-400 font-semibold">
+                <span>Plazo de Crédito:</span>
+                <span>{(sale as any)?.credit_term_days || 30} DÍAS</span>
+              </div>
+            )}
           </div>
 
           {/* Itemized List */}
@@ -245,6 +262,7 @@ export default function TicketModal({
         </div>
 
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
