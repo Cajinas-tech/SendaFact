@@ -16,6 +16,7 @@ export default function POSPage() {
   const [search, setSearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [selectedCustomerId, setSelectedCustomerId] = useState('');
+  const [busquedaCliente, setBusquedaCliente] = useState('');
   const [paymentMethod, setPaymentMethod] = useState<'efectivo' | 'tarjeta' | 'transferencia' | 'credito'>('efectivo');
   const [creditDays, setCreditDays] = useState<number>(30);
   const [cart, setCart] = useState<{ id: number; name: string; sku: string; price_cordobas: number; price_usd: number; quantity: number }[]>([]);
@@ -737,23 +738,65 @@ export default function POSPage() {
                     </span>
                   </div>
 
-                  {/* Selector de Cliente para Crédito */}
-                  <div>
+                  {/* Buscador de Clientes en Tiempo Real para Crédito */}
+                  <div className="relative">
                     <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1">
-                      Seleccionar Cliente <span className="text-rose-500">*</span>
+                      Buscar Cliente Registrado <span className="text-rose-500">*</span>
                     </label>
-                    <select
-                      value={selectedCustomerId}
-                      onChange={(e) => setSelectedCustomerId(e.target.value)}
-                      className="w-full px-3 py-2 rounded-xl border border-amber-500/40 bg-white dark:bg-slate-900 text-xs font-bold text-slate-800 dark:text-slate-200 outline-none focus:border-amber-500"
-                    >
-                      <option value="">-- Elige un Cliente Registrado --</option>
-                      {customers.map((c) => (
-                        <option key={c.id} value={c.id}>
-                          {c.name} {c.phone ? `(${c.phone})` : ''} - Límite: C$ {(c.credit_limit || 0).toLocaleString()}
-                        </option>
-                      ))}
-                    </select>
+                    <div className="relative">
+                      <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                      <input
+                        type="text"
+                        value={
+                          selectedCustomerId 
+                            ? (customers.find(c => String(c.id) === String(selectedCustomerId))?.name || busquedaCliente)
+                            : busquedaCliente
+                        }
+                        onChange={(e) => {
+                          setBusquedaCliente(e.target.value);
+                          if (selectedCustomerId) setSelectedCustomerId('');
+                        }}
+                        placeholder="Escribe el nombre o teléfono del cliente..."
+                        className="w-full pl-8 pr-3 py-2 rounded-xl border border-amber-500/40 bg-white dark:bg-slate-900 text-xs font-bold text-slate-800 dark:text-slate-200 outline-none focus:border-amber-500"
+                      />
+                    </div>
+
+                    {/* Desplegable de Resultados Filtrados */}
+                    {busquedaCliente && !selectedCustomerId && (
+                      <ul className="absolute z-30 w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 mt-1 rounded-xl max-h-44 overflow-y-auto shadow-xl divide-y divide-slate-100 dark:divide-slate-800">
+                        {customers
+                          .filter(c => 
+                            c.name.toLowerCase().includes(busquedaCliente.toLowerCase()) || 
+                            (c.phone && c.phone.includes(busquedaCliente))
+                          )
+                          .map((cliente) => (
+                            <li
+                              key={cliente.id}
+                              onClick={() => {
+                                setSelectedCustomerId(String(cliente.id));
+                                setBusquedaCliente('');
+                              }}
+                              className="px-3 py-2 text-xs hover:bg-amber-50 dark:hover:bg-slate-800 cursor-pointer flex justify-between items-center transition"
+                            >
+                              <div>
+                                <span className="font-bold text-slate-900 dark:text-white block">{cliente.name}</span>
+                                {cliente.phone && <span className="text-[10px] text-slate-400 font-mono">Tel: {cliente.phone}</span>}
+                              </div>
+                              <span className="text-[11px] font-mono font-bold text-emerald-600 dark:text-emerald-400">
+                                Cupo: C$ {(cliente.credit_limit || 0).toLocaleString()}
+                              </span>
+                            </li>
+                          ))}
+                        {customers.filter(c => 
+                          c.name.toLowerCase().includes(busquedaCliente.toLowerCase()) || 
+                          (c.phone && c.phone.includes(busquedaCliente))
+                        ).length === 0 && (
+                          <li className="px-3 py-3 text-xs text-slate-400 italic text-center">
+                            No se encontraron clientes registrados con ese término
+                          </li>
+                        )}
+                      </ul>
+                    )}
                   </div>
 
                   {/* Información de Deuda y Saldo Disponible */}

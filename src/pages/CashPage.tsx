@@ -7,6 +7,7 @@ import {
 import { storage } from '../lib/storage';
 import { CashRegister, Movement, Sale, CreditAccount } from '../types';
 import { useToast } from '../components/UI/Toast';
+import InformeCierreCaja from '../components/Cash/InformeCierreCaja';
 
 export const CashPage: React.FC = () => {
   const [activeRegister, setActiveRegister] = useState<CashRegister | null>(null);
@@ -430,124 +431,23 @@ export const CashPage: React.FC = () => {
 
       {/* MODAL: Cerrar Caja con Arqueo Completo y Desglose de Abonos */}
       {showCloseModal && activeRegister && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl w-full max-w-2xl p-6 shadow-2xl space-y-5 animate-in fade-in zoom-in-95 duration-200">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-2xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center text-rose-600 dark:text-rose-400 shrink-0">
-                <Lock className="w-6 h-6" />
-              </div>
-              <div>
-                <h3 className="text-lg font-bold text-slate-900 dark:text-white">Arqueo y Cierre de Caja</h3>
-                <p className="text-xs text-slate-500 dark:text-slate-400">Turno #{activeRegister.id} • Cajero: {activeRegister.user || 'Principal'}</p>
-              </div>
-            </div>
-
-            {/* Desglose Matemático del Arqueo */}
-            <div className="bg-slate-50 dark:bg-slate-950 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-2 text-sm">
-              <div className="flex justify-between text-slate-600 dark:text-slate-400">
-                <span>Fondo Inicial de Apertura:</span>
-                <span className="text-slate-900 dark:text-white font-mono font-bold">C$ {initialAmount.toFixed(2)}</span>
-              </div>
-              <div className="flex justify-between text-slate-600 dark:text-slate-400">
-                <span>(+) Ventas de Contado (Efectivo):</span>
-                <span className="text-emerald-600 dark:text-emerald-400 font-mono font-bold">+ C$ {cashSales.toFixed(2)}</span>
-              </div>
-              <div className="flex justify-between text-slate-600 dark:text-slate-400">
-                <span>(+) Cobranza de Abonos a Crédito (Efectivo):</span>
-                <span className="text-teal-600 dark:text-teal-400 font-mono font-bold">+ C$ {cashAbonosShift.toFixed(2)}</span>
-              </div>
-              <div className="flex justify-between text-slate-600 dark:text-slate-400">
-                <span>Ventas Electrónicas (Tarjeta / Transf):</span>
-                <span className="text-blue-600 dark:text-blue-400 font-mono font-bold">C$ {(cardSales + transferSales).toFixed(2)}</span>
-              </div>
-              {(activeRegister.total_expenses || 0) > 0 && (
-                <div className="flex justify-between text-rose-600 dark:text-rose-400">
-                  <span>(-) Egresos / Gastos Registrados:</span>
-                  <span className="font-mono font-bold">- C$ {(activeRegister.total_expenses || 0).toFixed(2)}</span>
-                </div>
-              )}
-              <div className="pt-2 border-t border-slate-200 dark:border-slate-800 flex justify-between font-black text-base">
-                <span className="text-slate-900 dark:text-white">Total Efectivo a Entregar en Arqueo:</span>
-                <span className="text-amber-600 dark:text-amber-400 font-mono text-xl">C$ {currentCashInDrawer.toFixed(2)}</span>
-              </div>
-            </div>
-
-            {/* Desglose Detallado de Abonos del Turno (Cobranza de Créditos) */}
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
-                  <Receipt className="w-3.5 h-3.5 text-teal-500" />
-                  Abonos Cobrados en este Turno ({shiftPayments.length})
-                </h4>
-                <span className="text-xs font-mono font-bold text-teal-600 dark:text-teal-400">
-                  Total Abonos: C$ {cashAbonosShift.toFixed(2)}
-                </span>
-              </div>
-
-              <div className="border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden max-h-44 overflow-y-auto">
-                {shiftPayments.length === 0 ? (
-                  <div className="p-4 text-center text-xs text-slate-400">
-                    No se registraron abonos a crédito durante este turno de caja.
-                  </div>
-                ) : (
-                  <table className="w-full text-left text-xs">
-                    <thead className="bg-slate-100 dark:bg-slate-800/80 text-[10px] font-bold uppercase text-slate-500 sticky top-0">
-                      <tr>
-                        <th className="px-3 py-2">Cliente</th>
-                        <th className="px-3 py-2 text-right">Crédito Orig.</th>
-                        <th className="px-3 py-2 text-right text-teal-600 dark:text-teal-400">Abonado Hoy</th>
-                        <th className="px-3 py-2 text-right">Saldo Restante</th>
-                        <th className="px-3 py-2 text-center">Hora Pago</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60 font-mono">
-                      {shiftPayments.map((p, idx) => (
-                        <tr key={p.id || idx} className="hover:bg-slate-50 dark:hover:bg-slate-800/40">
-                          <td className="px-3 py-2 font-sans font-semibold text-slate-900 dark:text-white">
-                            {p.cliente_nombre}
-                            <span className="block text-[10px] font-mono text-slate-400">
-                              {p.ticket_number || `CR-${p.credito_id}`}
-                            </span>
-                          </td>
-                          <td className="px-3 py-2 text-right text-slate-600 dark:text-slate-400">
-                            C$ {(p.credito_original || 0).toFixed(2)}
-                          </td>
-                          <td className="px-3 py-2 text-right font-bold text-teal-600 dark:text-teal-400">
-                            + C$ {(p.monto_abonado_hoy || 0).toFixed(2)}
-                          </td>
-                          <td className="px-3 py-2 text-right text-slate-700 dark:text-slate-300">
-                            C$ {(p.saldo_restante_actual || 0).toFixed(2)}
-                          </td>
-                          <td className="px-3 py-2 text-center text-[10px] font-sans text-slate-400">
-                            {p.hora_pago ? new Date(p.hora_pago).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--:--'}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                )}
-              </div>
-            </div>
-
-            <form onSubmit={handleCloseRegister} className="space-y-4">
-              <div className="flex gap-3 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setShowCloseModal(false)}
-                  className="flex-1 px-4 py-2.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl text-sm font-bold transition cursor-pointer"
-                >
-                  Continuar Turno
-                </button>
-                <button
-                  type="submit"
-                  className="flex-1 px-4 py-2.5 bg-rose-600 hover:bg-rose-500 text-white rounded-xl text-sm font-bold shadow-lg shadow-rose-600/30 transition cursor-pointer flex items-center justify-center gap-2"
-                >
-                  <Lock className="w-4 h-4" />
-                  Confirmar y Cerrar Caja
-                </button>
-              </div>
-            </form>
-          </div>
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto animate-in fade-in duration-150">
+          <InformeCierreCaja
+            cajaId={activeRegister.id}
+            cajeroNombre={activeRegister.user || 'Principal'}
+            fechaApertura={activeRegister.opened_at}
+            fondoInicial={initialAmount}
+            ventasEfectivo={cashSales}
+            ventasTarjeta={cardSales}
+            ventasTransferencia={transferSales}
+            ventasCredito={creditSales}
+            cobranzaAbonos={cashAbonosShift}
+            egresosGastos={activeRegister.total_expenses || 0}
+            totalEfectivoEsperado={currentCashInDrawer}
+            abonosDetalle={shiftPayments}
+            onConfirmarCierre={() => handleCloseRegister({ preventDefault: () => {} } as any)}
+            onCancelar={() => setShowCloseModal(false)}
+          />
         </div>
       )}
 
