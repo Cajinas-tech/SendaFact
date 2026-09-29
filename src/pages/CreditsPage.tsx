@@ -6,6 +6,7 @@ import {
   Ban, XCircle, AlertCircle, Trash2, History
 } from 'lucide-react';
 import { storage } from '../lib/storage';
+import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { CreditAccount, Customer } from '../types';
 import { useToast } from '../components/UI/Toast';
 
@@ -23,6 +24,7 @@ export const CreditsPage: React.FC = () => {
   const [paymentAmount, setPaymentAmount] = useState('');
   const [paymentMethod, setPaymentMethod] = useState<'cash' | 'card' | 'transfer'>('cash');
   const [notes, setNotes] = useState('');
+  const [isProcessing, setIsProcessing] = useState(false);
 
   // Cancel / Void Credit Modal
   const [creditToCancel, setCreditToCancel] = useState<CreditAccount | null>(null);
@@ -61,75 +63,121 @@ export const CreditsPage: React.FC = () => {
     return 'pending';
   };
 
-  const handleMakePayment = (e: React.FormEvent) => {
+  const handleMakePayment = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedCredit) return;
+    if (!selectedCredit || isProcessing) return;
 
-    const remaining = selectedCredit.remaining_debt ?? selectedCredit.total_debt ?? 0;
-    const amount = parseFloat(paymentAmount) || 0;
-
-    if (amount <= 0) {
+    // Control de inputs: conversión numérica estricta para evitar concatenaciones ("100" + "50" = "10050")
+    const rawNum = parseFloat(paymentAmount);
+    if (isNaN(rawNum) || rawNum <= 0) {
       warning('Monto Inválido', 'El abono debe ser mayor a C$ 0.00');
       return;
     }
+    const amount = Number(rawNum.toFixed(2));
 
+    const remaining = Number((selectedCredit.remaining_debt ?? selectedCredit.total_debt ?? 0).toFixed(2));
     if (amount > remaining + 0.01) {
       warning('Monto Excede la Deuda', `El saldo pendiente es de C$ ${remaining.toFixed(2)}`);
       return;
     }
 
-    const newRemaining = Math.max(0, remaining - amount);
-    const isFullPayment = newRemaining <= 0.01;
+    // Prevenir doble clic: bloquear peticiones simultáneas
+    setIsProcessing(true);
 
-    const updatedCredit: CreditAccount = {
-      ...selectedCredit,
-      remaining_debt: newRemaining,
-      status: isFullPayment ? 'paid' : 'pending',
-      payments: [
-        ...(selectedCredit.payments || []),
-        {
-          id: Date.now(),
-          credit_id: selectedCredit.id,
-          amount_cordobas: amount,
-          payment_method: paymentMethod === 'cash' ? 'Efectivo' : paymentMethod === 'card' ? 'Tarjeta' : 'Transferencia',
-          receipt_number: `ABO-${Math.floor(1000 + Math.random() * 9000)}`,
-          created_at: new Date().toISOString()
-        }
-      ]
-    };
-
-    storage.saveCredit(updatedCredit);
-
-    // Actualizar deuda del cliente
-    const customer = customers.find(c => String(c.id) === String(selectedCredit.customer_id));
-    if (customer) {
-      storage.saveCustomer({
-        ...customer,
-        current_debt: Math.max(0, (customer.current_debt || 0) - amount)
-      });
-    }
-
-    // Si es en efectivo, reflejar en caja activa
-    if (paymentMethod === 'cash') {
+    try {
       const activeReg = storage.getActiveCashRegister();
-      if (activeReg) {
-        storage.saveCashRegister({
-          ...activeReg,
-          cash_sales: (activeReg.cash_sales || 0) + amount,
-          total_sales_cordobas: (activeReg.total_sales_cordobas || 0) + amount
+      const currentUser = storage.getCurrentUser();
+
+      // 1. Si Supabase está conectado, invocar la función RPC atómica
+      if (isSupabaseConfigured()) {
+        try {
+          const { error: rpcError } = await supabase.rpc('registrar_abono_credito', {
+            p_credito_id: selectedCredit.id,
+            p_monto_abono: amount,
+            p_caja_id: activeReg?.id || 1,
+            p_usuario_id: currentUser?.id || 1
+          });
+
+          if (rpcError) {
+            console.warn('Supabase RPC registrar_abono_credito devolvió aviso:', rpcError.message);
+          }
+        } catch (sbErr) {
+          console.warn('Error de conexión con Supabase RPC:', sbErr);
+        }
+      }
+
+      // 2. Operación atómica en el estado local de la aplicación
+      const newRemaining = Math.max(0, Number((remaining - amount).toFixed(2)));
+      const isFullPayment = newRemaining <= 0.01;
+
+      const updatedCredit: CreditAccount = {
+        ...selectedCredit,
+        remaining_debt: newRemaining,
+        status: isFullPayment ? 'paid' : 'pending',
+        payments: [
+          ...(selectedCredit.payments || []),
+          {
+            id: Date.now(),
+            credit_id: selectedCredit.id,
+            amount_cordobas: amount,
+            payment_method: paymentMethod === 'cash' ? 'Efectivo' : paymentMethod === 'card' ? 'Tarjeta' : 'Transferencia',
+            receipt_number: notes.trim() ? notes.trim() : `ABO-${Math.floor(1000 + Math.random() * 9000)}`,
+            created_at: new Date().toISOString()
+          }
+        ]
+      };
+
+      storage.saveCredit(updatedCredit);
+
+      // Actualizar deuda del cliente (resta atómica)
+      const customer = customers.find(c => String(c.id) === String(selectedCredit.customer_id));
+      if (customer) {
+        storage.saveCustomer({
+          ...customer,
+          current_debt: Math.max(0, Number(((customer.current_debt || 0) - amount).toFixed(2)))
         });
       }
+
+      // Si es en efectivo, sumar inmediatamente al saldo de caja activa
+      if (paymentMethod === 'cash' && activeReg) {
+        storage.saveCashRegister({
+          ...activeReg,
+          cash_sales: Number(((activeReg.cash_sales || 0) + amount).toFixed(2)),
+          total_sales_cordobas: Number(((activeReg.total_sales_cordobas || 0) + amount).toFixed(2)),
+          current_cash: typeof activeReg.current_cash === 'number' 
+            ? Number((activeReg.current_cash + amount).toFixed(2)) 
+            : undefined
+        });
+
+        // Registrar movimiento de ingreso en el kardex
+        storage.saveMovement({
+          id: 'mov-' + Date.now(),
+          product_id: 0,
+          product_name: `Abono a Crédito - ${selectedCredit.customer_name}`,
+          type: 'in',
+          quantity: 1,
+          reason: `Abono factura #${selectedCredit.ticket_number || selectedCredit.id} (${paymentMethod === 'cash' ? 'Efectivo' : paymentMethod})`,
+          user_name: currentUser?.name || 'Cajero',
+          user: currentUser?.name || 'Cajero',
+          created_at: new Date().toISOString()
+        });
+      }
+
+      setSelectedCredit(null);
+      setPaymentAmount('');
+      setNotes('');
+      loadData();
+
+      success(
+        isFullPayment ? '¡Deuda Cancelada Totalmente!' : '¡Abono Aplicado con Éxito!',
+        `C$ ${amount.toFixed(2)} procesados correctamente. Saldo descontado y caja actualizada.`
+      );
+    } catch (err: any) {
+      console.error("Error al procesar el abono:", err);
+      error('Error al Procesar Abono', err?.message || 'No se pudo completar la transacción.');
+    } finally {
+      setIsProcessing(false);
     }
-
-    setSelectedCredit(null);
-    setPaymentAmount('');
-    setNotes('');
-    loadData();
-
-    success(
-      isFullPayment ? '¡Deuda Cancelada Totalmente!' : '¡Abono Aplicado con Éxito!',
-      `C$ ${amount.toFixed(2)} aplicados a la cuenta de ${selectedCredit.customer_name}`
-    );
   };
 
   const handleCancelCredit = () => {
@@ -575,9 +623,10 @@ export const CreditsPage: React.FC = () => {
                     min="0.01"
                     max={selectedCredit.remaining_debt ?? selectedCredit.total_debt}
                     required
+                    disabled={isProcessing}
                     value={paymentAmount}
                     onChange={(e) => setPaymentAmount(e.target.value)}
-                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl pl-10 pr-4 py-3 text-slate-900 dark:text-white font-mono font-bold text-lg focus:outline-none focus:border-amber-500"
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl pl-10 pr-4 py-3 text-slate-900 dark:text-white font-mono font-bold text-lg focus:outline-none focus:border-amber-500 disabled:opacity-60 disabled:cursor-not-allowed"
                   />
                 </div>
               </div>
@@ -589,8 +638,9 @@ export const CreditsPage: React.FC = () => {
                     <button
                       key={method}
                       type="button"
+                      disabled={isProcessing}
                       onClick={() => setPaymentMethod(method)}
-                      className={`py-2 rounded-xl text-xs font-bold uppercase transition cursor-pointer ${
+                      className={`py-2 rounded-xl text-xs font-bold uppercase transition cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed ${
                         paymentMethod === method
                           ? 'bg-amber-600 text-white shadow-lg shadow-amber-600/30'
                           : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
@@ -606,26 +656,38 @@ export const CreditsPage: React.FC = () => {
                 <label className="block text-xs font-bold uppercase text-slate-600 dark:text-slate-400 mb-1.5">Observación / Recibo</label>
                 <input
                   type="text"
+                  disabled={isProcessing}
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
                   placeholder="Ej. Recibo manual #0942..."
-                  className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-slate-900 dark:text-white text-sm focus:outline-none focus:border-amber-500"
+                  className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-slate-900 dark:text-white text-sm focus:outline-none focus:border-amber-500 disabled:opacity-60 disabled:cursor-not-allowed"
                 />
               </div>
 
               <div className="flex gap-3 pt-2">
                 <button
                   type="button"
+                  disabled={isProcessing}
                   onClick={() => setSelectedCredit(null)}
-                  className="flex-1 px-4 py-2.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl text-sm font-bold transition cursor-pointer"
+                  className="flex-1 px-4 py-2.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl text-sm font-bold transition cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 px-4 py-2.5 bg-amber-600 hover:bg-amber-500 text-white rounded-xl text-sm font-bold shadow-lg shadow-amber-600/30 transition cursor-pointer"
+                  disabled={isProcessing}
+                  className={`flex-1 px-4 py-2.5 bg-amber-600 hover:bg-amber-500 text-white rounded-xl text-sm font-bold shadow-lg shadow-amber-600/30 transition flex items-center justify-center gap-2 cursor-pointer ${
+                    isProcessing ? 'opacity-70 cursor-not-allowed pointer-events-none' : ''
+                  }`}
                 >
-                  Aplicar Abono
+                  {isProcessing ? (
+                    <>
+                      <RefreshCw className="w-4 h-4 animate-spin" />
+                      <span>Procesando...</span>
+                    </>
+                  ) : (
+                    <span>Aplicar Abono</span>
+                  )}
                 </button>
               </div>
             </form>

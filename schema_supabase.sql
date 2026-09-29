@@ -294,3 +294,76 @@ SELECT setval('products_id_seq', (SELECT MAX(id) FROM products));
 SELECT setval('cash_registers_id_seq', (SELECT MAX(id) FROM cash_registers));
 SELECT setval('credits_id_seq', (SELECT MAX(id) FROM credits));
 SELECT setval('movements_id_seq', (SELECT MAX(id) FROM movements));
+
+-- ==============================================================================
+-- 14. FUNCIONES RPC ATÓMICAS (TRANSACCIONALES) PARA ABONOS A CRÉDITO
+-- ==============================================================================
+
+-- A) Versión estándar para el esquema de SendaFact (credits, cash_registers, credit_payments, customers)
+CREATE OR REPLACE FUNCTION registrar_abono_credito(
+  p_credito_id BIGINT,
+  p_monto_abono NUMERIC,
+  p_caja_id BIGINT,
+  p_usuario_id BIGINT
+) RETURNS VOID AS $$
+DECLARE
+  v_customer_id BIGINT;
+BEGIN
+  -- 1. Obtener customer_id y actualizar crédito restando la deuda
+  UPDATE credits
+  SET remaining_amount = GREATEST(0, remaining_amount - p_monto_abono),
+      paid_amount = paid_amount + p_monto_abono,
+      status = CASE WHEN (remaining_amount - p_monto_abono) <= 0 THEN 'pagado' ELSE 'activo' END,
+      updated_at = NOW()
+  WHERE id = p_credito_id
+  RETURNING customer_id INTO v_customer_id;
+
+  -- 2. Actualizar saldo de deuda en el cliente
+  IF v_customer_id IS NOT NULL THEN
+    UPDATE customers
+    SET current_debt = GREATEST(0, current_debt - p_monto_abono),
+        updated_at = NOW()
+    WHERE id = v_customer_id;
+  END IF;
+
+  -- 3. Sumar el dinero ingresado a la caja registradora activa
+  UPDATE cash_registers
+  SET total_sales_cordobas = total_sales_cordobas + p_monto_abono,
+      cash_sales = cash_sales + p_monto_abono,
+      updated_at = NOW()
+  WHERE id = p_caja_id AND status = 'open';
+
+  -- 4. Registrar en el historial de pagos / abonos
+  INSERT INTO credit_payments (credit_id, user_id, amount, payment_method, notes, payment_date, created_at, updated_at)
+  VALUES (p_credito_id, p_usuario_id, p_monto_abono, 'efectivo', 'Abono a crédito procesado', NOW(), NOW(), NOW());
+
+  -- 5. Registrar en el Kardex / movimientos de auditoría
+  INSERT INTO movements (type, product_name, ticket_number, payment_method, quantity, amount, user_id, customer_id, movement_date, created_at, updated_at)
+  VALUES ('ingreso', 'Abono de Crédito', 'ABO-' || p_credito_id, 'EFECTIVO', 1, p_monto_abono, p_usuario_id, v_customer_id, NOW(), NOW(), NOW());
+END;
+$$ LANGUAGE plpgsql;
+
+-- B) Versión alternativa con identificadores UUID (para tablas creditos / cajas / historial_pagos)
+CREATE OR REPLACE FUNCTION registrar_abono_credito(
+  p_credito_id UUID,
+  p_monto_abono NUMERIC,
+  p_caja_id UUID,
+  p_usuario_id UUID
+) RETURNS VOID AS $$
+BEGIN
+  -- 1. Restar el abono del saldo pendiente del crédito
+  UPDATE creditos
+  SET saldo_pendiente = saldo_pendiente - p_monto_abono,
+      estado = CASE WHEN (saldo_pendiente - p_monto_abono) <= 0 THEN 'PAGADO' ELSE 'PENDIENTE' END
+  WHERE id = p_credito_id;
+
+  -- 2. Sumar el dinero al cierre de caja activo
+  UPDATE cajas
+  SET total_recaudado = total_recaudado + p_monto_abono
+  WHERE id = p_caja_id AND estado = 'ABIERTA';
+
+  -- 3. Registrar el historial del movimiento
+  INSERT INTO historial_pagos (credito_id, monto, fecha, usuario_id)
+  VALUES (p_credito_id, p_monto_abono, NOW(), p_usuario_id);
+END;
+$$ LANGUAGE plpgsql;
