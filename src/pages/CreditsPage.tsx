@@ -4,11 +4,12 @@ import {
   CreditCard, Search, 
   Clock, CheckCircle2, AlertTriangle, 
   Receipt, RefreshCw, UserCheck, Calendar, Phone,
-  Ban, XCircle, AlertCircle, Trash2, History
+  Ban, XCircle, AlertCircle, Trash2, History,
+  Eye, Printer, MessageCircle, FileText, X, ArrowUpDown, Building2
 } from 'lucide-react';
 import { storage } from '../lib/storage';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
-import { CreditAccount, Customer } from '../types';
+import { CreditAccount, Customer, Sale, CompanySetting } from '../types';
 import { useToast } from '../components/UI/Toast';
 
 type FilterStatus = 'all' | 'pending' | 'overdue' | 'paid' | 'cancelled';
@@ -16,6 +17,8 @@ type FilterStatus = 'all' | 'pending' | 'overdue' | 'paid' | 'cancelled';
 export const CreditsPage: React.FC = () => {
   const [credits, setCredits] = useState<CreditAccount[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
+  const [sales, setSales] = useState<Sale[]>([]);
+  const [company, setCompany] = useState<CompanySetting | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<FilterStatus>('all');
   const { success, warning, error, info } = useToast();
@@ -31,11 +34,17 @@ export const CreditsPage: React.FC = () => {
   const [creditToCancel, setCreditToCancel] = useState<CreditAccount | null>(null);
   const [cancelReason, setCancelReason] = useState('');
 
+  // Invoice Detail Modal
+  const [viewingInvoiceCredit, setViewingInvoiceCredit] = useState<CreditAccount | null>(null);
+
   const loadData = () => {
     const loadedCredits = storage.getCredits() || [];
     const loadedCustomers = storage.getCustomers() || [];
+    const loadedSales = storage.getSales() || [];
     setCredits(loadedCredits);
     setCustomers(loadedCustomers);
+    setSales(loadedSales);
+    setCompany(storage.getCompanySettings());
   };
 
   useEffect(() => {
@@ -62,6 +71,137 @@ export const CreditsPage: React.FC = () => {
     if (remaining <= 0.01 || credit.status === 'paid') return 'paid';
     if (isCreditOverdue(credit)) return 'overdue';
     return 'pending';
+  };
+
+  const formatDateTime = (dateStr?: string) => {
+    if (!dateStr) return '-';
+    try {
+      const d = new Date(dateStr);
+      if (isNaN(d.getTime())) return dateStr;
+      const day = String(d.getDate()).padStart(2, '0');
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const year = d.getFullYear();
+      const hours = String(d.getHours()).padStart(2, '0');
+      const mins = String(d.getMinutes()).padStart(2, '0');
+      return `${day}/${month}/${year}, ${hours}:${mins}`;
+    } catch {
+      return dateStr;
+    }
+  };
+
+  const formatPaymentMethod = (method?: string) => {
+    if (!method) return 'Efectivo (CONTADO)';
+    const m = method.toLowerCase().trim();
+    if (m === 'efectivo' || m === 'cash') return 'Efectivo (CONTADO)';
+    if (m === 'credito' || m === 'crédito' || m === 'credit') return 'Crédito (Abonos / Plazo)';
+    if (m === 'transferencia' || m === 'transfer') return 'Transferencia Bancaria';
+    if (m === 'tarjeta' || m === 'card') return 'Tarjeta Débito / Crédito';
+    return method;
+  };
+
+  const renderPaymentBadge = (method?: string) => {
+    const m = (method || 'efectivo').toLowerCase().trim();
+    if (m === 'transferencia' || m === 'transfer') {
+      return (
+        <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-black bg-blue-100 text-blue-800 dark:bg-blue-950/70 dark:text-blue-300 border border-blue-200 dark:border-blue-800/60 uppercase tracking-wider">
+          <ArrowUpDown className="w-3 h-3 text-blue-600 dark:text-blue-400" />
+          Transferencia
+        </span>
+      );
+    }
+    if (m === 'credito' || m === 'crédito' || m === 'credit') {
+      return (
+        <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-black bg-amber-100 text-amber-800 dark:bg-amber-950/70 dark:text-amber-300 border border-amber-200 dark:border-amber-800/60 uppercase tracking-wider">
+          <Calendar className="w-3 h-3 text-amber-600 dark:text-amber-400" />
+          Crédito
+        </span>
+      );
+    }
+    if (m === 'tarjeta' || m === 'card') {
+      return (
+        <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-black bg-indigo-100 text-indigo-800 dark:bg-indigo-950/70 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800/60 uppercase tracking-wider">
+          <CreditCard className="w-3 h-3 text-indigo-600 dark:text-indigo-400" />
+          Tarjeta
+        </span>
+      );
+    }
+    return (
+      <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-800 dark:bg-emerald-950/70 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60 uppercase tracking-wider">
+        <CheckCircle2 className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
+        Efectivo
+      </span>
+    );
+  };
+
+  const getInvoiceForCredit = (credit: CreditAccount): Sale => {
+    const cleanTicket = (credit.ticket_number || '').trim().toLowerCase();
+    const found = sales.find(s => {
+      const sTicket = (s.ticket_number || '').trim().toLowerCase();
+      if (sTicket && cleanTicket) {
+        if (sTicket === cleanTicket) return true;
+        if (sTicket.replace('#', '') === cleanTicket.replace('#', '')) return true;
+      }
+      if (credit.sale_id && s.id === credit.sale_id) return true;
+      return false;
+    });
+
+    if (found) return found;
+
+    // Fallback: Si no se encuentra en memoria, construir representación limpia de la factura
+    return {
+      id: credit.sale_id || credit.id,
+      ticket_number: credit.ticket_number || `#CR-${credit.id}`,
+      customer_id: credit.customer_id,
+      customer: {
+        id: credit.customer_id,
+        name: credit.customer_name,
+        phone: credit.customer_phone || '50588888888',
+        address: 'Venta a Crédito'
+      },
+      user_name: 'Cajero Principal',
+      user_role: 'cajero',
+      payment_method: 'credito',
+      total_cordobas: credit.total_debt,
+      total_usd: credit.total_debt / (company?.exchange_rate || 36.80),
+      status: credit.status === 'cancelled' ? 'cancelled' : 'completed',
+      created_at: credit.created_at || new Date().toISOString(),
+      items: [
+        {
+          product_name: 'Venta de Mercadería al Crédito',
+          quantity: 1,
+          unit_price_cordobas: credit.total_debt,
+          total_cordobas: credit.total_debt
+        }
+      ]
+    };
+  };
+
+  const handleSendInvoiceWhatsApp = (sale: Sale, credit: CreditAccount) => {
+    const rawPhone = credit.customer_phone || sale.customer?.phone || (sale as any).customer_phone || '50588888888';
+    const cleanPhone = rawPhone.replace(/\D/g, '');
+    const phone = cleanPhone.startsWith('505') ? cleanPhone : `505${cleanPhone}`;
+
+    const remaining = credit.remaining_debt ?? credit.total_debt ?? 0;
+    const isCredit = (sale.payment_method || '').toLowerCase().includes('cred');
+
+    let msg = `🧾 *COMPROBANTE DE FACTURA - SENDA SISTEMAS*\n\n` +
+      `*Factura:* ${sale.ticket_number}\n` +
+      `*Cliente:* ${credit.customer_name}\n` +
+      `*Fecha:* ${formatDateTime(sale.created_at)}\n` +
+      `*Método:* ${formatPaymentMethod(sale.payment_method)}\n` +
+      `*Total Factura:* C$ ${sale.total_cordobas.toFixed(2)}\n`;
+
+    if (isCredit) {
+      msg += `*Saldo Pendiente:* C$ ${remaining.toFixed(2)}\n` +
+        `*Fecha Límite:* ${credit.due_date ? new Date(credit.due_date).toLocaleDateString('es-NI') : '30 días'}\n`;
+      if (credit.payments && credit.payments.length > 0) {
+        msg += `\n*Abonos Registrados:*\n` +
+          credit.payments.map(p => `• ${p.created_at?.split('T')[0] || ''} (${p.receipt_number}): C$ ${p.amount_cordobas.toFixed(2)} [${p.payment_method}]`).join('\n') + `\n`;
+      }
+    }
+
+    msg += `\n¡Muchas gracias por su preferencia!`;
+    window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`, '_blank');
   };
 
   const handleMakePayment = async (e: React.FormEvent) => {
@@ -468,8 +608,16 @@ export const CreditsPage: React.FC = () => {
                   return (
                     <tr key={credit.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/30 transition">
                       <td className="px-6 py-4 font-mono font-bold text-slate-800 dark:text-slate-300 text-xs">
-                        {credit.ticket_number || `CR-${credit.id}`}
-                        <span className="block text-[10px] text-slate-400 font-sans">
+                        <button
+                          type="button"
+                          onClick={() => setViewingInvoiceCredit(credit)}
+                          className="hover:text-blue-600 dark:hover:text-blue-400 transition cursor-pointer text-left group inline-flex items-center gap-1.5"
+                          title="Ver detalle completo de esta factura"
+                        >
+                          <span className="group-hover:underline">{credit.ticket_number || `CR-${credit.id}`}</span>
+                          <Eye className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 transition text-blue-500" />
+                        </button>
+                        <span className="block text-[10px] text-slate-400 font-sans mt-0.5">
                           Emisión: {credit.created_at || 'Reciente'}
                         </span>
                       </td>
@@ -543,39 +691,54 @@ export const CreditsPage: React.FC = () => {
                         )}
                       </td>
                       <td className="px-6 py-4 text-center">
-                        {effStatus === 'pending' || effStatus === 'overdue' ? (
-                          <div className="flex items-center justify-center gap-2">
-                            <button
-                              onClick={() => {
-                                setSelectedCredit(credit);
-                                setPaymentAmount(remaining.toString());
-                              }}
-                              className="px-3 py-1.5 bg-amber-600 hover:bg-amber-500 text-white rounded-xl text-xs font-bold shadow-xs transition inline-flex items-center gap-1 cursor-pointer"
-                              title="Registrar Abono"
-                            >
-                              <span className="font-black text-xs leading-none">C$</span>
-                              Abonar
-                            </button>
-                            <button
-                              onClick={() => setCreditToCancel(credit)}
-                              className="px-2.5 py-1.5 bg-slate-100 hover:bg-rose-500/10 text-slate-500 hover:text-rose-600 dark:bg-slate-800 dark:hover:bg-rose-500/20 dark:text-slate-400 dark:hover:text-rose-400 border border-slate-200 dark:border-slate-700 hover:border-rose-500/30 rounded-xl text-xs font-bold transition inline-flex items-center gap-1 cursor-pointer"
-                              title="Anular o Cancelar Crédito"
-                            >
+                        <div className="flex items-center justify-center gap-2">
+                          {/* BOTÓN: VER DETALLE DE FACTURAS */}
+                          <button
+                            type="button"
+                            onClick={() => setViewingInvoiceCredit(credit)}
+                            className="px-2.5 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-600 dark:bg-blue-950/40 dark:hover:bg-blue-900/60 dark:text-blue-400 border border-blue-200 dark:border-blue-800/60 rounded-xl text-xs font-bold transition inline-flex items-center gap-1.5 cursor-pointer shadow-2xs"
+                            title="Ver Detalle de Factura, Saldo y Abonos"
+                          >
+                            <Eye className="w-3.5 h-3.5" />
+                            <span>Factura</span>
+                          </button>
+
+                          {(effStatus === 'pending' || effStatus === 'overdue') ? (
+                            <>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setSelectedCredit(credit);
+                                  setPaymentAmount(remaining.toString());
+                                }}
+                                className="px-3 py-1.5 bg-amber-600 hover:bg-amber-500 text-white rounded-xl text-xs font-bold shadow-xs transition inline-flex items-center gap-1 cursor-pointer"
+                                title="Registrar Abono"
+                              >
+                                <span className="font-black text-xs leading-none">C$</span>
+                                Abonar
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setCreditToCancel(credit)}
+                                className="px-2.5 py-1.5 bg-slate-100 hover:bg-rose-500/10 text-slate-500 hover:text-rose-600 dark:bg-slate-800 dark:hover:bg-rose-500/20 dark:text-slate-400 dark:hover:text-rose-400 border border-slate-200 dark:border-slate-700 hover:border-rose-500/30 rounded-xl text-xs font-bold transition inline-flex items-center gap-1 cursor-pointer"
+                                title="Anular o Cancelar Crédito"
+                              >
+                                <Ban className="w-3.5 h-3.5" />
+                                Anular
+                              </button>
+                            </>
+                          ) : effStatus === 'paid' ? (
+                            <span className="text-xs text-emerald-600 dark:text-emerald-400 font-bold inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60">
+                              <CheckCircle2 className="w-3.5 h-3.5" />
+                              Saldado
+                            </span>
+                          ) : (
+                            <span className="text-xs text-slate-400 font-medium inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-slate-100 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700">
                               <Ban className="w-3.5 h-3.5" />
-                              Anular
-                            </button>
-                          </div>
-                        ) : effStatus === 'paid' ? (
-                          <span className="text-xs text-emerald-500 dark:text-emerald-400 font-bold inline-flex items-center gap-1">
-                            <CheckCircle2 className="w-3.5 h-3.5" />
-                            Saldado
-                          </span>
-                        ) : (
-                          <span className="text-xs text-slate-400 font-medium inline-flex items-center gap-1">
-                            <Ban className="w-3.5 h-3.5" />
-                            Anulado
-                          </span>
-                        )}
+                              Anulado
+                            </span>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   );
@@ -750,6 +913,456 @@ export const CreditsPage: React.FC = () => {
         </div>,
         document.body
       )}
+
+      {/* MODAL: VER DETALLE DE FACTURA, SALDOS Y ABONOS */}
+      {viewingInvoiceCredit && createPortal((() => {
+        const credit = viewingInvoiceCredit;
+        const sale = getInvoiceForCredit(credit);
+        const totalDebt = credit.total_debt || sale.total_cordobas || 0;
+        const remaining = credit.remaining_debt ?? totalDebt;
+        const totalPaid = Math.max(0, Number((totalDebt - remaining).toFixed(2)));
+        const methodLower = (sale.payment_method || 'credito').toLowerCase().trim();
+        const isCredit = methodLower.includes('cred') || methodLower === 'credito' || methodLower === 'crédito';
+        const isTransfer = methodLower === 'transferencia' || methodLower === 'transfer';
+        const isCard = methodLower === 'tarjeta' || methodLower === 'card';
+        const isCash = methodLower === 'efectivo' || methodLower === 'cash';
+        const isCancelled = credit.status === 'cancelled' || sale.status === 'cancelled';
+        const isFullyPaid = remaining <= 0.01 || credit.status === 'paid';
+        const payments = credit.payments || [];
+        const items = sale.items && sale.items.length > 0 ? sale.items : [
+          {
+            product_name: 'Venta de Productos al Crédito',
+            quantity: 1,
+            unit_price_cordobas: totalDebt,
+            total_cordobas: totalDebt
+          }
+        ];
+
+        return (
+          <div 
+            onClick={(e) => {
+              if (e.target === e.currentTarget) setViewingInvoiceCredit(null);
+            }}
+            className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-4 bg-black/60 dark:bg-black/80 backdrop-blur-xs overflow-y-auto animate-in fade-in duration-150"
+          >
+            <div className="relative bg-white dark:bg-slate-900 rounded-[28px] sm:rounded-[32px] shadow-2xl max-w-2xl w-full p-5 sm:p-6 border border-slate-100 dark:border-slate-800 text-slate-800 dark:text-slate-100 my-auto max-h-[92vh] sm:max-h-[88vh] flex flex-col overflow-hidden">
+              
+              {/* 1. Encabezado Fijo Superior */}
+              <div className="shrink-0 flex items-start justify-between pb-3 border-b border-slate-100 dark:border-slate-800/80">
+                <div className="flex items-center gap-3">
+                  <div className="w-11 h-11 rounded-2xl bg-blue-50 dark:bg-blue-950/60 border border-blue-100 dark:border-blue-800/70 flex items-center justify-center text-blue-600 dark:text-blue-400 shrink-0">
+                    <FileText className="w-5.5 h-5.5" />
+                  </div>
+                  <div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h3 className="text-base sm:text-lg font-black text-slate-900 dark:text-white tracking-tight">
+                        Factura {sale.ticket_number ? (sale.ticket_number.startsWith('#') ? sale.ticket_number : '#' + sale.ticket_number) : `#CR-${credit.id}`}
+                      </h3>
+                      {isCancelled ? (
+                        <span className="text-[10px] font-black uppercase px-2.5 py-0.5 rounded-full bg-rose-100 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300 tracking-wider">
+                          ANULADA
+                        </span>
+                      ) : (
+                        <span className="text-[10px] font-black uppercase px-2.5 py-0.5 rounded-full bg-[#def7ec] text-[#03543f] dark:bg-emerald-950/60 dark:text-emerald-300 tracking-wider">
+                          COMPLETADA
+                        </span>
+                      )}
+                      {renderPaymentBadge(sale.payment_method)}
+                    </div>
+                    <p className="text-xs text-slate-400 dark:text-slate-500 font-normal mt-0.5">
+                      Fecha de Emisión: {formatDateTime(sale.created_at || credit.created_at)}
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setViewingInvoiceCredit(null)}
+                  className="p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition rounded-xl cursor-pointer"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* 2. Cuerpo Scrollable Independiente */}
+              <div className="flex-1 overflow-y-auto min-h-0 pr-1 space-y-4 my-2.5 [scrollbar-width:thin]">
+                
+                {/* Info Grid (Cliente y Emisor / Cajero) */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {/* Card Cliente */}
+                  <div className="bg-[#f8fafc] dark:bg-slate-800/50 p-3.5 rounded-2xl border border-slate-100/90 dark:border-slate-800 space-y-1">
+                    <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider block">
+                      CLIENTE
+                    </span>
+                    <p className="font-extrabold text-sm text-slate-900 dark:text-white truncate">
+                      {credit.customer_name || sale.customer?.name || 'Cliente'}
+                    </p>
+                    <p className="text-xs text-slate-400 dark:text-slate-500 truncate">
+                      Tel: {credit.customer_phone || sale.customer?.phone || '50588888888'}
+                    </p>
+                    <p className="text-xs text-slate-400 dark:text-slate-500 truncate">
+                      Dir: {sale.customer?.address || 'Venta Registrada'}
+                    </p>
+                  </div>
+
+                  {/* Card Emisor / Cajero */}
+                  <div className="bg-[#f8fafc] dark:bg-slate-800/50 p-3.5 rounded-2xl border border-slate-100/90 dark:border-slate-800 space-y-1">
+                    <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider block">
+                      EMISOR / CAJERO
+                    </span>
+                    <p className="font-extrabold text-sm text-slate-900 dark:text-white truncate">
+                      {sale.user_name || 'Cajero Principal'}
+                    </p>
+                    <p className="text-xs text-slate-400 dark:text-slate-500 truncate">
+                      Método Facturado: <span className="text-slate-700 dark:text-slate-200 font-semibold">{formatPaymentMethod(sale.payment_method)}</span>
+                    </p>
+                    {isCredit && (
+                      <p className="text-[11px] text-amber-600 dark:text-amber-400 font-semibold truncate">
+                        Plazo Otorgado: {credit.dias_plazo || (sale as any).credit_term_days || 30} días
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                {/* --- SECCIÓN SI ES VENTA AL CRÉDITO: SALDO, DEUDA Y ABONOS --- */}
+                {isCredit && (
+                  <div className="space-y-3">
+                    {/* Tarjetas de Métricas de Crédito */}
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                      {/* Monto Total */}
+                      <div className="bg-slate-50 dark:bg-slate-800/60 p-3 rounded-2xl border border-slate-200/80 dark:border-slate-800 text-center sm:text-left">
+                        <span className="text-[10px] font-black uppercase text-slate-400 dark:text-slate-500 tracking-wider block">
+                          Total Factura
+                        </span>
+                        <p className="text-lg font-black text-slate-900 dark:text-white font-mono mt-0.5">
+                          C$ {totalDebt.toLocaleString('es-NI', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </p>
+                        <span className="text-[10px] text-slate-400">Deuda original</span>
+                      </div>
+
+                      {/* Total Abonado */}
+                      <div className="bg-emerald-50/60 dark:bg-emerald-950/30 p-3 rounded-2xl border border-emerald-200/80 dark:border-emerald-800/60 text-center sm:text-left">
+                        <span className="text-[10px] font-black uppercase text-emerald-600 dark:text-emerald-400 tracking-wider block">
+                          Total Abonado
+                        </span>
+                        <p className="text-lg font-black text-emerald-600 dark:text-emerald-400 font-mono mt-0.5">
+                          C$ {totalPaid.toLocaleString('es-NI', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </p>
+                        <span className="text-[10px] text-emerald-600/80 dark:text-emerald-400/70">
+                          {payments.length} abono(s) recibido(s)
+                        </span>
+                      </div>
+
+                      {/* Saldo Pendiente Actual */}
+                      <div className={`p-3 rounded-2xl border text-center sm:text-left ${
+                        isFullyPaid 
+                          ? 'bg-slate-50 dark:bg-slate-800/40 border-slate-200 dark:border-slate-800'
+                          : isCreditOverdue(credit)
+                          ? 'bg-rose-50/70 dark:bg-rose-950/30 border-rose-200 dark:border-rose-900/60'
+                          : 'bg-amber-50/70 dark:bg-amber-950/30 border-amber-200 dark:border-amber-900/60'
+                      }`}>
+                        <span className={`text-[10px] font-black uppercase tracking-wider block ${
+                          isFullyPaid 
+                            ? 'text-slate-500' 
+                            : isCreditOverdue(credit) 
+                            ? 'text-rose-600 dark:text-rose-400' 
+                            : 'text-amber-600 dark:text-amber-400'
+                        }`}>
+                          Saldo Pendiente
+                        </span>
+                        <p className={`text-lg font-black font-mono mt-0.5 ${
+                          isFullyPaid 
+                            ? 'text-slate-400 line-through' 
+                            : isCreditOverdue(credit) 
+                            ? 'text-rose-600 dark:text-rose-400' 
+                            : 'text-amber-600 dark:text-amber-400'
+                        }`}>
+                          C$ {remaining.toLocaleString('es-NI', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </p>
+                        <span className="text-[10px] font-semibold text-slate-500">
+                          {isFullyPaid ? 'Factura saldada' : credit.due_date ? `Vence: ${new Date(credit.due_date).toLocaleDateString('es-NI')}` : 'Plazo 30 días'}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Historial de Abonos de Esta Factura */}
+                    <div className="bg-[#f8fafc] dark:bg-slate-800/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-800 space-y-2.5">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <History className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                          <h4 className="text-xs font-black uppercase tracking-wider text-slate-800 dark:text-slate-200">
+                            Historial de Abonos ({payments.length})
+                          </h4>
+                        </div>
+                        {isFullyPaid ? (
+                          <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300">
+                            100% Saldado
+                          </span>
+                        ) : (
+                          <span className="text-[10px] font-semibold text-slate-400">
+                            Resta C$ {remaining.toFixed(2)}
+                          </span>
+                        )}
+                      </div>
+
+                      {payments && payments.length > 0 ? (
+                        <div className="border border-slate-200/80 dark:border-slate-700/80 rounded-xl overflow-hidden bg-white dark:bg-slate-900">
+                          <table className="w-full text-left text-xs">
+                            <thead className="bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 font-bold border-b border-slate-100 dark:border-slate-800">
+                              <tr>
+                                <th className="py-2 px-3">Fecha / Hora</th>
+                                <th className="py-2 px-3">Nº Recibo</th>
+                                <th className="py-2 px-3">Método</th>
+                                <th className="py-2 px-3 text-right">Monto Abonado</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80 font-medium">
+                              {payments.map((p, idx) => (
+                                <tr key={idx} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition">
+                                  <td className="py-2 px-3 text-slate-600 dark:text-slate-300 whitespace-nowrap text-[11px]">
+                                    {formatDateTime(p.created_at)}
+                                  </td>
+                                  <td className="py-2 px-3 font-mono font-bold text-slate-800 dark:text-slate-200">
+                                    {p.receipt_number || `ABO-${idx + 1}`}
+                                  </td>
+                                  <td className="py-2 px-3">
+                                    <span className="px-2 py-0.5 rounded-full text-[9px] font-bold uppercase bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
+                                      {p.payment_method || 'Efectivo'}
+                                    </span>
+                                  </td>
+                                  <td className="py-2 px-3 text-right font-black text-emerald-600 dark:text-emerald-400 font-mono">
+                                    +C$ {(p.amount_cordobas || 0).toLocaleString('es-NI', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      ) : (
+                        <div className="p-3 text-center rounded-xl bg-white dark:bg-slate-900 border border-dashed border-slate-200 dark:border-slate-700/80 text-xs text-slate-400">
+                          <p className="font-semibold text-slate-600 dark:text-slate-300">No se registran abonos aún para esta factura.</p>
+                          <p className="text-[11px] text-slate-400 mt-0.5">El saldo completo de C$ {totalDebt.toFixed(2)} se encuentra pendiente de cobro.</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* --- SECCIÓN SI ES VENTA DE CONTADO: EFECTIVO, TARJETA O TRANSFERENCIA --- */}
+                {!isCredit && (
+                  <div className="space-y-3">
+                    {isCash && (
+                      <div className="bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/60 rounded-2xl p-4 flex items-center justify-between gap-3 text-xs">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-2xl bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+                            <CheckCircle2 className="w-5 h-5" />
+                          </div>
+                          <div>
+                            <p className="font-extrabold text-emerald-950 dark:text-emerald-200 text-sm">
+                              Factura Pagada de Contado (Efectivo)
+                            </p>
+                            <p className="text-[11px] text-emerald-700 dark:text-emerald-300 mt-0.5">
+                              Monto total recaudado en caja al momento de emisión • Saldo deudor: <strong>C$ 0.00</strong>
+                            </p>
+                          </div>
+                        </div>
+                        <div className="text-right shrink-0">
+                          <span className="text-[10px] text-emerald-700 dark:text-emerald-300 block uppercase font-bold">Total Cobrado</span>
+                          <span className="text-lg font-black text-emerald-600 dark:text-emerald-400 font-mono">
+                            C$ {sale.total_cordobas.toFixed(2)}
+                          </span>
+                        </div>
+                      </div>
+                    )}
+
+                    {isCard && (
+                      <div className="bg-indigo-50 dark:bg-indigo-950/30 border border-indigo-200 dark:border-indigo-800/60 rounded-2xl p-4 flex items-center justify-between gap-3 text-xs">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-2xl bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0">
+                            <CreditCard className="w-4 h-4" />
+                          </div>
+                          <div>
+                            <p className="font-extrabold text-indigo-950 dark:text-indigo-200 text-sm">
+                              Factura Pagada con Tarjeta Débito / Crédito
+                            </p>
+                            <p className="text-[11px] text-indigo-700 dark:text-indigo-300 mt-0.5">
+                              Transacción electrónica POS aprobada • Saldo deudor: <strong>C$ 0.00</strong>
+                            </p>
+                          </div>
+                        </div>
+                        <div className="text-right shrink-0">
+                          <span className="text-[10px] text-indigo-700 dark:text-indigo-300 block uppercase font-bold">Total Cobrado</span>
+                          <span className="text-lg font-black text-indigo-600 dark:text-indigo-400 font-mono">
+                            C$ {sale.total_cordobas.toFixed(2)}
+                          </span>
+                        </div>
+                      </div>
+                    )}
+
+                    {isTransfer && (
+                      <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800/60 rounded-2xl p-4 flex items-center justify-between gap-3 text-xs">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-2xl bg-blue-500/20 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
+                            <ArrowUpDown className="w-4 h-4" />
+                          </div>
+                          <div>
+                            <p className="font-extrabold text-blue-950 dark:text-blue-200 text-sm">
+                              Factura Pagada por Transferencia Bancaria
+                            </p>
+                            <p className="text-[11px] text-blue-700 dark:text-blue-300 mt-0.5">
+                              Operación bancaria electrónica conciliada • Saldo deudor: <strong>C$ 0.00</strong>
+                            </p>
+                          </div>
+                        </div>
+                        <div className="text-right shrink-0">
+                          <span className="text-[10px] text-blue-700 dark:text-blue-300 block uppercase font-bold">Total Recibido</span>
+                          <span className="text-lg font-black text-blue-600 dark:text-blue-400 font-mono">
+                            C$ {sale.total_cordobas.toFixed(2)}
+                          </span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* DETALLE DE PRODUCTOS */}
+                <div className="space-y-2">
+                  <span className="text-[10px] sm:text-[11px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider block">
+                    DETALLE DE PRODUCTOS ({items.length} {items.length === 1 ? 'ÍTEM' : 'ÍTEMS'})
+                  </span>
+
+                  <div className="border border-slate-100 dark:border-slate-800 rounded-2xl overflow-hidden bg-white dark:bg-slate-900">
+                    <div className="max-h-[160px] sm:max-h-[190px] overflow-y-auto [scrollbar-width:thin]">
+                      <table className="w-full text-left text-xs">
+                        <thead className="sticky top-0 z-10 bg-[#f8fafc] dark:bg-slate-800 text-slate-500 dark:text-slate-400 font-bold border-b border-slate-100 dark:border-slate-800">
+                          <tr>
+                            <th className="py-2.5 px-3 text-left w-12 font-bold">Cant</th>
+                            <th className="py-2.5 px-3 text-left font-bold">Descripción</th>
+                            <th className="py-2.5 px-3 text-right font-bold">P. Unitario</th>
+                            <th className="py-2.5 px-3 text-right font-bold">Subtotal</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100/80 dark:divide-slate-800/80">
+                          {items.map((it, idx) => (
+                            <tr key={idx} className="hover:bg-slate-50/40 dark:hover:bg-slate-800/40 transition">
+                              <td className="py-2.5 px-3 font-black text-slate-900 dark:text-white text-xs align-middle">
+                                {it.quantity}
+                              </td>
+                              <td className="py-2.5 px-3 align-middle">
+                                <p className="font-extrabold text-slate-900 dark:text-white text-xs leading-snug">
+                                  {it.product_name}
+                                </p>
+                                {((it as any).brand || (it as any).category) ? (
+                                  <p className="text-[10px] text-slate-400 dark:text-slate-500 font-normal">
+                                    {[(it as any).brand, (it as any).category].filter(Boolean).join(' • ')}
+                                  </p>
+                                ) : null}
+                              </td>
+                              <td className="py-2.5 px-3 text-right font-semibold text-slate-800 dark:text-slate-200 text-xs align-middle font-mono">
+                                C$ {(it.unit_price_cordobas || 0).toFixed(2)}
+                              </td>
+                              <td className="py-2.5 px-3 text-right font-black text-slate-900 dark:text-white text-xs align-middle font-mono">
+                                C$ {(it.total_cordobas || 0).toFixed(2)}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+
+                  {/* Desglose de Totales */}
+                  <div className="flex justify-end pt-2 pr-1">
+                    <div className="w-56 sm:w-64 space-y-1 text-right text-xs">
+                      <div className="flex justify-between text-slate-500 dark:text-slate-400">
+                        <span>Subtotal:</span>
+                        <span className="font-bold text-slate-800 dark:text-slate-200 font-mono">
+                          C$ {(sale.subtotal_cordobas || sale.total_cordobas || totalDebt).toFixed(2)}
+                        </span>
+                      </div>
+
+                      {sale.discount_amount && sale.discount_amount > 0 ? (
+                        <div className="flex justify-between text-rose-500">
+                          <span>Descuento:</span>
+                          <span className="font-bold font-mono">-C$ {sale.discount_amount.toFixed(2)}</span>
+                        </div>
+                      ) : null}
+
+                      <div className="pt-1.5 flex justify-between items-baseline border-t border-slate-100 dark:border-slate-800">
+                        <span className="text-xs sm:text-sm font-black text-slate-900 dark:text-white uppercase tracking-tight">
+                          TOTAL FACTURA:
+                        </span>
+                        <span className="text-xl sm:text-2xl font-black text-[#2563eb] tracking-tight font-mono">
+                          C$ {(sale.total_cordobas || totalDebt).toFixed(2)}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+
+              {/* 3. Footer Fijo */}
+              <div className="shrink-0 flex flex-wrap items-center justify-between gap-3 pt-4 sm:pt-5 border-t border-slate-100/90 dark:border-slate-800">
+                {/* Left: Botón Abonar (si es crédito y debe aún) */}
+                <div>
+                  {isCredit && !isFullyPaid && !isCancelled && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const cr = viewingInvoiceCredit;
+                        setViewingInvoiceCredit(null);
+                        setSelectedCredit(cr);
+                        setPaymentAmount((cr.remaining_debt ?? cr.total_debt ?? 0).toString());
+                      }}
+                      className="flex items-center gap-2 px-4 py-2.5 bg-amber-600 hover:bg-amber-500 text-white rounded-2xl text-xs font-bold transition shadow-xs cursor-pointer"
+                    >
+                      <Receipt className="w-4 h-4" />
+                      <span>Registrar Abono</span>
+                    </button>
+                  )}
+                  {isFullyPaid && (
+                    <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60">
+                      <CheckCircle2 className="w-4 h-4" />
+                      Cuenta Saldada al 100%
+                    </span>
+                  )}
+                </div>
+
+                {/* Right: WhatsApp, Imprimir y Cerrar */}
+                <div className="flex flex-wrap items-center gap-2 sm:gap-2.5">
+                  <button
+                    type="button"
+                    onClick={() => handleSendInvoiceWhatsApp(sale, credit)}
+                    className="flex items-center gap-2 px-4 sm:px-5 py-2.5 bg-[#059669] hover:bg-[#047857] text-white rounded-2xl text-xs font-bold transition shadow-xs cursor-pointer"
+                  >
+                    <MessageCircle className="w-4 h-4" />
+                    <span>WhatsApp</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => window.print()}
+                    className="flex items-center gap-2 px-4 sm:px-5 py-2.5 bg-[#2563eb] hover:bg-[#1d4ed8] text-white rounded-2xl text-xs font-bold transition shadow-xs cursor-pointer"
+                  >
+                    <Printer className="w-4 h-4" />
+                    <span>Imprimir Comprobante</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setViewingInvoiceCredit(null)}
+                    className="px-4 sm:px-5 py-2.5 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-2xl text-xs font-bold transition cursor-pointer"
+                  >
+                    Cerrar
+                  </button>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        );
+      })(), document.body)}
     </div>
   );
 };
