@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import {
   FileText,
   Search,
@@ -737,8 +738,8 @@ export const InvoicesPage: React.FC = () => {
         </div>
       </div>
 
-      {/* 4. MODAL: DETALLE COMPLETO DE FACTURA (DISEÑO EXACTO ACOPLADO) */}
-      {showDetailModal && selectedSale && (() => {
+      {/* 4. MODAL: DETALLE COMPLETO DE FACTURA (PORTAL DIRECTO A BODY PARA EVITAR CORTES DE VISUALIZACIÓN) */}
+      {showDetailModal && selectedSale && createPortal((() => {
         const isCancelled = selectedSale.status === 'cancelled';
         const role = getUserRole(selectedSale);
         const itemsCount = selectedSale.items?.length || 1;
@@ -748,9 +749,9 @@ export const InvoicesPage: React.FC = () => {
             onClick={(e) => {
               if (e.target === e.currentTarget) setShowDetailModal(false);
             }}
-            className="fixed inset-0 z-50 flex items-center justify-center p-2.5 sm:p-4 bg-black/60 dark:bg-black/80 backdrop-blur-xs overflow-hidden animate-in fade-in"
+            className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-4 bg-black/60 dark:bg-black/80 backdrop-blur-xs overflow-y-auto animate-in fade-in duration-150"
           >
-            <div className="relative bg-white dark:bg-slate-900 rounded-[28px] sm:rounded-[32px] shadow-2xl max-w-2xl w-full p-5 sm:p-6 border border-slate-100 dark:border-slate-800 text-slate-800 dark:text-slate-100 my-auto max-h-[92vh] sm:max-h-[88vh] flex flex-col justify-between">
+            <div className="relative bg-white dark:bg-slate-900 rounded-[28px] sm:rounded-[32px] shadow-2xl max-w-2xl w-full p-5 sm:p-6 border border-slate-100 dark:border-slate-800 text-slate-800 dark:text-slate-100 my-auto max-h-[92vh] sm:max-h-[88vh] flex flex-col overflow-hidden">
               
               {/* 1. Encabezado Fijo Superior */}
               <div className="shrink-0 flex items-start justify-between pb-2">
@@ -836,6 +837,11 @@ export const InvoicesPage: React.FC = () => {
                     <p className="text-xs text-slate-400 dark:text-slate-500 truncate">
                       Método: <span className="text-slate-600 dark:text-slate-300 font-medium">{formatPaymentMethod(selectedSale.payment_method || 'Efectivo')}</span>
                     </p>
+                    {(selectedSale as any).credit_term_days && (
+                      <p className="text-[11px] text-amber-600 dark:text-amber-400 font-semibold truncate">
+                        Plazo Crédito: {(selectedSale as any).credit_term_days} días
+                      </p>
+                    )}
                   </div>
                 </div>
 
@@ -846,7 +852,7 @@ export const InvoicesPage: React.FC = () => {
                   </span>
 
                   <div className="border border-slate-100 dark:border-slate-800 rounded-2xl overflow-hidden bg-white dark:bg-slate-900">
-                    <div className="max-h-[160px] sm:max-h-[190px] overflow-y-auto [scrollbar-width:thin]">
+                    <div className="max-h-[180px] sm:max-h-[220px] overflow-y-auto [scrollbar-width:thin]">
                       <table className="w-full text-left text-xs">
                         <thead className="sticky top-0 z-10 bg-[#f8fafc] dark:bg-slate-800 text-slate-500 dark:text-slate-400 font-bold border-b border-slate-100 dark:border-slate-800">
                           <tr>
@@ -868,9 +874,11 @@ export const InvoicesPage: React.FC = () => {
                                   <p className="font-extrabold text-slate-900 dark:text-white text-xs leading-snug">
                                     {it.product_name}
                                   </p>
-                                  <p className="text-[10px] text-slate-400 dark:text-slate-500 font-normal">
-                                    {(it as any).brand || 'Pepsi'} • {(it as any).category || 'Gaseosas'}
-                                  </p>
+                                  {((it as any).brand || (it as any).category) ? (
+                                    <p className="text-[10px] text-slate-400 dark:text-slate-500 font-normal">
+                                      {[(it as any).brand, (it as any).category].filter(Boolean).join(' • ')}
+                                    </p>
+                                  ) : null}
                                 </td>
                                 <td className="py-2.5 px-3 text-right font-semibold text-slate-800 dark:text-slate-200 text-xs align-middle">
                                   C${(it.unit_price_cordobas || 0).toFixed(2)}
@@ -887,12 +895,12 @@ export const InvoicesPage: React.FC = () => {
                             <tr className="hover:bg-slate-50/40 dark:hover:bg-slate-800/40 transition">
                               <td className="py-2.5 px-3 font-black text-slate-900 dark:text-white text-xs align-middle">1</td>
                               <td className="py-2.5 px-3 align-middle">
-                                <p className="font-extrabold text-slate-900 dark:text-white text-xs leading-snug">Gaseosa Pepsi Cola 3 Litros</p>
-                                <p className="text-[10px] text-slate-400 dark:text-slate-500 font-normal">Pepsi • Gaseosas</p>
+                                <p className="font-extrabold text-slate-900 dark:text-white text-xs leading-snug">Consumo de Artículos</p>
+                                <p className="text-[10px] text-slate-400 dark:text-slate-500 font-normal">General</p>
                               </td>
-                              <td className="py-2.5 px-3 text-right font-semibold text-slate-800 dark:text-slate-200 text-xs align-middle">C$68.00</td>
+                              <td className="py-2.5 px-3 text-right font-semibold text-slate-800 dark:text-slate-200 text-xs align-middle">C${(selectedSale.total_cordobas || 0).toFixed(2)}</td>
                               <td className="py-2.5 px-3 text-center text-xs align-middle font-bold text-emerald-500">-</td>
-                              <td className="py-2.5 px-3 text-right font-black text-slate-900 dark:text-white text-xs align-middle">C$68.00</td>
+                              <td className="py-2.5 px-3 text-right font-black text-slate-900 dark:text-white text-xs align-middle">C${(selectedSale.total_cordobas || 0).toFixed(2)}</td>
                             </tr>
                           )}
                         </tbody>
@@ -930,8 +938,8 @@ export const InvoicesPage: React.FC = () => {
                 </div>
               </div>
 
-              {/* 3. Footer Fijo (Fondo Limpio, Sin Borde Artificial) */}
-              <div className="shrink-0 flex items-center justify-between pt-6 mt-2">
+              {/* 3. Footer Fijo (Siempre Visible, Nunca Cortado) */}
+              <div className="shrink-0 flex flex-wrap items-center justify-between gap-3 pt-4 sm:pt-5 border-t border-slate-100/90 dark:border-slate-800">
                 {/* Left: Anular Factura Button */}
                 <div>
                   {!isCancelled && (
@@ -950,11 +958,11 @@ export const InvoicesPage: React.FC = () => {
                 </div>
 
                 {/* Right: WhatsApp, Imprimir Ticket, Cerrar Buttons */}
-                <div className="flex items-center gap-2.5">
+                <div className="flex flex-wrap items-center gap-2 sm:gap-2.5">
                   <button
                     type="button"
                     onClick={() => handleSendWhatsApp(selectedSale)}
-                    className="flex items-center gap-2 px-5 py-2.5 bg-[#059669] hover:bg-[#047857] text-white rounded-2xl text-xs font-bold transition shadow-xs cursor-pointer"
+                    className="flex items-center gap-2 px-4 sm:px-5 py-2.5 bg-[#059669] hover:bg-[#047857] text-white rounded-2xl text-xs font-bold transition shadow-xs cursor-pointer"
                   >
                     <MessageCircle className="w-4 h-4" />
                     <span>WhatsApp</span>
@@ -966,7 +974,7 @@ export const InvoicesPage: React.FC = () => {
                       setShowDetailModal(false);
                       handleDirectPrint(selectedSale);
                     }}
-                    className="flex items-center gap-2 px-5 py-2.5 bg-[#2563eb] hover:bg-[#1d4ed8] text-white rounded-2xl text-xs font-bold transition shadow-xs cursor-pointer"
+                    className="flex items-center gap-2 px-4 sm:px-5 py-2.5 bg-[#2563eb] hover:bg-[#1d4ed8] text-white rounded-2xl text-xs font-bold transition shadow-xs cursor-pointer"
                   >
                     <Printer className="w-4 h-4" />
                     <span>Imprimir Ticket</span>
@@ -975,7 +983,7 @@ export const InvoicesPage: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => setShowDetailModal(false)}
-                    className="px-5 py-2.5 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-2xl text-xs font-bold transition cursor-pointer"
+                    className="px-4 sm:px-5 py-2.5 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-2xl text-xs font-bold transition cursor-pointer"
                   >
                     Cerrar
                   </button>
@@ -985,11 +993,11 @@ export const InvoicesPage: React.FC = () => {
             </div>
           </div>
         );
-      })()}
+      })(), document.body)}
 
       {/* 5. MODAL: IMPRESIÓN DIRECTA DE COMPROBANTE / FACTURA */}
-      {showPrintModal && printSale && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/75 backdrop-blur-xs animate-in fade-in duration-150 overflow-y-auto">
+      {showPrintModal && printSale && createPortal(
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-4 bg-black/75 backdrop-blur-xs animate-in fade-in duration-150 overflow-y-auto">
           <div className="w-full max-w-md bg-white dark:bg-[#0b1329] rounded-3xl p-5 sm:p-6 border border-slate-200 dark:border-slate-800 shadow-2xl space-y-4 my-auto">
             
             {/* Header */}
@@ -1160,7 +1168,8 @@ export const InvoicesPage: React.FC = () => {
             </div>
 
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* 6. MODAL: ANULAR FACTURA */}

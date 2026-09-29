@@ -1,4 +1,5 @@
 import React from 'react';
+import { createPortal } from 'react-dom';
 import { Trash2, AlertTriangle, Info, X, ShieldAlert, LogOut } from 'lucide-react';
 
 export interface ConfirmModalProps {
@@ -34,8 +35,8 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
   const isWarning = type === 'warning';
   const isLogout = type === 'logout';
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-in fade-in duration-200">
+  return createPortal(
+    <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-in fade-in duration-200">
       <div className="relative w-full max-w-md bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-slate-800/90 rounded-3xl p-6 sm:p-7 shadow-2xl text-center space-y-5 animate-in zoom-in-95 duration-200 overflow-hidden">
         
         {/* Ambient Top Glow Effect */}
@@ -128,7 +129,8 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
         </div>
 
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
 
