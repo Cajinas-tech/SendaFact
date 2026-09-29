@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { 
   Vault, DollarSign, ArrowUpRight, ArrowDownRight, 
   Lock, Unlock, CheckCircle2, PlusCircle, CreditCard, Banknote, RefreshCw,
@@ -367,11 +368,16 @@ export const CashPage: React.FC = () => {
       </div>
 
       {/* MODAL: Abrir Caja */}
-      {showOpenModal && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl w-full max-w-md p-6 shadow-2xl space-y-5 animate-in fade-in zoom-in-95 duration-200">
+      {showOpenModal && createPortal(
+        <div 
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setShowOpenModal(false);
+          }}
+          className="fixed inset-0 z-[100] bg-black/60 dark:bg-black/80 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto animate-in fade-in duration-150"
+        >
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl w-full max-w-md p-6 shadow-2xl space-y-5 animate-in fade-in zoom-in-95 duration-200 my-auto">
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
+              <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-600 dark:text-emerald-400 shrink-0">
                 <Unlock className="w-6 h-6" />
               </div>
               <div>
@@ -413,25 +419,31 @@ export const CashPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setShowOpenModal(false)}
-                  className="flex-1 px-4 py-2.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl text-sm font-bold transition"
+                  className="flex-1 px-4 py-2.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl text-sm font-bold transition cursor-pointer"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-sm font-bold shadow-lg shadow-emerald-600/30 transition"
+                  className="flex-1 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-sm font-bold shadow-lg shadow-emerald-600/30 transition cursor-pointer"
                 >
                   Confirmar Apertura
                 </button>
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* MODAL: Cerrar Caja con Arqueo Completo y Desglose de Abonos */}
-      {showCloseModal && activeRegister && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto animate-in fade-in duration-150">
+      {showCloseModal && activeRegister && createPortal(
+        <div 
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setShowCloseModal(false);
+          }}
+          className="fixed inset-0 z-[100] bg-black/60 dark:bg-black/80 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto animate-in fade-in duration-150"
+        >
           <InformeCierreCaja
             cajaId={activeRegister.id}
             cajeroNombre={activeRegister.user || 'Principal'}
@@ -448,13 +460,19 @@ export const CashPage: React.FC = () => {
             onConfirmarCierre={() => handleCloseRegister({ preventDefault: () => {} } as any)}
             onCancelar={() => setShowCloseModal(false)}
           />
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* MODAL: Ingreso / Egreso */}
-      {showMovementModal && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl w-full max-w-md p-6 shadow-2xl space-y-5 animate-in fade-in zoom-in-95 duration-200">
+      {showMovementModal && createPortal(
+        <div 
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setShowMovementModal(false);
+          }}
+          className="fixed inset-0 z-[100] bg-black/60 dark:bg-black/80 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto animate-in fade-in duration-150"
+        >
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl w-full max-w-md p-6 shadow-2xl space-y-5 animate-in fade-in zoom-in-95 duration-200 my-auto">
             <h3 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
               <DollarSign className="w-5 h-5 text-amber-500" />
               Movimiento Manual de Efectivo
@@ -465,7 +483,7 @@ export const CashPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setMovementType('in')}
-                  className={`py-2.5 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition ${
+                  className={`py-2.5 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition cursor-pointer ${
                     movementType === 'in'
                       ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/30'
                       : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
@@ -477,7 +495,7 @@ export const CashPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setMovementType('out')}
-                  className={`py-2.5 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition ${
+                  className={`py-2.5 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition cursor-pointer ${
                     movementType === 'out'
                       ? 'bg-rose-600 text-white shadow-lg shadow-rose-600/30'
                       : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
@@ -518,20 +536,21 @@ export const CashPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setShowMovementModal(false)}
-                  className="flex-1 px-4 py-2.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl text-sm font-bold transition"
+                  className="flex-1 px-4 py-2.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl text-sm font-bold transition cursor-pointer"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 px-4 py-2.5 bg-amber-600 hover:bg-amber-500 text-white rounded-xl text-sm font-bold shadow-lg shadow-amber-600/30 transition"
+                  className="flex-1 px-4 py-2.5 bg-amber-600 hover:bg-amber-500 text-white rounded-xl text-sm font-bold shadow-lg shadow-amber-600/30 transition cursor-pointer"
                 >
                   Registrar Movimiento
                 </button>
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
