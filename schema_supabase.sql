@@ -367,3 +367,211 @@ BEGIN
   VALUES (p_credito_id, p_monto_abono, NOW(), p_usuario_id);
 END;
 $$ LANGUAGE plpgsql;
+
+-- ==============================================================================
+-- 15. FUNCIÓN A: CREAR FACTURA, DESCONTAR INVENTARIO Y GESTIONAR CRÉDITO / CAJA
+-- ==============================================================================
+
+-- Versión para modelo relacional SendaFact (sales, sale_items, products, credits, cash_registers, customers)
+CREATE OR REPLACE FUNCTION procesar_factura_v2(
+  p_cliente_id BIGINT,
+  p_metodo_pago TEXT,
+  p_total NUMERIC,
+  p_dias_plazo INT,
+  p_productos JSONB, -- Array de productos: [{"id": 1, "cantidad": 2}, ...]
+  p_caja_id BIGINT
+) RETURNS BIGINT AS $$
+DECLARE
+  v_sale_id BIGINT;
+  v_ticket VARCHAR(100);
+  v_prod RECORD;
+BEGIN
+  v_ticket := 'FACT-' || TO_CHAR(NOW(), 'YYYYMMDD-HH24MISS');
+
+  -- 1. Insertar Factura de Venta General
+  INSERT INTO sales (ticket_number, customer_id, user_id, cash_register_id, payment_method, total_cordobas, status, created_at, updated_at)
+  VALUES (v_ticket, p_cliente_id, 1, p_caja_id, LOWER(p_metodo_pago), p_total, 'completed', NOW(), NOW())
+  RETURNING id INTO v_sale_id;
+
+  -- 2. Descontar Stock de Inventario en bucle
+  FOR v_prod IN SELECT * FROM jsonb_to_recordset(p_productos) AS x(id BIGINT, cantidad INT) LOOP
+    UPDATE products 
+    SET stock = GREATEST(0, stock - v_prod.cantidad),
+        updated_at = NOW()
+    WHERE id = v_prod.id;
+
+    -- Registrar detalle del item vendido
+    INSERT INTO sale_items (sale_id, product_id, product_name, quantity, total_cordobas, created_at, updated_at)
+    VALUES (v_sale_id, v_prod.id, COALESCE((SELECT name FROM products WHERE id = v_prod.id), 'Producto'), v_prod.cantidad, p_total, NOW(), NOW());
+  END LOOP;
+
+  -- 3. Lógica según el Método de Pago
+  IF UPPER(p_metodo_pago) = 'CREDITO' THEN
+    -- En crédito NO entra dinero a caja: se crea la cuenta por cobrar y se incrementa la deuda del cliente
+    INSERT INTO credits (credit_code, customer_id, sale_id, total_amount, paid_amount, remaining_amount, due_date, status, created_at, updated_at)
+    VALUES (
+      'CR-' || v_ticket,
+      p_cliente_id,
+      v_sale_id,
+      p_total,
+      0.00,
+      p_total,
+      CURRENT_DATE + (COALESCE(p_dias_plazo, 30) || ' days')::INTERVAL,
+      'activo',
+      NOW(),
+      NOW()
+    );
+
+    IF p_cliente_id IS NOT NULL THEN
+      UPDATE customers 
+      SET current_debt = current_debt + p_total,
+          updated_at = NOW()
+      WHERE id = p_cliente_id;
+    END IF;
+
+  ELSIF UPPER(p_metodo_pago) = 'EFECTIVO' THEN
+    -- En efectivo entra directo a la caja registradora activa
+    UPDATE cash_registers 
+    SET total_sales_cordobas = total_sales_cordobas + p_total,
+        cash_sales = cash_sales + p_total,
+        updated_at = NOW()
+    WHERE id = p_caja_id AND status = 'open';
+
+  ELSIF UPPER(p_metodo_pago) = 'TARJETA' THEN
+    UPDATE cash_registers 
+    SET total_sales_cordobas = total_sales_cordobas + p_total,
+        card_sales = card_sales + p_total,
+        updated_at = NOW()
+    WHERE id = p_caja_id AND status = 'open';
+  END IF;
+
+  RETURN v_sale_id;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Versión con UUID para esquemas con nombres facturas / productos / creditos / cajas
+CREATE OR REPLACE FUNCTION procesar_factura_v2(
+  p_cliente_id UUID,
+  p_metodo_pago TEXT,
+  p_total NUMERIC,
+  p_dias_plazo INT,
+  p_productos JSONB,
+  p_caja_id UUID
+) RETURNS VOID AS $$
+DECLARE
+  v_factura_id UUID;
+  v_prod RECORD;
+BEGIN
+  -- 1. Insertar la Factura General
+  INSERT INTO facturas (cliente_id, metodo_pago, total, fecha)
+  VALUES (p_cliente_id, p_metodo_pago, p_total, NOW())
+  RETURNING id INTO v_factura_id;
+
+  -- 2. Descontar del Inventario (Bucle para cada producto del carrito)
+  FOR v_prod IN SELECT * FROM jsonb_to_recordset(p_productos) AS x(id UUID, cantidad INT) LOOP
+    UPDATE productos 
+    SET stock = stock - v_prod.cantidad 
+    WHERE id = v_prod.id;
+  END LOOP;
+
+  -- 3. Lógica según el Método de Pago elegido
+  IF UPPER(p_metodo_pago) = 'CREDITO' THEN
+    INSERT INTO creditos (factura_id, cliente_id, monto_total, saldo_pendiente, dias_plazo, fecha_vencimiento, estado)
+    VALUES (
+      v_factura_id, 
+      p_cliente_id, 
+      p_total, 
+      p_total,
+      p_dias_plazo, 
+      NOW() + (COALESCE(p_dias_plazo, 30) || ' days')::INTERVAL, 
+      'PENDIENTE'
+    );
+  ELSIF UPPER(p_metodo_pago) = 'EFECTIVO' THEN
+    UPDATE cajas 
+    SET total_recaudado = total_recaudado + p_total 
+    WHERE id = p_caja_id AND estado = 'ABIERTA';
+  END IF;
+END;
+$$ LANGUAGE plpgsql;
+
+-- ==============================================================================
+-- 16. FUNCIÓN B: REGISTRAR ABONO Y AFECTAR EL CIERRE DE CAJA
+-- ==============================================================================
+
+-- Para modelo SendaFact (credits, credit_payments, cash_registers, customers)
+CREATE OR REPLACE FUNCTION registrar_abono_con_control(
+  p_credito_id BIGINT,
+  p_monto_abono NUMERIC,
+  p_caja_id BIGINT
+) RETURNS VOID AS $$
+DECLARE
+  v_customer_id BIGINT;
+BEGIN
+  -- 1. Restar de la cuenta pendiente del crédito
+  UPDATE credits
+  SET remaining_amount = GREATEST(0, remaining_amount - p_monto_abono),
+      paid_amount = paid_amount + p_monto_abono,
+      status = CASE WHEN (remaining_amount - p_monto_abono) <= 0 THEN 'pagado' ELSE 'activo' END,
+      updated_at = NOW()
+  WHERE id = p_credito_id
+  RETURNING customer_id INTO v_customer_id;
+
+  -- 2. Restar de la deuda acumulada del cliente
+  IF v_customer_id IS NOT NULL THEN
+    UPDATE customers
+    SET current_debt = GREATEST(0, current_debt - p_monto_abono),
+        updated_at = NOW()
+    WHERE id = v_customer_id;
+  END IF;
+
+  -- 3. Registrar en el Historial de Abonos (credit_payments)
+  INSERT INTO credit_payments (credit_id, user_id, amount, payment_method, notes, payment_date, created_at, updated_at)
+  VALUES (p_credito_id, 1, p_monto_abono, 'efectivo', 'Abono registrado en cierre de caja', NOW(), NOW(), NOW());
+
+  -- 4. Sumar al Cierre de Caja Activo (indica que entró dinero a la caja por cobranza)
+  UPDATE cash_registers
+  SET total_sales_cordobas = total_sales_cordobas + p_monto_abono,
+      cash_sales = cash_sales + p_monto_abono,
+      updated_at = NOW()
+  WHERE id = p_caja_id AND status = 'open';
+END;
+$$ LANGUAGE plpgsql;
+
+-- Para esquemas alternativos con UUID (creditos, historial_pagos, cajas)
+CREATE OR REPLACE FUNCTION registrar_abono_con_control(
+  p_credito_id UUID,
+  p_monto_abono NUMERIC,
+  p_caja_id UUID
+) RETURNS VOID AS $$
+BEGIN
+  -- 1. Restar de la cuenta pendiente del cliente
+  UPDATE creditos
+  SET saldo_pendiente = saldo_pendiente - p_monto_abono,
+      estado = CASE WHEN (saldo_pendiente - p_monto_abono) <= 0 THEN 'PAGADO' ELSE 'PENDIENTE' END
+  WHERE id = p_credito_id;
+
+  -- 2. Registrar en el Historial de Abonos (para auditoría e informes)
+  INSERT INTO historial_pagos (credito_id, caja_id, monto, fecha)
+  VALUES (p_credito_id, p_caja_id, p_monto_abono, NOW());
+
+  -- 3. Sumar al Cierre de Caja Activo (Indica que entró dinero por cobranza)
+  UPDATE cajas
+  SET total_recaudado = total_recaudado + p_monto_abono
+  WHERE id = p_caja_id AND estado = 'ABIERTA';
+END;
+$$ LANGUAGE plpgsql;
+
+-- ==============================================================================
+-- 17. CONSULTA PARA EL REPORTE DE CIERRE DE CAJA (DESGLOSE DE ABONOS DEL DÍA)
+-- ==============================================================================
+-- Consulta para listar qué clientes abonaron durante este turno de caja:
+-- SELECT 
+--   c.name AS cliente_nombre,
+--   cr.total_amount AS credito_original,
+--   cp.amount AS monto_abonado_hoy,
+--   cr.remaining_amount AS saldo_restante_actual,
+--   cp.payment_date AS hora_pago
+-- FROM credit_payments cp
+-- JOIN credits cr ON cp.credit_id = cr.id
+-- JOIN customers c ON cr.customer_id = c.id
+-- WHERE cp.user_id = 1;

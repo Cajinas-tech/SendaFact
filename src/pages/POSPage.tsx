@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { Search, ShoppingBag, Trash2, CheckCircle, CreditCard, Banknote, RefreshCw, Zap, Tag, Percent, X, ArrowRight } from 'lucide-react';
+import { Search, ShoppingBag, Trash2, CheckCircle, CreditCard, Banknote, RefreshCw, Zap, Tag, Percent, X, ArrowRight, Clock, AlertTriangle, Calendar } from 'lucide-react';
 import ProductCard from '../components/POS/ProductCard';
 import CartItem from '../components/POS/CartItem';
 import TicketModal from '../components/POS/TicketModal';
 import DiscountModal from '../components/POS/DiscountModal';
 import { storage } from '../lib/storage';
+import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { Product, Category, Customer, Sale } from '../types';
 import { useToast } from '../components/UI/Toast';
 
@@ -16,6 +17,7 @@ export default function POSPage() {
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [selectedCustomerId, setSelectedCustomerId] = useState('');
   const [paymentMethod, setPaymentMethod] = useState<'efectivo' | 'tarjeta' | 'transferencia' | 'credito'>('efectivo');
+  const [creditDays, setCreditDays] = useState<number>(30);
   const [cart, setCart] = useState<{ id: number; name: string; sku: string; price_cordobas: number; price_usd: number; quantity: number }[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [mobileTab, setMobileTab] = useState<'catalog' | 'cart'>('catalog');
@@ -149,6 +151,16 @@ export default function POSPage() {
   // Procesar Cobro
   const handleCheckout = async () => {
     if (cart.length === 0 || isProcessing) return;
+
+    // Validación: Para ventas a crédito es obligatorio seleccionar un cliente registrado
+    const customer = customers.find(c => String(c.id) === String(selectedCustomerId));
+    if (paymentMethod === 'credito') {
+      if (!customer) {
+        warning('Cliente Requerido', 'Para autorizar una venta a crédito debes seleccionar un cliente registrado en la lista.');
+        return;
+      }
+    }
+
     setIsProcessing(true);
 
     try {
@@ -157,8 +169,29 @@ export default function POSPage() {
       const seq = String(Math.floor(1 + Math.random() * 999999)).padStart(6, '0');
       const ticketNumber = `#FACT-${ymd}-${seq}`;
       const currentUser = storage.getCurrentUser();
-      const customer = customers.find(c => String(c.id) === String(selectedCustomerId));
+      const activeReg = storage.getActiveCashRegister();
 
+      // 1. Invocar Función RPC Atómica en Supabase (si está configurado)
+      if (isSupabaseConfigured()) {
+        try {
+          const { error: rpcError } = await supabase.rpc('procesar_factura_v2', {
+            p_cliente_id: customer ? customer.id : null,
+            p_metodo_pago: paymentMethod.toUpperCase(),
+            p_total: totalCordobas,
+            p_dias_plazo: paymentMethod === 'credito' ? creditDays : 0,
+            p_productos: cart.map(i => ({ id: i.id, cantidad: i.quantity })),
+            p_caja_id: activeReg?.id || 1
+          });
+
+          if (rpcError) {
+            console.warn('Supabase procesar_factura_v2 devolvió aviso:', rpcError.message);
+          }
+        } catch (sbErr) {
+          console.warn('Error llamando procesar_factura_v2 en Supabase:', sbErr);
+        }
+      }
+
+      // 2. Operación Atómica en Almacenamiento Local (SendaFact Engine)
       const newSale: Sale = {
         id: Date.now(),
         ticket_number: ticketNumber,
@@ -191,7 +224,7 @@ export default function POSPage() {
       const existingSales = storage.getSales();
       storage.setSales([newSale, ...existingSales]);
 
-      // Descontar Stock
+      // Descontar Stock de Inventario (aplica para todos los métodos de pago)
       const updatedProducts = products.map(p => {
         const itemSold = cart.find(c => c.id === p.id);
         if (itemSold) {
@@ -202,7 +235,7 @@ export default function POSPage() {
       storage.setProducts(updatedProducts);
       setProducts(updatedProducts);
 
-      // Registrar movimiento de kardex
+      // Registrar movimiento de salida en Kardex
       const existingMovements = storage.getMovements();
       const newMovements = cart.map((i, idx) => ({
         id: Date.now() + idx,
@@ -213,27 +246,58 @@ export default function POSPage() {
         quantity: i.quantity,
         previous_stock: (products.find(p => p.id === i.id)?.stock || 0),
         new_stock: Math.max(0, (products.find(p => p.id === i.id)?.stock || 0) - i.quantity),
-        reason: `Venta #${ticketNumber}`,
+        reason: `Venta ${ticketNumber} (${paymentMethod === 'credito' ? 'CRÉDITO' : paymentMethod.toUpperCase()})`,
         user_name: currentUser.name,
         created_at: new Date().toISOString()
       }));
       storage.setMovements([...newMovements, ...existingMovements]);
 
-      // Si es crédito, registrar en cuentas por cobrar
+      // LÓGICA ATÓMICA SEGÚN MÉTODO DE PAGO
       if (paymentMethod === 'credito' && customer) {
+        // EN CRÉDITO: No entra dinero a caja. Se crea la cuenta por cobrar y se suma a la deuda del cliente.
         const existingCredits = storage.getCredits();
+        const dueDate = new Date(Date.now() + creditDays * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+
         storage.setCredits([{
           id: Date.now(),
           customer_id: customer.id,
           customer_name: customer.name,
           customer_phone: customer.phone,
+          sale_id: newSale.id,
           ticket_number: ticketNumber,
           total_debt: totalCordobas,
           remaining_debt: totalCordobas,
+          dias_plazo: creditDays,
           status: 'pending',
-          due_date: new Date(Date.now() + 30*24*60*60*1000).toISOString().split('T')[0],
-          created_at: new Date().toISOString().split('T')[0]
+          due_date: dueDate,
+          created_at: new Date().toISOString().split('T')[0],
+          payments: []
         }, ...existingCredits]);
+
+        // Actualizar deuda acumulada del cliente en el catálogo
+        storage.saveCustomer({
+          ...customer,
+          current_debt: Number(((customer.current_debt || 0) + totalCordobas).toFixed(2)),
+          credits_count: (customer.credits_count || 0) + 1
+        });
+      } else if (paymentMethod === 'efectivo') {
+        // EN EFECTIVO: El dinero entra de inmediato a la caja activa
+        if (activeReg) {
+          storage.saveCashRegister({
+            ...activeReg,
+            cash_sales: Number(((activeReg.cash_sales || 0) + totalCordobas).toFixed(2)),
+            total_sales_cordobas: Number(((activeReg.total_sales_cordobas || 0) + totalCordobas).toFixed(2))
+          });
+        }
+      } else if (paymentMethod === 'tarjeta') {
+        // EN TARJETA: Registra venta electrónica en caja activa
+        if (activeReg) {
+          storage.saveCashRegister({
+            ...activeReg,
+            card_sales: Number(((activeReg.card_sales || 0) + totalCordobas).toFixed(2)),
+            total_sales_cordobas: Number(((activeReg.total_sales_cordobas || 0) + totalCordobas).toFixed(2))
+          });
+        }
       }
 
       setCompletedSale(newSale);
@@ -243,13 +307,18 @@ export default function POSPage() {
         totalCordobas: totalCordobas
       });
       setTicketModalOpen(true);
-      success('¡Venta realizada con éxito!', `Ticket ${ticketNumber} • Total: C$ ${totalCordobas.toFixed(2)}`);
+      success(
+        paymentMethod === 'credito' ? '¡Factura a Crédito Generada!' : '¡Venta realizada con éxito!',
+        `${ticketNumber} • Total: C$ ${totalCordobas.toFixed(2)}${paymentMethod === 'credito' ? ` (Vence en ${creditDays} días)` : ''}`
+      );
       setCart([]);
       setSelectedCustomerId('');
       setPaymentMethod('efectivo');
+      setCreditDays(30);
       setDiscountValue(0);
 
     } catch (e) {
+      console.error('Error al facturar:', e);
       error('Error al procesar la venta', 'Por favor verifica la caja y los productos seleccionados');
     } finally {
       setIsProcessing(false);
@@ -493,24 +562,26 @@ export default function POSPage() {
               </button>
             </div>
 
-            {/* Selección de Cliente */}
-            <div>
-              <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1">
-                Cliente
-              </label>
-              <select
-                value={selectedCustomerId}
-                onChange={(e) => setSelectedCustomerId(e.target.value)}
-                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs font-bold text-slate-700 dark:text-slate-300 outline-none"
-              >
-                <option value="">Cliente Ocasional / Público General</option>
-                {customers.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name} {c.phone ? `(Tel: ${c.phone})` : ''}
-                  </option>
-                ))}
-              </select>
-            </div>
+            {/* Selección de Cliente para contado */}
+            {paymentMethod !== 'credito' && (
+              <div>
+                <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1">
+                  Cliente (Opcional)
+                </label>
+                <select
+                  value={selectedCustomerId}
+                  onChange={(e) => setSelectedCustomerId(e.target.value)}
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs font-bold text-slate-700 dark:text-slate-300 outline-none"
+                >
+                  <option value="">Cliente Ocasional / Público General</option>
+                  {customers.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.name} {c.phone ? `(Tel: ${c.phone})` : ''}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
 
             {/* Lista de Items en Carrito */}
             <div className="space-y-2.5 max-h-56 overflow-y-auto pr-1">
@@ -614,32 +685,154 @@ export default function POSPage() {
               <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-400">
                 Método de Pago
               </label>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-3 gap-2">
                 <button
                   type="button"
                   onClick={() => setPaymentMethod('efectivo')}
-                  className={`py-2 px-3 rounded-xl border text-xs font-black flex items-center justify-center gap-1.5 transition cursor-pointer ${
+                  className={`py-2 px-2 rounded-xl border text-xs font-black flex items-center justify-center gap-1.5 transition cursor-pointer ${
                     paymentMethod === 'efectivo'
                       ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 shadow-2xs'
-                      : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400'
+                      : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:border-slate-300 dark:hover:border-slate-600'
                   }`}
                 >
-                  <Banknote className="w-4 h-4" />
+                  <Banknote className="w-4 h-4 shrink-0" />
                   <span>Efectivo</span>
                 </button>
                 <button
                   type="button"
                   onClick={() => setPaymentMethod('tarjeta')}
-                  className={`py-2 px-3 rounded-xl border text-xs font-black flex items-center justify-center gap-1.5 transition cursor-pointer ${
+                  className={`py-2 px-2 rounded-xl border text-xs font-black flex items-center justify-center gap-1.5 transition cursor-pointer ${
                     paymentMethod === 'tarjeta'
                       ? 'border-blue-500 bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 shadow-2xs'
-                      : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400'
+                      : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:border-slate-300 dark:hover:border-slate-600'
                   }`}
                 >
-                  <CreditCard className="w-4 h-4" />
+                  <CreditCard className="w-4 h-4 shrink-0" />
                   <span>Tarjeta</span>
                 </button>
+                <button
+                  type="button"
+                  onClick={() => setPaymentMethod('credito')}
+                  className={`py-2 px-2 rounded-xl border text-xs font-black flex items-center justify-center gap-1.5 transition cursor-pointer ${
+                    paymentMethod === 'credito'
+                      ? 'border-amber-500 bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 shadow-2xs'
+                      : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:border-slate-300 dark:hover:border-slate-600'
+                  }`}
+                >
+                  <Clock className="w-4 h-4 shrink-0" />
+                  <span>Crédito</span>
+                </button>
               </div>
+
+              {/* CAMPOS CONDICIONALES PARA CRÉDITO: Menú de Cliente registrado y Días de Plazo */}
+              {paymentMethod === 'credito' && (
+                <div className="mt-3 p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/30 space-y-3 animate-in fade-in slide-in-from-top-2 duration-150">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-amber-700 dark:text-amber-400 flex items-center gap-1.5">
+                      <Clock className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                      Condiciones del Crédito
+                    </span>
+                    <span className="text-[10px] font-bold uppercase tracking-wider bg-amber-500/20 text-amber-700 dark:text-amber-300 px-2 py-0.5 rounded-full">
+                      No suma a caja
+                    </span>
+                  </div>
+
+                  {/* Selector de Cliente para Crédito */}
+                  <div>
+                    <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1">
+                      Seleccionar Cliente <span className="text-rose-500">*</span>
+                    </label>
+                    <select
+                      value={selectedCustomerId}
+                      onChange={(e) => setSelectedCustomerId(e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl border border-amber-500/40 bg-white dark:bg-slate-900 text-xs font-bold text-slate-800 dark:text-slate-200 outline-none focus:border-amber-500"
+                    >
+                      <option value="">-- Elige un Cliente Registrado --</option>
+                      {customers.map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.name} {c.phone ? `(${c.phone})` : ''} - Límite: C$ {(c.credit_limit || 0).toLocaleString()}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Información de Deuda y Saldo Disponible */}
+                  {selectedCustomerId && (() => {
+                    const currentCustomer = customers.find(c => String(c.id) === String(selectedCustomerId));
+                    if (!currentCustomer) return null;
+                    const availableCredit = (currentCustomer.credit_limit || 0) - (currentCustomer.current_debt || 0);
+                    const isExceeded = availableCredit < totalCordobas;
+
+                    return (
+                      <div className="p-2.5 rounded-xl bg-white/80 dark:bg-slate-900/80 border border-amber-500/30 text-[11px] space-y-1 shadow-2xs">
+                        <div className="flex justify-between text-slate-600 dark:text-slate-400">
+                          <span>Límite autorizado:</span>
+                          <span className="font-mono font-bold text-slate-800 dark:text-slate-200">
+                            C$ {(currentCustomer.credit_limit || 0).toFixed(2)}
+                          </span>
+                        </div>
+                        <div className="flex justify-between text-slate-600 dark:text-slate-400">
+                          <span>Deuda actual:</span>
+                          <span className="font-mono font-bold text-rose-600 dark:text-rose-400">
+                            C$ {(currentCustomer.current_debt || 0).toFixed(2)}
+                          </span>
+                        </div>
+                        <div className="flex justify-between font-bold pt-1 border-t border-slate-100 dark:border-slate-800">
+                          <span className="text-slate-700 dark:text-slate-300">Crédito disponible:</span>
+                          <span className={`font-mono ${isExceeded ? 'text-rose-600 font-black' : 'text-emerald-600 dark:text-emerald-400'}`}>
+                            C$ {Math.max(0, availableCredit).toFixed(2)}
+                          </span>
+                        </div>
+                        {isExceeded && (
+                          <div className="mt-1 flex items-center gap-1 text-[10px] text-rose-600 dark:text-rose-400 font-bold bg-rose-500/10 p-1.5 rounded-lg border border-rose-500/20">
+                            <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+                            <span>Esta factura (C$ {totalCordobas.toFixed(2)}) supera el cupo de crédito disponible.</span>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
+
+                  {/* Input numérico de Días de Plazo */}
+                  <div>
+                    <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1">
+                      Días de Plazo para Pagar
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="number"
+                        min="1"
+                        max="365"
+                        value={creditDays}
+                        onChange={(e) => setCreditDays(Math.max(1, parseInt(e.target.value) || 1))}
+                        className="w-20 px-3 py-1.5 rounded-xl border border-amber-500/40 bg-white dark:bg-slate-900 text-xs font-mono font-bold text-slate-800 dark:text-slate-200 outline-none focus:border-amber-500"
+                      />
+                      <div className="flex gap-1.5">
+                        {[8, 15, 30, 45].map((days) => (
+                          <button
+                            key={days}
+                            type="button"
+                            onClick={() => setCreditDays(days)}
+                            className={`px-2 py-1 rounded-lg text-[10px] font-bold transition cursor-pointer ${
+                              creditDays === days
+                                ? 'bg-amber-600 text-white shadow-2xs'
+                                : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700 hover:bg-slate-50'
+                            }`}
+                          >
+                            {days} días
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="mt-1 flex items-center gap-1.5 text-[10px] text-amber-700 dark:text-amber-400 font-medium">
+                      <Calendar className="w-3 h-3 text-amber-500" />
+                      <span>
+                        Fecha de vencimiento: {new Date(Date.now() + creditDays * 86400000).toLocaleDateString('es-NI', { day: '2-digit', month: 'short', year: 'numeric' })}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Totales Desglosados */}

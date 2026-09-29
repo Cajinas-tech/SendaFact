@@ -126,6 +126,7 @@ export interface CreditAccount {
   ticket_number: string;
   total_debt: number;
   remaining_debt: number;
+  dias_plazo?: number;
   status: 'pending' | 'paid' | 'overdue' | 'cancelled';
   due_date: string;
   created_at: string;
@@ -135,6 +136,8 @@ export interface CreditAccount {
 export interface CreditPayment {
   id: number;
   credit_id: number;
+  customer_name?: string;
+  caja_id?: number | string;
   amount_cordobas: number;
   payment_method: string;
   receipt_number: string;

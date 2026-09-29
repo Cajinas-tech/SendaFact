@@ -119,6 +119,8 @@ export const CreditsPage: React.FC = () => {
           {
             id: Date.now(),
             credit_id: selectedCredit.id,
+            customer_name: selectedCredit.customer_name,
+            caja_id: activeReg?.id || 1,
             amount_cordobas: amount,
             payment_method: paymentMethod === 'cash' ? 'Efectivo' : paymentMethod === 'card' ? 'Tarjeta' : 'Transferencia',
             receipt_number: notes.trim() ? notes.trim() : `ABO-${Math.floor(1000 + Math.random() * 9000)}`,
