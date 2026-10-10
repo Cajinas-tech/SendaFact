@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { 
   Tag, 
   Plus, 
@@ -286,8 +287,8 @@ export default function CategoriesPage() {
       </div>
 
       {/* MODAL CREAR / EDITAR CATEGORÍA */}
-      {modalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xs animate-in fade-in duration-200">
+      {modalOpen && createPortal(
+        <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="bg-white dark:bg-[#0f172a] rounded-3xl border border-slate-200/90 dark:border-slate-800 shadow-2xl w-full max-w-lg overflow-hidden animate-in zoom-in-95 duration-200">
             {/* Modal Header */}
             <div className="p-6 border-b border-slate-100 dark:border-slate-800/80 flex items-center justify-between">
@@ -354,7 +355,8 @@ export default function CategoriesPage() {
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* CONFIRM DELETE MODAL */}
@@ -370,8 +372,8 @@ export default function CategoriesPage() {
       />
 
       {/* PREVENT DELETE MODAL IF HAS PRODUCTS */}
-      {preventDeleteModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xs animate-in fade-in duration-200">
+      {preventDeleteModal && createPortal(
+        <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="bg-white dark:bg-[#0f172a] rounded-3xl border border-slate-200/90 dark:border-slate-800 shadow-2xl w-full max-w-md p-6 text-center space-y-4 animate-in zoom-in-95 duration-200">
             <div className="w-14 h-14 rounded-full bg-amber-50 dark:bg-amber-950/50 border border-amber-200 dark:border-amber-800 text-amber-600 dark:text-amber-400 mx-auto flex items-center justify-center shadow-lg shadow-amber-500/10">
               <AlertCircle className="w-7 h-7" />
@@ -393,7 +395,8 @@ export default function CategoriesPage() {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
     </div>
