@@ -27,6 +27,7 @@ export default function CategoriesPage() {
   const [preventDeleteModal, setPreventDeleteModal] = useState<{ name: string; count: number } | null>(null);
 
   // Form State
+  const [code, setCode] = useState('');
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
 
@@ -39,6 +40,16 @@ export default function CategoriesPage() {
   useEffect(() => {
     loadData();
   }, []);
+
+  // Generate random short code like wv2d01
+  const generateCategoryCode = () => {
+    const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
+    let res = '';
+    for (let i = 0; i < 6; i++) {
+      res += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return res;
+  };
 
   // Filtered categories
   const filteredCategories = useMemo(() => {
@@ -59,6 +70,7 @@ export default function CategoriesPage() {
   // Open Create Modal
   const openCreateModal = () => {
     setEditingCategory(null);
+    setCode(generateCategoryCode());
     setName('');
     setDescription('');
     setModalOpen(true);
@@ -67,6 +79,7 @@ export default function CategoriesPage() {
   // Open Edit Modal
   const openEditModal = (cat: Category) => {
     setEditingCategory(cat);
+    setCode(cat.code || generateCategoryCode());
     setName(cat.name);
     setDescription(cat.description || '');
     setModalOpen(true);
@@ -87,6 +100,7 @@ export default function CategoriesPage() {
       // Update
       const updated: Category = {
         ...editingCategory,
+        code: code.trim().toLowerCase() || editingCategory.code,
         name: cleanName.toUpperCase(),
         description: cleanDesc ? cleanDesc.toUpperCase() : `${cleanName.toUpperCase()} GENERAL`,
       };
@@ -94,9 +108,10 @@ export default function CategoriesPage() {
       success('Categoría Actualizada', `"${cleanName.toUpperCase()}" se guardó correctamente.`);
     } else {
       // Create new
+      const finalCode = code.trim().toLowerCase() || generateCategoryCode();
       const newCategory: Category = {
         id: Date.now(),
-        code: Math.random().toString(36).substring(2, 10),
+        code: finalCode,
         name: cleanName.toUpperCase(),
         slug: cleanName.toLowerCase().replace(/\s+/g, '-'),
         description: cleanDesc ? cleanDesc.toUpperCase() : `${cleanName.toUpperCase()} GENERAL`,
@@ -286,16 +301,22 @@ export default function CategoriesPage() {
         </div>
       </div>
 
-      {/* MODAL CREAR / EDITAR CATEGORÍA */}
+      {/* MODAL CREAR / EDITAR CATEGORÍA (IDÉNTICO A LA CAPTURA DE REFERENCIA) */}
       {modalOpen && createPortal(
         <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-white dark:bg-[#0f172a] rounded-3xl border border-slate-200/90 dark:border-slate-800 shadow-2xl w-full max-w-lg overflow-hidden animate-in zoom-in-95 duration-200">
+          <div className="bg-white dark:bg-[#0f172a] rounded-[28px] border border-slate-200/90 dark:border-slate-800 shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200">
             {/* Modal Header */}
-            <div className="p-6 border-b border-slate-100 dark:border-slate-800/80 flex items-center justify-between">
-              <h3 className="text-base sm:text-lg font-black text-slate-900 dark:text-white tracking-tight">
-                {editingCategory ? 'Editar Categoría' : 'Nueva Categoría'}
-              </h3>
+            <div className="p-6 pb-5 flex items-center justify-between border-b border-slate-100 dark:border-slate-800/80">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center font-bold border border-blue-100 dark:border-blue-900/50">
+                  <Plus className="w-5 h-5 stroke-[2.8]" />
+                </div>
+                <h3 className="text-base sm:text-lg font-black text-slate-900 dark:text-white uppercase tracking-tight">
+                  {editingCategory ? 'Editar Categoría' : 'Nueva Categoría'}
+                </h3>
+              </div>
               <button
+                type="button"
                 onClick={() => setModalOpen(false)}
                 className="p-1.5 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
               >
@@ -305,52 +326,65 @@ export default function CategoriesPage() {
 
             {/* Modal Form */}
             <form onSubmit={handleSubmit}>
-              <div className="p-6 space-y-5">
-                {/* Nombre */}
+              <div className="p-6 space-y-4">
+                {/* Código / ID */}
                 <div>
-                  <label className="text-[11px] font-black text-slate-700 dark:text-slate-300 tracking-wider mb-2 block uppercase">
-                    NOMBRE
+                  <label className="text-[11px] font-black text-slate-700 dark:text-slate-300 tracking-wider mb-1.5 block uppercase">
+                    CÓDIGO / ID
+                  </label>
+                  <input
+                    type="text"
+                    value={code}
+                    readOnly
+                    className="w-full px-4 py-3 rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60 font-mono text-xs font-bold text-slate-700 dark:text-slate-300 select-none outline-none"
+                  />
+                </div>
+
+                {/* Nombre de la Categoría */}
+                <div>
+                  <label className="text-[11px] font-black text-slate-700 dark:text-slate-300 tracking-wider mb-1.5 block uppercase">
+                    NOMBRE DE LA CATEGORÍA *
                   </label>
                   <input
                     type="text"
                     required
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    placeholder="Ej. Bebidas, Abarrotes..."
-                    className="w-full px-4 py-3 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm font-semibold text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition outline-none uppercase"
+                    placeholder="EJ. BEBIDAS, GASEOSAS, SNACKS"
+                    className="w-full px-4 py-3 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-bold text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition outline-none uppercase placeholder:text-slate-400 placeholder:font-normal"
                     autoFocus
                   />
                 </div>
 
                 {/* Descripción */}
                 <div>
-                  <label className="text-[11px] font-black text-slate-700 dark:text-slate-300 tracking-wider mb-2 block uppercase">
+                  <label className="text-[11px] font-black text-slate-700 dark:text-slate-300 tracking-wider mb-1.5 block uppercase">
                     DESCRIPCIÓN
                   </label>
                   <textarea
-                    rows={4}
+                    rows={3}
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
-                    placeholder="Detalle o notas de la categoría..."
-                    className="w-full px-4 py-3 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm font-semibold text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition outline-none uppercase resize-none"
+                    placeholder="EJ. BEBIDAS, JUGOS Y REFRESCOS"
+                    className="w-full px-4 py-3 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-semibold text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition outline-none uppercase resize-none placeholder:text-slate-400 placeholder:font-normal"
                   />
                 </div>
               </div>
 
               {/* Modal Footer */}
-              <div className="p-6 border-t border-slate-100 dark:border-slate-800/80 bg-slate-50/50 dark:bg-slate-900/50 flex items-center justify-end gap-3">
+              <div className="p-6 pt-3 flex items-center justify-end gap-3">
                 <button
                   type="button"
                   onClick={() => setModalOpen(false)}
-                  className="px-6 py-2.5 rounded-full border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold text-xs uppercase tracking-wider transition cursor-pointer"
+                  className="px-6 py-2.5 rounded-2xl border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold text-xs uppercase tracking-wider transition cursor-pointer"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
-                  className="px-7 py-2.5 rounded-full bg-blue-600 hover:bg-blue-700 text-white font-black text-xs uppercase tracking-wider shadow-lg shadow-blue-500/25 transition cursor-pointer"
+                  className="px-7 py-2.5 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-black text-xs uppercase tracking-wider shadow-lg shadow-blue-500/25 transition cursor-pointer"
                 >
-                  {editingCategory ? 'Actualizar Categoría' : 'Guardar Categoría'}
+                  {editingCategory ? 'GUARDAR CATEGORÍA' : 'CREAR CATEGORÍA'}
                 </button>
               </div>
             </form>
