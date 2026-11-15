@@ -179,6 +179,15 @@
     box-shadow: none !important;
     border: none !important;
   }
+  #printable-ticket.paper-58mm {
+    width: 58mm !important;
+    max-width: 58mm !important;
+    padding: 4mm 2mm !important;
+  }
+  #printable-ticket.paper-80mm {
+    width: 80mm !important;
+    max-width: 80mm !important;
+  }
   .no-print {
     display: none !important;
   }

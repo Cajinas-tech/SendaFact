@@ -17,7 +17,8 @@ import {
   RefreshCw,
   Ban,
   ArrowUpDown,
-  MessageCircle
+  MessageCircle,
+  Check
 } from 'lucide-react';
 import { storage } from '../lib/storage';
 import { Sale, CompanySetting, User, CreditAccount } from '../types';
@@ -45,6 +46,24 @@ export const InvoicesPage: React.FC = () => {
   // Selected sale for print modal
   const [printSale, setPrintSale] = useState<Sale | null>(null);
   const [showPrintModal, setShowPrintModal] = useState(false);
+  const [paperFormat, setPaperFormat] = useState<'80mm' | '58mm'>('80mm');
+
+  const handleShareWhatsApp = () => {
+    if (!printSale) return;
+    const itemsText = printSale.items?.map(i => `• ${i.quantity}x ${i.product_name} - C$${i.total_cordobas.toFixed(2)}`).join('\n') || '';
+    const text = `*TICKET / FACTURA DE VENTA*\n` +
+      `*${company?.name || 'SENDA SISTEMAS'}*\n` +
+      `Documento: ${printSale.ticket_number || '#' + printSale.id}\n` +
+      `Fecha: ${formatDateTime(printSale.created_at)}\n` +
+      `Cliente: ${printSale.customer?.name || (printSale as any).customer_name || 'Consumidor Final'}\n\n` +
+      `*DETALLE DE PRODUCTOS:*\n${itemsText}\n\n` +
+      `*TOTAL A PAGAR: C$ ${(printSale.total_cordobas || 0).toFixed(2)}*\n\n` +
+      `${company?.ticket_footer || '¡Gracias por su compra!'}`;
+    
+    const phone = printSale.customer?.phone?.replace(/\D/g, '') || '';
+    const url = phone ? `https://wa.me/${phone}?text=${encodeURIComponent(text)}` : `https://wa.me/?text=${encodeURIComponent(text)}`;
+    window.open(url, '_blank');
+  };
 
   // Void/Cancel sale modal
   const [saleToCancel, setSaleToCancel] = useState<Sale | null>(null);
@@ -1161,187 +1180,349 @@ export const InvoicesPage: React.FC = () => {
         );
       })(), document.body)}
 
-      {/* 5. MODAL: IMPRESIÓN DIRECTA DE COMPROBANTE / FACTURA */}
+      {/* 5. MODAL: IMPRESIÓN DIRECTA DE COMPROBANTE / FACTURA (REDiseñado con Formato POS y Vista Previa en Vivo) */}
       {showPrintModal && printSale && createPortal(
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-4 bg-black/75 backdrop-blur-xs animate-in fade-in duration-150 overflow-y-auto">
-          <div className="w-full max-w-md bg-white dark:bg-[#0b1329] rounded-3xl p-5 sm:p-6 border border-slate-200 dark:border-slate-800 shadow-2xl space-y-4 my-auto">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-5 bg-slate-950/75 backdrop-blur-xs animate-in fade-in duration-150 overflow-y-auto">
+          <div className="w-full max-w-4xl bg-white dark:bg-[#0b1329] rounded-[28px] border border-slate-200 dark:border-slate-800 shadow-2xl overflow-hidden my-auto animate-in zoom-in-95 duration-200">
             
-            {/* Header */}
-            <div className="no-print flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
-              <span className="text-sm font-bold uppercase tracking-wider text-slate-900 dark:text-white flex items-center gap-2">
-                <Printer className="w-4 h-4 text-blue-500" /> Vista de Impresión
-              </span>
-              <button
-                type="button"
-                onClick={() => setShowPrintModal(false)}
-                className="p-1 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
+            <div className="grid grid-cols-1 md:grid-cols-12 divide-y md:divide-y-0 md:divide-x divide-slate-100 dark:divide-slate-800/80">
+              
+              {/* LEFT COLUMN: CONTROLS & METADATA */}
+              <div className="md:col-span-5 p-6 sm:p-7 flex flex-col justify-between space-y-6 bg-white dark:bg-[#0b1329]">
+                
+                <div className="space-y-5">
+                  {/* Title Header */}
+                  <div className="flex items-center gap-3.5">
+                    <div className="w-11 h-11 rounded-2xl bg-cyan-50 dark:bg-cyan-950/60 text-cyan-600 dark:text-cyan-400 border border-cyan-100 dark:border-cyan-900/40 flex items-center justify-center shrink-0 shadow-xs">
+                      <Printer className="w-5 h-5 stroke-[2.2]" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-black text-slate-900 dark:text-white tracking-tight">
+                        Ticket de Impresión
+                      </h3>
+                      <p className="text-xs text-slate-400 dark:text-slate-500 font-medium">
+                        Factura de Venta POS
+                      </p>
+                    </div>
+                  </div>
 
-            {/* PRINTABLE RECEIPT CONTAINER */}
-            <div
-              id="printable-ticket"
-              className="bg-slate-50 dark:bg-slate-950 p-4 sm:p-5 rounded-2xl border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-200 font-mono text-xs shadow-inner space-y-3"
-            >
-              <div className="text-center space-y-1 pb-2">
-                {company?.logo ? (
-                  <div className="flex justify-center mb-1">
-                    <img
-                      src={company.logo}
-                      alt={company.name || 'Logo'}
-                      className="max-h-14 max-w-[160px] object-contain"
-                    />
+                  {/* Metadata Card */}
+                  <div className="bg-slate-50/70 dark:bg-slate-900/50 rounded-2xl p-4 border border-slate-100 dark:border-slate-800/80 space-y-2.5">
+                    <div className="flex justify-between items-center text-xs">
+                      <span className="text-slate-400 font-semibold">Documento:</span>
+                      <span className="font-mono font-bold text-slate-800 dark:text-slate-200">
+                        {printSale.ticket_number || `#FACT-${printSale.id}`}
+                      </span>
+                    </div>
+
+                    <div className="flex justify-between items-center text-xs">
+                      <span className="text-slate-400 font-semibold">Cliente:</span>
+                      <span className="font-bold text-slate-800 dark:text-slate-200 truncate max-w-[180px]">
+                        {printSale.customer?.name || (printSale as any).customer_name || 'Consumidor Final'}
+                      </span>
+                    </div>
+
+                    <div className="flex justify-between items-center text-xs">
+                      <span className="text-slate-400 font-semibold">Tipo:</span>
+                      {(() => {
+                        const m = (printSale.payment_method || '').toLowerCase();
+                        if (m.includes('cred')) {
+                          return (
+                            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-amber-100 dark:bg-amber-950/70 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-900/50">
+                              A CRÉDITO
+                            </span>
+                          );
+                        }
+                        if (m.includes('tarj')) {
+                          return (
+                            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-blue-100 dark:bg-blue-950/70 text-blue-800 dark:text-blue-300 border border-blue-200 dark:border-blue-900/50">
+                              TARJETA
+                            </span>
+                          );
+                        }
+                        if (m.includes('transf')) {
+                          return (
+                            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-purple-100 dark:bg-purple-950/70 text-purple-800 dark:text-purple-300 border border-purple-200 dark:border-purple-900/50">
+                              TRANSFERENCIA
+                            </span>
+                          );
+                        }
+                        return (
+                          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-100 dark:bg-emerald-950/70 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-900/50">
+                            CONTADO
+                          </span>
+                        );
+                      })()}
+                    </div>
+
+                    <div className="flex justify-between items-center text-xs pt-1 border-t border-slate-200/60 dark:border-slate-800/60">
+                      <span className="text-slate-400 font-semibold">Total a Imprimir:</span>
+                      <span className="font-black text-sm text-slate-900 dark:text-white">
+                        C$ {(printSale.total_cordobas || 0).toLocaleString('es-NI', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </span>
+                    </div>
                   </div>
-                ) : (
-                  <div className="w-9 h-9 rounded-xl bg-blue-600/10 text-blue-600 flex items-center justify-center mx-auto mb-1">
-                    <Building2 className="w-4 h-4" />
+
+                  {/* Formato de Papel POS Selector */}
+                  <div className="space-y-2">
+                    <label className="text-[11px] font-black tracking-wider text-slate-500 uppercase block">
+                      FORMATO DE PAPEL POS
+                    </label>
+                    <div className="grid grid-cols-2 gap-3">
+                      
+                      {/* Option 80 mm */}
+                      <button
+                        type="button"
+                        onClick={() => setPaperFormat('80mm')}
+                        className={`p-3.5 rounded-2xl text-left transition-all cursor-pointer relative ${
+                          paperFormat === '80mm'
+                            ? 'border-2 border-cyan-500 bg-cyan-50/20 dark:bg-cyan-950/20 shadow-xs'
+                            : 'border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/40 hover:border-slate-300 dark:hover:border-slate-700'
+                        }`}
+                      >
+                        {paperFormat === '80mm' && (
+                          <div className="absolute top-3 right-3 w-4 h-4 rounded-full border-2 border-cyan-500 text-cyan-600 dark:text-cyan-400 flex items-center justify-center">
+                            <Check className="w-2.5 h-2.5 stroke-[3]" />
+                          </div>
+                        )}
+                        <p className="font-black text-sm text-slate-900 dark:text-white">80 mm</p>
+                        <p className="text-[11px] text-slate-400 font-medium mt-0.5">Caja / Mostrador</p>
+                      </button>
+
+                      {/* Option 58 mm */}
+                      <button
+                        type="button"
+                        onClick={() => setPaperFormat('58mm')}
+                        className={`p-3.5 rounded-2xl text-left transition-all cursor-pointer relative ${
+                          paperFormat === '58mm'
+                            ? 'border-2 border-cyan-500 bg-cyan-50/20 dark:bg-cyan-950/20 shadow-xs'
+                            : 'border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/40 hover:border-slate-300 dark:hover:border-slate-700'
+                        }`}
+                      >
+                        {paperFormat === '58mm' && (
+                          <div className="absolute top-3 right-3 w-4 h-4 rounded-full border-2 border-cyan-500 text-cyan-600 dark:text-cyan-400 flex items-center justify-center">
+                            <Check className="w-2.5 h-2.5 stroke-[3]" />
+                          </div>
+                        )}
+                        <p className="font-black text-sm text-slate-900 dark:text-white">58 mm</p>
+                        <p className="text-[11px] text-slate-400 font-medium mt-0.5">Móvil / Bluetooth</p>
+                      </button>
+
+                    </div>
                   </div>
-                )}
-                <h2 className="text-sm font-black uppercase tracking-wider text-slate-900 dark:text-white">
-                  {company?.name || 'SENDA SISTEMAS'}
-                </h2>
-                {company?.razon_social && (
-                  <p className="text-[10px] font-semibold text-slate-700 dark:text-slate-300">
-                    {company.razon_social}
-                  </p>
-                )}
-                {company?.ruc && (
-                  <p className="text-[10px] text-slate-600 dark:text-slate-400">RUC: {company.ruc}</p>
-                )}
-                {company?.phone && (
-                  <p className="text-[10px] text-slate-600 dark:text-slate-400">Tel: {company.phone}</p>
-                )}
-                {company?.address && (
-                  <p className="text-[10px] text-slate-600 dark:text-slate-400 leading-tight">{company.address}</p>
-                )}
+                </div>
+
+                {/* Action Buttons */}
+                <div className="no-print space-y-2.5 pt-4">
+                  <button
+                    type="button"
+                    onClick={() => window.print()}
+                    className="w-full py-3.5 rounded-xl bg-[#0284c7] hover:bg-[#0369a1] text-white font-black text-xs uppercase tracking-wider shadow-md shadow-sky-500/20 transition flex items-center justify-center gap-2 cursor-pointer active:scale-95"
+                  >
+                    <Printer className="w-4 h-4" />
+                    <span>Imprimir Ticket POS ({paperFormat})</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleShareWhatsApp}
+                    className="w-full py-3.5 rounded-xl bg-[#059669] hover:bg-[#047857] text-white font-black text-xs uppercase tracking-wider shadow-md shadow-emerald-500/20 transition flex items-center justify-center gap-2 cursor-pointer active:scale-95"
+                  >
+                    <MessageCircle className="w-4 h-4" />
+                    <span>Enviar por WhatsApp</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setShowPrintModal(false)}
+                    className="w-full py-2 text-center text-xs font-bold text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition cursor-pointer"
+                  >
+                    Cerrar Vista
+                  </button>
+                </div>
+
               </div>
 
-              <div className="border-t border-dashed border-slate-300 dark:border-slate-700 pt-2 space-y-1 text-[11px]">
-                <div className="flex justify-between font-bold text-slate-900 dark:text-white">
-                  <span>FACTURA:</span>
-                  <span>{printSale.ticket_number || `#FACT-${printSale.id}`}</span>
-                </div>
-                <div className="flex justify-between text-slate-600 dark:text-slate-400">
-                  <span>Fecha:</span>
-                  <span>{formatDateTime(printSale.created_at)}</span>
-                </div>
-                <div className="flex justify-between text-slate-600 dark:text-slate-400">
-                  <span>Atendido por:</span>
-                  <span>{printSale.user_name || 'Cajero'} ({getUserRole(printSale).toUpperCase()})</span>
-                </div>
-                <div className="flex justify-between text-slate-600 dark:text-slate-400">
-                  <span>Cliente:</span>
-                  <span className="font-semibold">{printSale.customer?.name || (printSale as any).customer_name || 'Consumidor Final'}</span>
-                </div>
-                <div className="flex justify-between text-slate-600 dark:text-slate-400">
-                  <span>Forma de Pago:</span>
-                  <span className="uppercase font-semibold">{formatPaymentMethod(printSale.payment_method)}</span>
-                </div>
-                {((printSale.payment_method || '').toLowerCase().includes('cred') || (printSale as any).credit_term_days) && (
-                  <div className="flex justify-between text-amber-700 dark:text-amber-400 font-semibold">
-                    <span>Plazo de Crédito:</span>
-                    <span>{(printSale as any).credit_term_days || 30} DÍAS</span>
+              {/* RIGHT COLUMN: LIVE THERMAL TICKET PREVIEW */}
+              <div className="md:col-span-7 bg-slate-50/80 dark:bg-slate-900/40 p-5 sm:p-7 flex flex-col justify-between max-h-[88vh] overflow-y-auto modal-scroll">
+                
+                {/* Header info */}
+                <div className="no-print flex items-center justify-between pb-3 border-b border-slate-200/60 dark:border-slate-800/60 shrink-0">
+                  <div className="flex items-center gap-2 text-xs font-semibold text-slate-500 dark:text-slate-400">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+                    <span>Vista Previa en Vivo (Ancho {paperFormat})</span>
                   </div>
-                )}
-                {printSale.status === 'cancelled' && (
-                  <div className="flex justify-center text-rose-600 font-bold py-1 border border-rose-300 rounded uppercase">
-                    *** FACTURA ANULADA ***
-                  </div>
-                )}
-              </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowPrintModal(false)}
+                    className="p-1 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-200/50 dark:hover:bg-slate-800 transition cursor-pointer"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
 
-              {/* Items List */}
-              <div className="border-t border-dashed border-slate-300 dark:border-slate-700 pt-2">
-                <div className="flex justify-between font-bold text-[10px] uppercase text-slate-500 pb-1">
-                  <span>Cant. / Detalle</span>
-                  <span>Total</span>
-                </div>
-                <div className="space-y-1 pt-1 text-[11px]">
-                  {printSale.items && printSale.items.length > 0 ? (
-                    printSale.items.map((item, idx) => (
-                      <div key={idx} className="flex justify-between items-start gap-2">
-                        <div className="flex-1">
-                          <p className="font-medium text-slate-900 dark:text-white leading-tight">
-                            {item.quantity}x {item.product_name}
-                          </p>
-                          <p className="text-[10px] text-slate-500">
-                            @ C$ {item.unit_price_cordobas.toFixed(2)}
-                          </p>
-                        </div>
-                        <span className="font-bold text-slate-900 dark:text-white whitespace-nowrap">
-                          C$ {item.total_cordobas.toFixed(2)}
+                {/* Centered Ticket Paper */}
+                <div className="flex justify-center py-4 w-full">
+                  <div
+                    id="printable-ticket"
+                    className={`bg-white text-slate-900 p-6 sm:p-7 shadow-lg border border-slate-200/90 font-mono text-[11px] leading-tight space-y-3 transition-all duration-200 ${
+                      paperFormat === '58mm' ? 'w-[275px] max-w-[275px] paper-58mm' : 'w-[360px] max-w-[360px] paper-80mm'
+                    }`}
+                  >
+                    {/* Emisor / Comercio */}
+                    <div className="text-center space-y-0.5">
+                      <h2 className="text-xs font-black uppercase tracking-tight text-slate-900">
+                        {company?.name || 'AGENCIA DE BEBIDAS SENDADIST'}
+                      </h2>
+                      <p className="text-[10px] text-slate-600 font-semibold">
+                        RUC: {company?.ruc || 'J0310000349281'}
+                      </p>
+                      <p className="text-[9.5px] text-slate-600 leading-tight">
+                        {company?.address || 'Semáforos El Mayoreo 2c al Norte, Managua'}
+                      </p>
+                      <p className="text-[9.5px] text-slate-600">
+                        {company?.phone ? `PBX: ${company.phone}` : 'PBX: +505 2244-8899 • Cel: +505 8888-1234'}
+                      </p>
+                    </div>
+
+                    <div className="border-b border-dashed border-slate-300 my-2"></div>
+
+                    {/* Metadata Ticket */}
+                    <div className="space-y-1 text-[10.5px]">
+                      <div className="flex justify-between items-center font-bold text-slate-900">
+                        <span>FAC: {printSale.ticket_number || `#FACT-${printSale.id}`}</span>
+                        <span className="px-1.5 py-0.2 rounded border border-slate-400 text-[9px] font-bold uppercase">
+                          {printSale.payment_method?.toUpperCase()}
                         </span>
                       </div>
-                    ))
-                  ) : (
-                    <div className="flex justify-between items-center">
-                      <span>1x Venta de Productos</span>
-                      <span className="font-bold">C$ {(printSale.total_cordobas || 0).toFixed(2)}</span>
+                      <div className="text-slate-600">
+                        Fecha: {formatDateTime(printSale.created_at)}
+                      </div>
+                      <div className="text-slate-600">
+                        Cajero: {printSale.user_name || 'Cajero'} ({getUserRole(printSale).toUpperCase()})
+                      </div>
                     </div>
-                  )}
+
+                    <div className="border-b border-dashed border-slate-300 my-2"></div>
+
+                    {/* Cliente */}
+                    <div className="space-y-0.5 text-[10.5px]">
+                      <div className="font-bold text-slate-900">
+                        Cliente: {printSale.customer?.name || (printSale as any).customer_name || 'Consumidor Final'}
+                      </div>
+                      <div className="text-slate-600 text-[9.5px]">
+                        {printSale.customer?.address || 'Barrio Altagracia, del Pali 2c al lago, Managua'}
+                      </div>
+                    </div>
+
+                    <div className="border-b border-dashed border-slate-300 my-2"></div>
+
+                    {/* Tabla de Artículos */}
+                    <div>
+                      <div className="flex justify-between font-bold text-[10px] text-slate-700 pb-1">
+                        <span>Cant Descripción</span>
+                        <span>Total</span>
+                      </div>
+                      <div className="space-y-1.5 pt-0.5 text-[10.5px]">
+                        {printSale.items && printSale.items.length > 0 ? (
+                          printSale.items.map((item, idx) => (
+                            <div key={idx} className="flex justify-between items-start gap-1">
+                              <div className="flex-1 min-w-0">
+                                <div className="flex gap-1.5">
+                                  <span className="font-bold">{item.quantity}x</span>
+                                  <span className="truncate">{item.product_name}</span>
+                                </div>
+                                <span className="text-[9.5px] text-slate-500 pl-4 block">
+                                  P.U: C${item.unit_price_cordobas.toFixed(2)}
+                                </span>
+                              </div>
+                              <span className="font-bold whitespace-nowrap">
+                                C${item.total_cordobas.toFixed(2)}
+                              </span>
+                            </div>
+                          ))
+                        ) : (
+                          <div className="flex justify-between items-center">
+                            <span>1x Venta de Productos</span>
+                            <span className="font-bold">C${(printSale.total_cordobas || 0).toFixed(2)}</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="border-b border-dashed border-slate-300 my-2"></div>
+
+                    {/* Totales */}
+                    <div className="space-y-1 text-right text-[10.5px]">
+                      {printSale.subtotal_cordobas !== undefined && (
+                        <div className="flex justify-between text-slate-600">
+                          <span>Subtotal:</span>
+                          <span className="font-semibold">C$ {printSale.subtotal_cordobas.toFixed(2)}</span>
+                        </div>
+                      )}
+                      {printSale.discount_amount ? (
+                        <div className="flex justify-between text-rose-600 font-semibold">
+                          <span>Descuento:</span>
+                          <span>-C$ {printSale.discount_amount.toFixed(2)}</span>
+                        </div>
+                      ) : null}
+                      {printSale.tax_amount ? (
+                        <div className="flex justify-between text-slate-600">
+                          <span>IVA ({printSale.tax_rate || 15}%):</span>
+                          <span className="font-semibold">+C$ {printSale.tax_amount.toFixed(2)}</span>
+                        </div>
+                      ) : null}
+                      <div className="border-t-2 border-slate-900 my-1 pt-1.5 flex justify-between items-baseline font-black text-sm text-slate-900">
+                        <span className="tracking-wide">TOTAL:</span>
+                        <span>
+                          C$ {(printSale.total_cordobas || 0).toLocaleString('es-NI', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Crédito: Saldo Anterior y Nuevo Saldo */}
+                    {((printSale.payment_method || '').toLowerCase().includes('cred') || (printSale as any).credit_term_days) && (
+                      <div className="border border-dashed border-slate-300 rounded p-2 my-1.5 space-y-1 text-[10px]">
+                        <div className="flex justify-between text-slate-600">
+                          <span>Saldo Anterior:</span>
+                          <span className="font-semibold">
+                            C${((printSale.customer?.current_debt || 0) + (printSale.total_cordobas || 0)).toFixed(2)}
+                          </span>
+                        </div>
+                        <div className="flex justify-between font-bold text-slate-900">
+                          <span>Nuevo Saldo Cartera:</span>
+                          <span>
+                            C${(printSale.customer?.current_debt || printSale.total_cordobas || 0).toFixed(2)}
+                          </span>
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="border-b border-dashed border-slate-300 my-2"></div>
+
+                    {/* Mensaje de Pie */}
+                    <div className="text-center space-y-0.5 text-[9.5px] text-slate-600">
+                      <p className="font-bold uppercase tracking-wider text-slate-800">
+                        {company?.ticket_footer || '¡GRACIAS POR SU PREFERENCIA!'}
+                      </p>
+                      <p className="text-[9px]">Revise su producto antes de firmar o retirar.</p>
+                    </div>
+
+                    {/* Código de Barras Simulado */}
+                    <div className="pt-2 text-center space-y-0.5 select-none">
+                      <div className="font-mono text-xs tracking-[0.25em] text-slate-700">
+                        ||| | |||| ||| | || | ||| |||| |
+                      </div>
+                      <p className="text-[8.5px] text-slate-500 font-mono tracking-wider">
+                        {printSale.ticket_number || `#FACT-${printSale.id}`}
+                      </p>
+                    </div>
+
+                  </div>
                 </div>
+
               </div>
 
-              {/* Grand Total */}
-              <div className="border-t-2 border-slate-800 dark:border-slate-300 pt-2.5 space-y-1 text-right text-[11px]">
-                {printSale.subtotal_cordobas !== undefined && (
-                  <div className="flex justify-between text-slate-600 dark:text-slate-400">
-                    <span>Subtotal:</span>
-                    <span className="font-bold">C$ {printSale.subtotal_cordobas.toFixed(2)}</span>
-                  </div>
-                )}
-                {printSale.discount_amount ? (
-                  <div className="flex justify-between text-rose-600 font-medium">
-                    <span>Descuento:</span>
-                    <span className="font-bold">-C$ {printSale.discount_amount.toFixed(2)}</span>
-                  </div>
-                ) : null}
-                {printSale.tax_amount ? (
-                  <div className="flex justify-between text-slate-700 font-medium">
-                    <span>IVA:</span>
-                    <span className="font-bold">+C$ {printSale.tax_amount.toFixed(2)}</span>
-                  </div>
-                ) : null}
-                <div className="pt-1.5 border-t border-dashed border-slate-300 dark:border-slate-700 flex justify-between items-baseline font-black text-sm text-slate-900 dark:text-white">
-                  <span className="uppercase text-xs tracking-wider">TOTAL:</span>
-                  <span className="text-base font-black text-blue-600 dark:text-blue-400">
-                    C$ {(printSale.total_cordobas || 0).toLocaleString('es-NI', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center text-[10px] text-slate-500">
-                  <span>Equivalente en USD:</span>
-                  <span className="font-bold text-emerald-600">
-                    $ {(printSale.total_usd || 0).toFixed(2)} USD
-                  </span>
-                </div>
-              </div>
-
-              {/* Footer */}
-              <div className="border-t border-dashed border-slate-300 dark:border-slate-700 pt-2 text-center text-[10px] text-slate-500 space-y-0.5">
-                <p className="font-bold uppercase tracking-wider">{company?.ticket_footer || '¡Gracias por su compra!'}</p>
-                <p>Sistema SendaFact</p>
-              </div>
-            </div>
-
-            {/* Action Buttons */}
-            <div className="no-print space-y-2 pt-1">
-              <button
-                type="button"
-                onClick={() => window.print()}
-                className="w-full py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-black text-xs uppercase tracking-wider shadow-lg shadow-blue-500/25 transition flex items-center justify-center gap-2 cursor-pointer"
-              >
-                <Printer className="w-4 h-4" />
-                <span>Imprimir Ahora</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setShowPrintModal(false)}
-                className="w-full py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold text-xs uppercase tracking-wider transition cursor-pointer"
-              >
-                Cerrar
-              </button>
             </div>
 
           </div>
