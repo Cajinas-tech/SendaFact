@@ -459,9 +459,9 @@ export const CashPage: React.FC = () => {
           {/* Main Title Card */}
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white dark:bg-[#0b1329] p-6 sm:p-7 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm backdrop-blur-md">
             <div className="flex items-center gap-4">
-              <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-amber-600 to-amber-400 p-0.5 shadow-lg shadow-amber-500/20 flex items-center justify-center shrink-0">
-                <div className="w-full h-full bg-slate-900 dark:bg-slate-950 rounded-[14px] flex items-center justify-center">
-                  <Vault className="w-7 h-7 text-amber-400" />
+              <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-amber-500 to-amber-400 p-0.5 shadow-lg shadow-amber-500/20 flex items-center justify-center shrink-0">
+                <div className="w-full h-full bg-amber-50 dark:bg-slate-950 rounded-[14px] flex items-center justify-center">
+                  <Vault className="w-7 h-7 text-amber-600 dark:text-amber-400" />
                 </div>
               </div>
               <div>
@@ -773,32 +773,32 @@ export const CashPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Dark Summary Banner */}
-          <div className="bg-[#0b1329] text-white rounded-2xl p-5 sm:p-6 border border-slate-800 shadow-md grid grid-cols-1 sm:grid-cols-3 gap-5">
+          {/* Summary Banner */}
+          <div className="bg-white dark:bg-[#0b1329] rounded-2xl p-5 sm:p-6 border border-slate-200 dark:border-slate-800 shadow-sm grid grid-cols-1 sm:grid-cols-3 gap-5">
             <div>
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
+              <span className="text-[10.5px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider block mb-1">
                 TOTAL ESPERADO
               </span>
-              <span className="text-xl sm:text-2xl font-black font-mono text-white">
+              <span className="text-xl sm:text-2xl font-black font-mono text-slate-900 dark:text-white">
                 C$ {totalEsperadoGlobal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </span>
             </div>
 
             <div>
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
+              <span className="text-[10.5px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider block mb-1">
                 TOTAL FÍSICO CONTADO
               </span>
-              <span className="text-xl sm:text-2xl font-black font-mono text-cyan-400">
+              <span className="text-xl sm:text-2xl font-black font-mono text-cyan-600 dark:text-cyan-400">
                 C$ {totalFisicoGlobal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </span>
             </div>
 
             <div>
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
+              <span className="text-[10.5px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider block mb-1">
                 BALANCE GLOBAL
               </span>
               <span className={`text-xl sm:text-2xl font-black font-mono ${
-                balanceGlobal < 0 ? 'text-rose-400' : 'text-emerald-400'
+                balanceGlobal < 0 ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400'
               }`}>
                 {balanceGlobal < 0 ? '-' : '+'}C$ {Math.abs(balanceGlobal).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </span>
