@@ -1202,6 +1202,11 @@ export const InvoicesPage: React.FC = () => {
                 <h2 className="text-sm font-black uppercase tracking-wider text-slate-900 dark:text-white">
                   {company?.name || 'SENDA SISTEMAS'}
                 </h2>
+                {company?.razon_social && (
+                  <p className="text-[10px] font-semibold text-slate-700 dark:text-slate-300">
+                    {company.razon_social}
+                  </p>
+                )}
                 {company?.ruc && (
                   <p className="text-[10px] text-slate-600 dark:text-slate-400">RUC: {company.ruc}</p>
                 )}
@@ -1315,7 +1320,7 @@ export const InvoicesPage: React.FC = () => {
 
               {/* Footer */}
               <div className="border-t border-dashed border-slate-300 dark:border-slate-700 pt-2 text-center text-[10px] text-slate-500 space-y-0.5">
-                <p className="font-bold uppercase tracking-wider">¡Gracias por su compra!</p>
+                <p className="font-bold uppercase tracking-wider">{company?.ticket_footer || '¡Gracias por su compra!'}</p>
                 <p>Sistema SendaFact</p>
               </div>
             </div>

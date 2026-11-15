@@ -157,6 +157,7 @@ export interface User {
 export interface CompanySetting {
   id?: number;
   name: string;
+  razon_social?: string;
   logo?: string;
   ruc?: string;
   phone?: string;
@@ -165,4 +166,6 @@ export interface CompanySetting {
   exchange_rate: number;
   main_currency: string;
   secondary_currency: string;
+  iva_rate?: number;
+  ticket_footer?: string;
 }

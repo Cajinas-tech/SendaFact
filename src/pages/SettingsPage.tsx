@@ -4,7 +4,7 @@ import {
   Settings, Database, Users, Building2, 
   Download, Upload, Save, AlertTriangle, 
   FileSpreadsheet, RotateCcw, Flame, UserPlus, Trash2, CheckCircle2,
-  Image as ImageIcon, UploadCloud, X
+  Image as ImageIcon, UploadCloud, X, Sliders, Receipt, DollarSign, Printer
 } from 'lucide-react';
 import { storage } from '../lib/storage';
 import { User, CompanySetting, Product } from '../types';
@@ -14,8 +14,8 @@ import ConfirmModal from '../components/UI/ConfirmModal';
 export const SettingsPage: React.FC = () => {
   const [searchParams] = useSearchParams();
   const tabParam = searchParams.get('tab');
-  const [activeTab, setActiveTab] = useState<'backup' | 'users' | 'company'>(
-    tabParam === 'users' ? 'users' : tabParam === 'company' ? 'company' : 'backup'
+  const [activeTab, setActiveTab] = useState<'backup' | 'users' | 'company' | 'commercial'>(
+    tabParam === 'users' ? 'users' : tabParam === 'company' ? 'company' : tabParam === 'backup' ? 'backup' : 'commercial'
   );
   const { success, warning, error, info } = useToast();
 
@@ -24,7 +24,7 @@ export const SettingsPage: React.FC = () => {
   const [deleteUserTarget, setDeleteUserTarget] = useState<{ id: any; name: string } | null>(null);
 
   useEffect(() => {
-    if (tabParam === 'users' || tabParam === 'backup' || tabParam === 'company') {
+    if (tabParam === 'users' || tabParam === 'backup' || tabParam === 'company' || tabParam === 'commercial') {
       setActiveTab(tabParam);
     }
   }, [tabParam]);
@@ -36,14 +36,17 @@ export const SettingsPage: React.FC = () => {
 
   // Company settings
   const [company, setCompany] = useState<CompanySetting>({
-    name: 'SENDAFACT POS',
-    ruc: 'J0310000284920',
-    address: 'Managua, Nicaragua',
-    phone: '+505 8888-8888',
-    email: 'contacto@sendafact.com',
-    exchange_rate: 36.80,
+    name: 'Senda Sistemas',
+    razon_social: 'Comercial Nicaragua S.A.',
+    ruc: 'J0310000001234',
+    address: 'Villa Sol Casa E8-23 Calle 21',
+    phone: '+505 8505-9284',
+    email: 'contacto@sendasistemas.com',
+    exchange_rate: 36.63,
     main_currency: 'C$',
-    secondary_currency: 'USD'
+    secondary_currency: 'USD',
+    iva_rate: 15,
+    ticket_footer: '¡Gracias por su compra! Factura Simplificada en Córdobas (C$)'
   });
 
   // Users state
@@ -255,6 +258,13 @@ export const SettingsPage: React.FC = () => {
     success('¡Configuración Guardada!', 'Datos comerciales y logotipo de la empresa actualizados correctamente');
   };
 
+  // Save commercial settings
+  const handleSaveCommercial = (e: React.FormEvent) => {
+    e.preventDefault();
+    storage.saveCompanySettings(company);
+    success('¡Configuración Comercial Guardada!', 'Parámetros fiscales, tipo de cambio e impresión de comprobantes actualizados con éxito');
+  };
+
   // Save User
   const handleSaveUser = (e: React.FormEvent) => {
     e.preventDefault();
@@ -319,10 +329,10 @@ export const SettingsPage: React.FC = () => {
       </div>
 
       {/* Tabs Navigation */}
-      <div className="flex border-b border-slate-200 dark:border-slate-800 gap-4">
+      <div className="flex border-b border-slate-200 dark:border-slate-800 gap-4 overflow-x-auto">
         <button
           onClick={() => setActiveTab('backup')}
-          className={`pb-4 text-sm font-bold flex items-center gap-2 border-b-2 transition cursor-pointer ${
+          className={`pb-4 text-sm font-bold flex items-center gap-2 border-b-2 transition whitespace-nowrap cursor-pointer ${
             activeTab === 'backup'
               ? 'border-blue-500 text-blue-600 dark:text-blue-400'
               : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
@@ -333,7 +343,7 @@ export const SettingsPage: React.FC = () => {
         </button>
         <button
           onClick={() => setActiveTab('users')}
-          className={`pb-4 text-sm font-bold flex items-center gap-2 border-b-2 transition cursor-pointer ${
+          className={`pb-4 text-sm font-bold flex items-center gap-2 border-b-2 transition whitespace-nowrap cursor-pointer ${
             activeTab === 'users'
               ? 'border-blue-500 text-blue-600 dark:text-blue-400'
               : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
@@ -344,7 +354,7 @@ export const SettingsPage: React.FC = () => {
         </button>
         <button
           onClick={() => setActiveTab('company')}
-          className={`pb-4 text-sm font-bold flex items-center gap-2 border-b-2 transition cursor-pointer ${
+          className={`pb-4 text-sm font-bold flex items-center gap-2 border-b-2 transition whitespace-nowrap cursor-pointer ${
             activeTab === 'company'
               ? 'border-blue-500 text-blue-600 dark:text-blue-400'
               : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
@@ -352,6 +362,17 @@ export const SettingsPage: React.FC = () => {
         >
           <Building2 className="w-4 h-4" />
           Datos de la Empresa
+        </button>
+        <button
+          onClick={() => setActiveTab('commercial')}
+          className={`pb-4 text-sm font-bold flex items-center gap-2 border-b-2 transition whitespace-nowrap cursor-pointer ${
+            activeTab === 'commercial'
+              ? 'border-blue-500 text-blue-600 dark:text-blue-400'
+              : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+          }`}
+        >
+          <Sliders className="w-4 h-4" />
+          Configuración Comercial
         </button>
       </div>
 
@@ -747,6 +768,187 @@ export const SettingsPage: React.FC = () => {
             <Save className="w-4 h-4" />
             Guardar Cambios
           </button>
+        </form>
+      )}
+
+      {/* TAB 4: CONFIGURACIÓN COMERCIAL */}
+      {activeTab === 'commercial' && (
+        <form onSubmit={handleSaveCommercial} className="space-y-6 animate-fade-in">
+          
+          {/* Header Action Bar */}
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white dark:bg-slate-900/40 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm backdrop-blur-md">
+            <div>
+              <h2 className="text-base font-bold text-slate-900 dark:text-white">
+                Configuración Comercial
+              </h2>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                Parámetros de facturación para Nicaragua, tipo de cambio BCN e impresión de comprobantes.
+              </p>
+            </div>
+            <button
+              type="submit"
+              className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white rounded-xl text-xs font-bold shadow-md shadow-blue-600/25 flex items-center justify-center gap-2 transition cursor-pointer self-start md:self-auto shrink-0"
+            >
+              <Save className="w-4 h-4" />
+              <span>Guardar Cambios</span>
+            </button>
+          </div>
+
+          {/* Section 1: Datos Fiscales del Emisor (DGI Nicaragua) */}
+          <div className="bg-white dark:bg-slate-900/40 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
+            <div className="flex items-center gap-2 text-slate-900 dark:text-white">
+              <Receipt className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+              <h3 className="text-sm font-bold tracking-tight">
+                Datos Fiscales del Emisor (DGI Nicaragua)
+              </h3>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+                  Nombre Comercial del Negocio
+                </label>
+                <input
+                  type="text"
+                  value={company.name || ''}
+                  onChange={(e) => setCompany({ ...company, name: e.target.value })}
+                  placeholder="Senda Sistemas"
+                  className="w-full bg-slate-50/50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-slate-900 dark:text-white text-sm focus:outline-none focus:border-blue-500 transition"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+                  Razón Social
+                </label>
+                <input
+                  type="text"
+                  value={company.razon_social || ''}
+                  onChange={(e) => setCompany({ ...company, razon_social: e.target.value })}
+                  placeholder="Comercial Nicaragua S.A."
+                  className="w-full bg-slate-50/50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-slate-900 dark:text-white text-sm focus:outline-none focus:border-blue-500 transition"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+                  Número RUC
+                </label>
+                <input
+                  type="text"
+                  value={company.ruc || ''}
+                  onChange={(e) => setCompany({ ...company, ruc: e.target.value })}
+                  placeholder="J0310000001234"
+                  className="w-full bg-slate-50/50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-slate-900 dark:text-white text-sm focus:outline-none focus:border-blue-500 transition"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+                  Teléfono de Contacto
+                </label>
+                <input
+                  type="text"
+                  value={company.phone || ''}
+                  onChange={(e) => setCompany({ ...company, phone: e.target.value })}
+                  placeholder="+505 8505-9284"
+                  className="w-full bg-slate-50/50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-slate-900 dark:text-white text-sm focus:outline-none focus:border-blue-500 transition"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+                Dirección Física
+              </label>
+              <input
+                type="text"
+                value={company.address || ''}
+                onChange={(e) => setCompany({ ...company, address: e.target.value })}
+                placeholder="Villa Sol Casa E8-23 Calle 21"
+                className="w-full bg-slate-50/50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-slate-900 dark:text-white text-sm focus:outline-none focus:border-blue-500 transition"
+              />
+            </div>
+          </div>
+
+          {/* Section 2: Moneda, Tributación e Impuestos */}
+          <div className="bg-white dark:bg-slate-900/40 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
+            <div className="flex items-center gap-2">
+              <DollarSign className="w-4 h-4 text-emerald-500" />
+              <h3 className="text-sm font-bold text-slate-900 dark:text-white">
+                Moneda, Tributación e Impuestos
+              </h3>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Tasa Oficial BCN */}
+              <div className="p-4 rounded-2xl border border-blue-200/90 dark:border-blue-900/50 bg-blue-50/20 dark:bg-blue-950/10 space-y-3">
+                <label className="block text-xs font-bold text-slate-800 dark:text-slate-200">
+                  Tasa Oficial Banco Central de Nicaragua (BCN)
+                </label>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">
+                    1 USD = C$
+                  </span>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={company.exchange_rate}
+                    onChange={(e) => setCompany({ ...company, exchange_rate: parseFloat(e.target.value) || 0 })}
+                    className="w-28 bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-1.5 text-sm font-bold text-slate-900 dark:text-white text-center focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 shadow-xs"
+                  />
+                </div>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
+                  Se utiliza para convertir pagos en billetes de dólares y entregar el cambio exacto en Córdobas (C$).
+                </p>
+              </div>
+
+              {/* Tasa IVA */}
+              <div className="p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/40 dark:bg-slate-900/20 space-y-3 flex flex-col justify-start">
+                <label className="block text-xs font-bold text-slate-800 dark:text-slate-200">
+                  Tasa de IVA Nicaragua (%)
+                </label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="number"
+                    step="1"
+                    min="0"
+                    max="100"
+                    value={company.iva_rate !== undefined ? company.iva_rate : 15}
+                    onChange={(e) => setCompany({ ...company, iva_rate: parseFloat(e.target.value) || 0 })}
+                    className="w-20 bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-1.5 text-sm font-bold text-slate-900 dark:text-white text-center focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 shadow-xs"
+                  />
+                  <span className="text-xs font-medium text-slate-600 dark:text-slate-400">
+                    % (Ley de Concertación Tributaria)
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Section 3: Pie de Comprobante / Ticket */}
+          <div className="bg-white dark:bg-slate-900/40 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
+            <div className="flex items-center gap-2">
+              <Printer className="w-4 h-4 text-purple-500" />
+              <h3 className="text-sm font-bold text-slate-900 dark:text-white">
+                Pie de Comprobante / Ticket
+              </h3>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
+                Mensaje al pie de la factura impresa
+              </label>
+              <input
+                type="text"
+                value={company.ticket_footer || ''}
+                onChange={(e) => setCompany({ ...company, ticket_footer: e.target.value })}
+                placeholder="¡Gracias por su compra! Factura Simplificada en Córdobas (C$)"
+                className="w-full bg-slate-50/50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-slate-900 dark:text-white text-sm focus:outline-none focus:border-blue-500 transition"
+              />
+            </div>
+          </div>
+
         </form>
       )}
 

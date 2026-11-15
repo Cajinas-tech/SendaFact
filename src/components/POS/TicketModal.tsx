@@ -108,6 +108,12 @@ export default function TicketModal({
               {company?.name || 'SENDAFACT POS'}
             </h2>
 
+            {company?.razon_social && (
+              <p className="text-[11px] font-semibold text-slate-700 dark:text-slate-300">
+                {company.razon_social}
+              </p>
+            )}
+
             {company?.ruc && (
               <p className="text-[11px] text-slate-600 dark:text-slate-400">
                 RUC: {company.ruc}
@@ -236,7 +242,7 @@ export default function TicketModal({
 
           {/* Ticket Footer */}
           <div className="border-t border-dashed border-slate-300 dark:border-slate-700 pt-2 text-center text-[10px] text-slate-500 dark:text-slate-400 space-y-0.5">
-            <p className="font-bold uppercase tracking-wider">¡Gracias por su compra y preferencia!</p>
+            <p className="font-bold uppercase tracking-wider">{company?.ticket_footer || '¡Gracias por su compra y preferencia!'}</p>
             <p>Sistema de Facturación SendaFact</p>
           </div>
         </div>

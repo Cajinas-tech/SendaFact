@@ -223,15 +223,18 @@ const DEFAULT_CUSTOMERS: Customer[] = [
 
 const DEFAULT_SETTINGS: CompanySetting = {
   id: 1,
-  name: 'SENDA SISTEMAS',
+  name: 'Senda Sistemas',
+  razon_social: 'Comercial Nicaragua S.A.',
   logo: '',
-  ruc: 'J0310000012345',
-  phone: '+505 8888 8888',
+  ruc: 'J0310000001234',
+  phone: '+505 8505-9284',
   email: 'contacto@sendasistemas.com',
-  address: 'Managua, Nicaragua',
-  exchange_rate: 36.80,
+  address: 'Villa Sol Casa E8-23 Calle 21',
+  exchange_rate: 36.63,
   main_currency: 'C$',
-  secondary_currency: 'USD'
+  secondary_currency: 'USD',
+  iva_rate: 15,
+  ticket_footer: '¡Gracias por su compra! Factura Simplificada en Córdobas (C$)'
 };
 
 const DEFAULT_USERS: User[] = [
@@ -789,7 +792,12 @@ export const storage = {
       this.setSettings(DEFAULT_SETTINGS);
       return DEFAULT_SETTINGS;
     }
-    try { return JSON.parse(raw) || DEFAULT_SETTINGS; } catch (e) { return DEFAULT_SETTINGS; }
+    try {
+      const parsed = JSON.parse(raw);
+      return { ...DEFAULT_SETTINGS, ...parsed };
+    } catch (e) {
+      return DEFAULT_SETTINGS;
+    }
   },
   getCompanySettings(): any {
     return this.getSettings();
