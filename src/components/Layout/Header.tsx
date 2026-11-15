@@ -98,17 +98,17 @@ export default function Header({ titleBadge = 'DASHBOARD / ESTADÍSTICAS', onOpe
         <button
           type="button"
           onClick={() => setModalAlertasAbierto(true)}
-          className="flex items-center space-x-1 sm:space-x-1.5 px-2.5 sm:px-3 py-1.5 rounded-full bg-[#161426] dark:bg-[#121020] hover:bg-[#231e3d] dark:hover:bg-[#201a38] border border-[#3e345c] dark:border-[#4a3e6f] text-white text-xs font-bold transition-all shadow-sm cursor-pointer group active:scale-95"
+          className="flex items-center space-x-1.5 px-2.5 sm:px-3 py-1.5 rounded-full border border-slate-200 dark:border-slate-700 bg-slate-50 hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700/80 text-slate-700 dark:text-slate-200 text-xs font-bold transition-all shadow-2xs cursor-pointer group active:scale-95"
           title="Ver alertas de stock bajo y lotes próximos a vencer"
         >
-          <Bell className="w-3.5 h-3.5 text-pink-400 group-hover:rotate-12 transition-transform duration-200" />
-          <span className="text-[11px] sm:text-xs font-bold text-pink-100/95 tracking-wide hidden xs:inline sm:inline">Alertas</span>
+          <Bell className="w-3.5 h-3.5 text-red-500 fill-red-500/20 group-hover:rotate-12 transition-transform duration-200" />
+          <span className="text-[11px] sm:text-xs font-bold text-slate-700 dark:text-slate-200 tracking-wide hidden xs:inline sm:inline">Alertas</span>
           {alertasCount > 0 ? (
-            <span className="bg-[#e11d48] text-white text-[10px] sm:text-[11px] font-black px-1.5 py-0.5 rounded-full min-w-[18px] sm:min-w-[20px] h-[18px] sm:h-[20px] flex items-center justify-center leading-none shadow-sm animate-pulse">
+            <span className="bg-red-600 text-white text-[10px] sm:text-[11px] font-black px-1.5 py-0.5 rounded-full min-w-[18px] sm:min-w-[20px] h-[18px] sm:h-[20px] flex items-center justify-center leading-none shadow-xs animate-pulse">
               {alertasCount}
             </span>
           ) : (
-            <span className="bg-slate-700 text-slate-300 text-[9px] sm:text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[16px] sm:min-w-[18px] h-[16px] sm:h-[18px] flex items-center justify-center leading-none">
+            <span className="bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 text-[9px] sm:text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[16px] sm:min-w-[18px] h-[16px] sm:h-[18px] flex items-center justify-center leading-none">
               0
             </span>
           )}
