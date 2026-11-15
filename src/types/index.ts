@@ -100,6 +100,45 @@ export interface CashRegister {
   opened_at: string;
   closed_at?: string;
   notes?: string;
+  user?: string;
+  initial_cash?: number;
+  current_cash?: number;
+  total_expenses?: number;
+  total_sales_cash?: number;
+  final_cash?: number;
+}
+
+export interface DenominationCount {
+  b1000: number;
+  b500: number;
+  b200: number;
+  b100: number;
+  b50: number;
+  b20: number;
+  b10: number;
+  coins: number;
+}
+
+export interface CashClosingRecord {
+  id: string | number;
+  folio: string;
+  cajero_nombre: string;
+  opened_at: string;
+  closed_at: string;
+  fondo_apertura: number;
+  ventas_efectivo: number;
+  ventas_tarjeta: number;
+  ventas_transferencia?: number;
+  ventas_credito?: number;
+  cobranza_abonos: number;
+  egresos_gastos?: number;
+  total_esperado: number;
+  total_fisico_contado: number;
+  diferencia: number;
+  estado_cuadre: 'cuadrado' | 'faltante' | 'sobrante';
+  denominaciones: DenominationCount;
+  total_billetes_count: number;
+  observaciones?: string;
 }
 
 export interface Movement {

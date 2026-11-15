@@ -1,4 +1,4 @@
-import { Product, Category, Customer, Sale, CashRegister, Movement, CreditAccount, User, CompanySetting } from '../types';
+import { Product, Category, Customer, Sale, CashRegister, Movement, CreditAccount, User, CompanySetting, CashClosingRecord, DenominationCount } from '../types';
 
 const STORAGE_KEYS = {
   PRODUCTS: 'sendafact_products_v3',
@@ -7,6 +7,7 @@ const STORAGE_KEYS = {
   SALES: 'sendafact_sales_v3',
   CASH_REGISTER: 'sendafact_cash_v3',
   CASH_REGISTERS: 'sendafact_cash_registers_list_v3',
+  CASH_CLOSINGS: 'sendafact_cash_closings_v3',
   MOVEMENTS: 'sendafact_movements_v3',
   CREDITS: 'sendafact_credits_v3',
   USERS: 'sendafact_users_v3',
@@ -412,17 +413,398 @@ const DEFAULT_SALES: Sale[] = [
 ];
 
 const DEFAULT_CASH: CashRegister = {
-  id: 1,
+  id: 202610047611,
   user_id: 1,
-  user_name: 'Jairo Cajina',
+  user_name: 'Jairo',
   status: 'open',
-  opening_amount: 1000.00,
-  total_sales_cordobas: 11500.00,
-  cash_sales: 3500.00,
-  card_sales: 8000.00,
-  opened_at: new Date(Date.now() - 28800000).toISOString(),
-  notes: 'Turno matutino aperturado correctamente'
+  opening_amount: 2000.00,
+  total_sales_cordobas: 52.90,
+  cash_sales: 0.00,
+  card_sales: 52.90,
+  opened_at: '2026-10-03T22:47:17',
+  notes: 'Turno aperturado'
 };
+
+const DEFAULT_CASH_REGISTERS_LIST = [
+  {
+    id: 202610047611,
+    user: 'Jairo',
+    user_name: 'Jairo',
+    opened_at: '2026-10-03T22:47:17',
+    closed_at: null,
+    initial_cash: 2000.00,
+    opening_amount: 2000.00,
+    total_sales_cash: 0.00,
+    current_cash: 2000.00,
+    final_cash: 2000.00,
+    status: 'open'
+  },
+  {
+    id: 202610049723,
+    user: 'Jairo',
+    user_name: 'Jairo',
+    opened_at: '2026-10-03T22:46:59',
+    closed_at: '2026-10-03T22:47:08',
+    initial_cash: 1000.00,
+    opening_amount: 1000.00,
+    total_sales_cash: 0.00,
+    current_cash: 1000.00,
+    final_cash: 1000.00,
+    status: 'closed'
+  },
+  {
+    id: 202610049521,
+    user: 'Jairo',
+    user_name: 'Jairo',
+    opened_at: '2026-10-03T22:38:29',
+    closed_at: '2026-10-03T22:39:05',
+    initial_cash: 1000.00,
+    opening_amount: 1000.00,
+    total_sales_cash: 0.00,
+    current_cash: 1000.00,
+    final_cash: 1000.00,
+    status: 'closed'
+  },
+  {
+    id: 202610045624,
+    user: 'Jairo',
+    user_name: 'Jairo',
+    opened_at: '2026-10-03T22:23:15',
+    closed_at: '2026-10-03T22:23:19',
+    initial_cash: 2000.00,
+    opening_amount: 2000.00,
+    total_sales_cash: 0.00,
+    current_cash: 0.00,
+    final_cash: 0.00,
+    status: 'closed'
+  }
+];
+
+const DEFAULT_CASH_CLOSINGS: CashClosingRecord[] = [
+  {
+    id: 'CAJA-2026-10-04-9723',
+    folio: 'CAJA-2026-10-04-9723',
+    cajero_nombre: 'Jairo',
+    opened_at: '2026-10-03T22:46:59',
+    closed_at: '2026-10-03T22:47:08',
+    fondo_apertura: 1000.00,
+    ventas_efectivo: 0.00,
+    ventas_tarjeta: 0.00,
+    cobranza_abonos: 0.00,
+    total_esperado: 1000.00,
+    total_fisico_contado: 1000.00,
+    diferencia: 0.00,
+    estado_cuadre: 'cuadrado',
+    denominaciones: { b1000: 0, b500: 0, b200: 0, b100: 0, b50: 0, b20: 0, b10: 0, coins: 0 },
+    total_billetes_count: 0
+  },
+  {
+    id: 'CAJA-2026-10-04-9521',
+    folio: 'CAJA-2026-10-04-9521',
+    cajero_nombre: 'Jairo',
+    opened_at: '2026-10-03T22:38:29',
+    closed_at: '2026-10-03T22:39:05',
+    fondo_apertura: 1000.00,
+    ventas_efectivo: 0.00,
+    ventas_tarjeta: 0.00,
+    cobranza_abonos: 0.00,
+    total_esperado: 1000.00,
+    total_fisico_contado: 1000.00,
+    diferencia: 0.00,
+    estado_cuadre: 'cuadrado',
+    denominaciones: { b1000: 0, b500: 0, b200: 0, b100: 0, b50: 0, b20: 0, b10: 0, coins: 0 },
+    total_billetes_count: 0
+  },
+  {
+    id: 'CAJA-2026-10-04-5624',
+    folio: 'CAJA-2026-10-04-5624',
+    cajero_nombre: 'Jairo',
+    opened_at: '2026-10-03T22:23:15',
+    closed_at: '2026-10-03T22:23:19',
+    fondo_apertura: 2000.00,
+    ventas_efectivo: 0.00,
+    ventas_tarjeta: 0.00,
+    cobranza_abonos: 0.00,
+    total_esperado: 2000.00,
+    total_fisico_contado: 0.00,
+    diferencia: -2000.00,
+    estado_cuadre: 'faltante',
+    denominaciones: { b1000: 0, b500: 0, b200: 0, b100: 0, b50: 0, b20: 0, b10: 0, coins: 0 },
+    total_billetes_count: 0
+  },
+  {
+    id: 'CAJA-2026-10-03-7841',
+    folio: 'CAJA-2026-10-03-7841',
+    cajero_nombre: 'Jairo',
+    opened_at: '2026-10-03T18:00:00',
+    closed_at: '2026-10-03T21:45:00',
+    fondo_apertura: 1000.00,
+    ventas_efectivo: 1500.00,
+    ventas_tarjeta: 0.00,
+    cobranza_abonos: 0.00,
+    total_esperado: 2500.00,
+    total_fisico_contado: 0.00,
+    diferencia: -2500.00,
+    estado_cuadre: 'faltante',
+    denominaciones: { b1000: 0, b500: 0, b200: 0, b100: 0, b50: 0, b20: 0, b10: 0, coins: 0 },
+    total_billetes_count: 0
+  },
+  {
+    id: 'CAJA-2026-10-03-6520',
+    folio: 'CAJA-2026-10-03-6520',
+    cajero_nombre: 'Jairo',
+    opened_at: '2026-10-03T14:00:00',
+    closed_at: '2026-10-03T17:50:00',
+    fondo_apertura: 1000.00,
+    ventas_efectivo: 800.00,
+    ventas_tarjeta: 0.00,
+    cobranza_abonos: 0.00,
+    total_esperado: 1800.00,
+    total_fisico_contado: 0.00,
+    diferencia: -1800.00,
+    estado_cuadre: 'faltante',
+    denominaciones: { b1000: 0, b500: 0, b200: 0, b100: 0, b50: 0, b20: 0, b10: 0, coins: 0 },
+    total_billetes_count: 0
+  },
+  {
+    id: 'CAJA-2026-10-03-4912',
+    folio: 'CAJA-2026-10-03-4912',
+    cajero_nombre: 'Jairo',
+    opened_at: '2026-10-03T09:00:00',
+    closed_at: '2026-10-03T13:30:00',
+    fondo_apertura: 1000.00,
+    ventas_efectivo: 2250.00,
+    ventas_tarjeta: 0.00,
+    cobranza_abonos: 0.00,
+    total_esperado: 3250.00,
+    total_fisico_contado: 0.00,
+    diferencia: -3250.00,
+    estado_cuadre: 'faltante',
+    denominaciones: { b1000: 0, b500: 0, b200: 0, b100: 0, b50: 0, b20: 0, b10: 0, coins: 0 },
+    total_billetes_count: 0
+  },
+  {
+    id: 'CAJA-2026-10-02-9118',
+    folio: 'CAJA-2026-10-02-9118',
+    cajero_nombre: 'Jairo',
+    opened_at: '2026-10-02T19:00:00',
+    closed_at: '2026-10-02T22:15:00',
+    fondo_apertura: 1000.00,
+    ventas_efectivo: 450.00,
+    ventas_tarjeta: 0.00,
+    cobranza_abonos: 0.00,
+    total_esperado: 1450.00,
+    total_fisico_contado: 0.00,
+    diferencia: -1450.00,
+    estado_cuadre: 'faltante',
+    denominaciones: { b1000: 0, b500: 0, b200: 0, b100: 0, b50: 0, b20: 0, b10: 0, coins: 0 },
+    total_billetes_count: 0
+  },
+  {
+    id: 'CAJA-2026-10-02-8034',
+    folio: 'CAJA-2026-10-02-8034',
+    cajero_nombre: 'Jairo',
+    opened_at: '2026-10-02T14:30:00',
+    closed_at: '2026-10-02T18:45:00',
+    fondo_apertura: 1000.00,
+    ventas_efectivo: 1100.00,
+    ventas_tarjeta: 0.00,
+    cobranza_abonos: 0.00,
+    total_esperado: 2100.00,
+    total_fisico_contado: 0.00,
+    diferencia: -2100.00,
+    estado_cuadre: 'faltante',
+    denominaciones: { b1000: 0, b500: 0, b200: 0, b100: 0, b50: 0, b20: 0, b10: 0, coins: 0 },
+    total_billetes_count: 0
+  },
+  {
+    id: 'CAJA-2026-10-02-7105',
+    folio: 'CAJA-2026-10-02-7105',
+    cajero_nombre: 'Jairo',
+    opened_at: '2026-10-02T09:15:00',
+    closed_at: '2026-10-02T14:00:00',
+    fondo_apertura: 1000.00,
+    ventas_efectivo: 3120.00,
+    ventas_tarjeta: 0.00,
+    cobranza_abonos: 0.00,
+    total_esperado: 4120.00,
+    total_fisico_contado: 0.00,
+    diferencia: -4120.00,
+    estado_cuadre: 'faltante',
+    denominaciones: { b1000: 0, b500: 0, b200: 0, b100: 0, b50: 0, b20: 0, b10: 0, coins: 0 },
+    total_billetes_count: 0
+  },
+  {
+    id: 'CAJA-2026-10-01-6401',
+    folio: 'CAJA-2026-10-01-6401',
+    cajero_nombre: 'Jairo',
+    opened_at: '2026-10-01T18:00:00',
+    closed_at: '2026-10-01T21:30:00',
+    fondo_apertura: 1000.00,
+    ventas_efectivo: 950.00,
+    ventas_tarjeta: 0.00,
+    cobranza_abonos: 0.00,
+    total_esperado: 1950.00,
+    total_fisico_contado: 0.00,
+    diferencia: -1950.00,
+    estado_cuadre: 'faltante',
+    denominaciones: { b1000: 0, b500: 0, b200: 0, b100: 0, b50: 0, b20: 0, b10: 0, coins: 0 },
+    total_billetes_count: 0
+  },
+  {
+    id: 'CAJA-2026-10-01-5230',
+    folio: 'CAJA-2026-10-01-5230',
+    cajero_nombre: 'Jairo',
+    opened_at: '2026-10-01T13:00:00',
+    closed_at: '2026-10-01T17:45:00',
+    fondo_apertura: 1000.00,
+    ventas_efectivo: 1800.00,
+    ventas_tarjeta: 0.00,
+    cobranza_abonos: 0.00,
+    total_esperado: 2800.00,
+    total_fisico_contado: 0.00,
+    diferencia: -2800.00,
+    estado_cuadre: 'faltante',
+    denominaciones: { b1000: 0, b500: 0, b200: 0, b100: 0, b50: 0, b20: 0, b10: 0, coins: 0 },
+    total_billetes_count: 0
+  },
+  {
+    id: 'CAJA-2026-10-01-4112',
+    folio: 'CAJA-2026-10-01-4112',
+    cajero_nombre: 'Jairo',
+    opened_at: '2026-10-01T08:30:00',
+    closed_at: '2026-10-01T12:30:00',
+    fondo_apertura: 1000.00,
+    ventas_efectivo: 600.00,
+    ventas_tarjeta: 0.00,
+    cobranza_abonos: 0.00,
+    total_esperado: 1600.00,
+    total_fisico_contado: 0.00,
+    diferencia: -1600.00,
+    estado_cuadre: 'faltante',
+    denominaciones: { b1000: 0, b500: 0, b200: 0, b100: 0, b50: 0, b20: 0, b10: 0, coins: 0 },
+    total_billetes_count: 0
+  },
+  {
+    id: 'CAJA-2026-09-30-9850',
+    folio: 'CAJA-2026-09-30-9850',
+    cajero_nombre: 'Jairo',
+    opened_at: '2026-09-30T17:00:00',
+    closed_at: '2026-09-30T21:00:00',
+    fondo_apertura: 1000.00,
+    ventas_efectivo: 2400.00,
+    ventas_tarjeta: 0.00,
+    cobranza_abonos: 0.00,
+    total_esperado: 3400.00,
+    total_fisico_contado: 0.00,
+    diferencia: -3400.00,
+    estado_cuadre: 'faltante',
+    denominaciones: { b1000: 0, b500: 0, b200: 0, b100: 0, b50: 0, b20: 0, b10: 0, coins: 0 },
+    total_billetes_count: 0
+  },
+  {
+    id: 'CAJA-2026-09-30-8521',
+    folio: 'CAJA-2026-09-30-8521',
+    cajero_nombre: 'Jairo',
+    opened_at: '2026-09-30T12:00:00',
+    closed_at: '2026-09-30T16:30:00',
+    fondo_apertura: 1000.00,
+    ventas_efectivo: 1050.00,
+    ventas_tarjeta: 0.00,
+    cobranza_abonos: 0.00,
+    total_esperado: 2050.00,
+    total_fisico_contado: 0.00,
+    diferencia: -2050.00,
+    estado_cuadre: 'faltante',
+    denominaciones: { b1000: 0, b500: 0, b200: 0, b100: 0, b50: 0, b20: 0, b10: 0, coins: 0 },
+    total_billetes_count: 0
+  },
+  {
+    id: 'CAJA-2026-09-30-7410',
+    folio: 'CAJA-2026-09-30-7410',
+    cajero_nombre: 'Jairo',
+    opened_at: '2026-09-30T08:00:00',
+    closed_at: '2026-09-30T11:45:00',
+    fondo_apertura: 1000.00,
+    ventas_efectivo: 750.00,
+    ventas_tarjeta: 0.00,
+    cobranza_abonos: 0.00,
+    total_esperado: 1750.00,
+    total_fisico_contado: 0.00,
+    diferencia: -1750.00,
+    estado_cuadre: 'faltante',
+    denominaciones: { b1000: 0, b500: 0, b200: 0, b100: 0, b50: 0, b20: 0, b10: 0, coins: 0 },
+    total_billetes_count: 0
+  },
+  {
+    id: 'CAJA-2026-09-29-6320',
+    folio: 'CAJA-2026-09-29-6320',
+    cajero_nombre: 'Jairo',
+    opened_at: '2026-09-29T16:00:00',
+    closed_at: '2026-09-29T20:30:00',
+    fondo_apertura: 1000.00,
+    ventas_efectivo: 1300.00,
+    ventas_tarjeta: 0.00,
+    cobranza_abonos: 0.00,
+    total_esperado: 2300.00,
+    total_fisico_contado: 0.00,
+    diferencia: -2300.00,
+    estado_cuadre: 'faltante',
+    denominaciones: { b1000: 0, b500: 0, b200: 0, b100: 0, b50: 0, b20: 0, b10: 0, coins: 0 },
+    total_billetes_count: 0
+  },
+  {
+    id: 'CAJA-2026-09-29-5100',
+    folio: 'CAJA-2026-09-29-5100',
+    cajero_nombre: 'Jairo',
+    opened_at: '2026-09-29T11:00:00',
+    closed_at: '2026-09-29T15:30:00',
+    fondo_apertura: 1000.00,
+    ventas_efectivo: 920.00,
+    ventas_tarjeta: 0.00,
+    cobranza_abonos: 0.00,
+    total_esperado: 1920.00,
+    total_fisico_contado: 0.00,
+    diferencia: -1920.00,
+    estado_cuadre: 'faltante',
+    denominaciones: { b1000: 0, b500: 0, b200: 0, b100: 0, b50: 0, b20: 0, b10: 0, coins: 0 },
+    total_billetes_count: 0
+  },
+  {
+    id: 'CAJA-2026-09-29-3890',
+    folio: 'CAJA-2026-09-29-3890',
+    cajero_nombre: 'Jairo',
+    opened_at: '2026-09-29T08:00:00',
+    closed_at: '2026-09-29T10:45:00',
+    fondo_apertura: 1000.00,
+    ventas_efectivo: 893.20,
+    ventas_tarjeta: 0.00,
+    cobranza_abonos: 0.00,
+    total_esperado: 1893.20,
+    total_fisico_contado: 0.00,
+    diferencia: -1893.20,
+    estado_cuadre: 'faltante',
+    denominaciones: { b1000: 0, b500: 0, b200: 0, b100: 0, b50: 0, b20: 0, b10: 0, coins: 0 },
+    total_billetes_count: 0
+  },
+  {
+    id: 'CAJA-2026-09-28-2104',
+    folio: 'CAJA-2026-09-28-2104',
+    cajero_nombre: 'Jairo',
+    opened_at: '2026-09-28T09:00:00',
+    closed_at: '2026-09-28T14:00:00',
+    fondo_apertura: 1000.00,
+    ventas_efectivo: 500.00,
+    ventas_tarjeta: 0.00,
+    cobranza_abonos: 0.00,
+    total_esperado: 1500.00,
+    total_fisico_contado: 0.00,
+    diferencia: -1500.00,
+    estado_cuadre: 'faltante',
+    denominaciones: { b1000: 0, b500: 0, b200: 0, b100: 0, b50: 0, b20: 0, b10: 0, coins: 0 },
+    total_billetes_count: 0
+  }
+];
 
 const DEFAULT_CREDITS: CreditAccount[] = [
   {
@@ -679,21 +1061,49 @@ export const storage = {
     return null;
   },
   getCashRegisters(): any[] {
-    const current = this.getCashRegister();
-    return [
-      {
-        ...current,
-        user: current.user_name || 'Jairo Cajina',
-        current_cash: current.opening_amount + (current.cash_sales || 0),
-        initial_cash: current.opening_amount || 1000,
-        total_sales_cash: current.cash_sales || 0
-      }
-    ];
+    const raw = localStorage.getItem(STORAGE_KEYS.CASH_REGISTERS);
+    if (!raw) {
+      this.setCashRegisters(DEFAULT_CASH_REGISTERS_LIST);
+      return DEFAULT_CASH_REGISTERS_LIST;
+    }
+    try {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      return DEFAULT_CASH_REGISTERS_LIST;
+    } catch (e) {
+      return DEFAULT_CASH_REGISTERS_LIST;
+    }
+  },
+  setCashRegisters(list: any[]) {
+    localStorage.setItem(STORAGE_KEYS.CASH_REGISTERS, JSON.stringify(list));
+  },
+  getCashClosings(): CashClosingRecord[] {
+    const raw = localStorage.getItem(STORAGE_KEYS.CASH_CLOSINGS);
+    if (!raw) {
+      this.setCashClosings(DEFAULT_CASH_CLOSINGS);
+      return DEFAULT_CASH_CLOSINGS;
+    }
+    try {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      return DEFAULT_CASH_CLOSINGS;
+    } catch (e) {
+      return DEFAULT_CASH_CLOSINGS;
+    }
+  },
+  setCashClosings(closings: CashClosingRecord[]) {
+    localStorage.setItem(STORAGE_KEYS.CASH_CLOSINGS, JSON.stringify(closings));
+  },
+  saveCashClosing(closing: CashClosingRecord) {
+    const closings = this.getCashClosings();
+    closings.unshift(closing);
+    this.setCashClosings(closings);
   },
   openCashRegister(amount: number, notes?: string): any {
     const u = this.getCurrentUser();
+    const newRegId = Date.now();
     const newReg: CashRegister = {
-      id: Date.now(),
+      id: newRegId,
       user_id: u.id,
       user_name: u.name,
       status: 'open',
@@ -705,16 +1115,47 @@ export const storage = {
       notes: notes || 'Turno aperturado'
     };
     this.setCashRegister(newReg);
+
+    const list = this.getCashRegisters();
+    list.unshift({
+      id: newRegId,
+      user: u.name || 'Jairo',
+      user_name: u.name || 'Jairo',
+      opened_at: newReg.opened_at,
+      closed_at: null,
+      initial_cash: amount,
+      opening_amount: amount,
+      total_sales_cash: 0,
+      current_cash: amount,
+      final_cash: amount,
+      status: 'open'
+    });
+    this.setCashRegisters(list);
+
     return this.getActiveCashRegister();
   },
-  closeCashRegister(id: any) {
+  closeCashRegister(id: any, closingData?: any) {
     const current = this.getCashRegister();
+    const closedTime = new Date().toISOString();
     const updated = {
       ...current,
       status: 'closed' as const,
-      closed_at: new Date().toISOString()
+      closed_at: closedTime,
+      final_cash: closingData?.total_fisico_contado ?? current.opening_amount
     };
     this.setCashRegister(updated);
+
+    const list = this.getCashRegisters();
+    const idx = list.findIndex(r => String(r.id) === String(id) || String(r.id) === String(current.id));
+    if (idx >= 0) {
+      list[idx] = {
+        ...list[idx],
+        status: 'closed',
+        closed_at: closedTime,
+        final_cash: closingData?.total_fisico_contado ?? list[idx].current_cash
+      };
+      this.setCashRegisters(list);
+    }
   },
   saveCashRegister(cash: any) {
     this.setCashRegister(cash);
