@@ -199,7 +199,7 @@ export default function Header({ titleBadge = 'DASHBOARD / ESTADÍSTICAS', onOpe
             ? 'border-emerald-200/90 dark:border-emerald-900/50 bg-emerald-50/50 dark:bg-emerald-950/20 text-emerald-800 dark:text-emerald-300'
             : 'border-rose-200/90 dark:border-rose-900/50 bg-rose-50/50 dark:bg-rose-950/20 text-rose-800 dark:text-rose-300'
         }`}>
-          <span className={`w-2 h-2 rounded-full shrink-0 ${activeRegister ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'}`} />
+          <span className={`w-2 h-2 rounded-full shrink-0 ${activeRegister ? 'bg-emerald-500' : 'bg-rose-500'}`} />
           <Wallet className={`w-3.5 h-3.5 shrink-0 ${activeRegister ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`} />
           <span className="font-bold">
             {activeRegister ? `Caja Abierta (C$${openingAmount})` : 'Caja Cerrada'}

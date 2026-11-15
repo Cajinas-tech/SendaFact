@@ -142,7 +142,7 @@ export default function DashboardPage() {
             }`}>
               <span className={`w-2 h-2 rounded-full inline-block shrink-0 ${
                 activeRegister 
-                  ? 'bg-emerald-500 animate-ping' 
+                  ? 'bg-emerald-500' 
                   : 'bg-rose-500'
               }`} />
               {activeRegister ? 'Abierta' : 'Cerrada'}
