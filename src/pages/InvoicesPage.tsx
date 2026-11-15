@@ -46,7 +46,7 @@ export const InvoicesPage: React.FC = () => {
   // Selected sale for print modal
   const [printSale, setPrintSale] = useState<Sale | null>(null);
   const [showPrintModal, setShowPrintModal] = useState(false);
-  const [paperFormat, setPaperFormat] = useState<'80mm' | '58mm'>('80mm');
+  const [paperFormat, setPaperFormat] = useState<'80mm' | '58mm' | 'letter'>('80mm');
 
   const handleShareWhatsApp = () => {
     if (!printSale) return;
@@ -1263,49 +1263,68 @@ export const InvoicesPage: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* Formato de Papel POS Selector */}
+                  {/* Formato de Impresión Selector */}
                   <div className="space-y-2">
                     <label className="text-[11px] font-black tracking-wider text-slate-500 uppercase block">
-                      FORMATO DE PAPEL POS
+                      FORMATO DE IMPRESIÓN
                     </label>
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-3 gap-2">
                       
                       {/* Option 80 mm */}
                       <button
                         type="button"
                         onClick={() => setPaperFormat('80mm')}
-                        className={`p-3.5 rounded-2xl text-left transition-all cursor-pointer relative ${
+                        className={`p-3 rounded-2xl text-left transition-all cursor-pointer relative ${
                           paperFormat === '80mm'
                             ? 'border-2 border-cyan-500 bg-cyan-50/20 dark:bg-cyan-950/20 shadow-xs'
                             : 'border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/40 hover:border-slate-300 dark:hover:border-slate-700'
                         }`}
                       >
                         {paperFormat === '80mm' && (
-                          <div className="absolute top-3 right-3 w-4 h-4 rounded-full border-2 border-cyan-500 text-cyan-600 dark:text-cyan-400 flex items-center justify-center">
+                          <div className="absolute top-2.5 right-2.5 w-4 h-4 rounded-full border-2 border-cyan-500 text-cyan-600 dark:text-cyan-400 flex items-center justify-center">
                             <Check className="w-2.5 h-2.5 stroke-[3]" />
                           </div>
                         )}
                         <p className="font-black text-sm text-slate-900 dark:text-white">80 mm</p>
-                        <p className="text-[11px] text-slate-400 font-medium mt-0.5">Caja / Mostrador</p>
+                        <p className="text-[10px] text-slate-400 font-medium mt-0.5">Caja / POS</p>
                       </button>
 
                       {/* Option 58 mm */}
                       <button
                         type="button"
                         onClick={() => setPaperFormat('58mm')}
-                        className={`p-3.5 rounded-2xl text-left transition-all cursor-pointer relative ${
+                        className={`p-3 rounded-2xl text-left transition-all cursor-pointer relative ${
                           paperFormat === '58mm'
                             ? 'border-2 border-cyan-500 bg-cyan-50/20 dark:bg-cyan-950/20 shadow-xs'
                             : 'border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/40 hover:border-slate-300 dark:hover:border-slate-700'
                         }`}
                       >
                         {paperFormat === '58mm' && (
-                          <div className="absolute top-3 right-3 w-4 h-4 rounded-full border-2 border-cyan-500 text-cyan-600 dark:text-cyan-400 flex items-center justify-center">
+                          <div className="absolute top-2.5 right-2.5 w-4 h-4 rounded-full border-2 border-cyan-500 text-cyan-600 dark:text-cyan-400 flex items-center justify-center">
                             <Check className="w-2.5 h-2.5 stroke-[3]" />
                           </div>
                         )}
                         <p className="font-black text-sm text-slate-900 dark:text-white">58 mm</p>
-                        <p className="text-[11px] text-slate-400 font-medium mt-0.5">Móvil / Bluetooth</p>
+                        <p className="text-[10px] text-slate-400 font-medium mt-0.5">Bluetooth</p>
+                      </button>
+
+                      {/* Option Carta / A4 */}
+                      <button
+                        type="button"
+                        onClick={() => setPaperFormat('letter')}
+                        className={`p-3 rounded-2xl text-left transition-all cursor-pointer relative ${
+                          paperFormat === 'letter'
+                            ? 'border-2 border-cyan-500 bg-cyan-50/20 dark:bg-cyan-950/20 shadow-xs'
+                            : 'border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/40 hover:border-slate-300 dark:hover:border-slate-700'
+                        }`}
+                      >
+                        {paperFormat === 'letter' && (
+                          <div className="absolute top-2.5 right-2.5 w-4 h-4 rounded-full border-2 border-cyan-500 text-cyan-600 dark:text-cyan-400 flex items-center justify-center">
+                            <Check className="w-2.5 h-2.5 stroke-[3]" />
+                          </div>
+                        )}
+                        <p className="font-black text-sm text-slate-900 dark:text-white">Carta (A4)</p>
+                        <p className="text-[10px] text-slate-400 font-medium mt-0.5">Oficina / PDF</p>
                       </button>
 
                     </div>
@@ -1320,7 +1339,9 @@ export const InvoicesPage: React.FC = () => {
                     className="w-full py-3.5 rounded-xl bg-[#0284c7] hover:bg-[#0369a1] text-white font-black text-xs uppercase tracking-wider shadow-md shadow-sky-500/20 transition flex items-center justify-center gap-2 cursor-pointer active:scale-95"
                   >
                     <Printer className="w-4 h-4" />
-                    <span>Imprimir Ticket POS ({paperFormat})</span>
+                    <span>
+                      {paperFormat === 'letter' ? 'Imprimir Factura Carta (A4)' : `Imprimir Ticket POS (${paperFormat})`}
+                    </span>
                   </button>
 
                   <button
@@ -1343,14 +1364,16 @@ export const InvoicesPage: React.FC = () => {
 
               </div>
 
-              {/* RIGHT COLUMN: LIVE THERMAL TICKET PREVIEW */}
+              {/* RIGHT COLUMN: LIVE TICKET / INVOICE PREVIEW */}
               <div className="md:col-span-7 bg-slate-50/80 dark:bg-slate-900/40 p-5 sm:p-7 flex flex-col justify-between max-h-[88vh] overflow-y-auto modal-scroll">
                 
                 {/* Header info */}
                 <div className="no-print flex items-center justify-between pb-3 border-b border-slate-200/60 dark:border-slate-800/60 shrink-0">
                   <div className="flex items-center gap-2 text-xs font-semibold text-slate-500 dark:text-slate-400">
                     <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-                    <span>Vista Previa en Vivo (Ancho {paperFormat})</span>
+                    <span>
+                      Vista Previa en Vivo ({paperFormat === 'letter' ? 'Formato Carta / A4' : `Ancho ${paperFormat}`})
+                    </span>
                   </div>
                   <button
                     type="button"
@@ -1361,164 +1384,406 @@ export const InvoicesPage: React.FC = () => {
                   </button>
                 </div>
 
-                {/* Centered Ticket Paper */}
+                {/* Centered Ticket Paper or Letter Sheet */}
                 <div className="flex justify-center py-4 w-full">
-                  <div
-                    id="printable-ticket"
-                    className={`bg-white text-slate-900 p-6 sm:p-7 shadow-lg border border-slate-200/90 font-mono text-[11px] leading-tight space-y-3 transition-all duration-200 ${
-                      paperFormat === '58mm' ? 'w-[275px] max-w-[275px] paper-58mm' : 'w-[360px] max-w-[360px] paper-80mm'
-                    }`}
-                  >
-                    {/* Emisor / Comercio */}
-                    <div className="text-center space-y-0.5">
-                      <h2 className="text-xs font-black uppercase tracking-tight text-slate-900">
-                        {company?.name || 'AGENCIA DE BEBIDAS SENDADIST'}
-                      </h2>
-                      <p className="text-[10px] text-slate-600 font-semibold">
-                        RUC: {company?.ruc || 'J0310000349281'}
-                      </p>
-                      <p className="text-[9.5px] text-slate-600 leading-tight">
-                        {company?.address || 'Semáforos El Mayoreo 2c al Norte, Managua'}
-                      </p>
-                      <p className="text-[9.5px] text-slate-600">
-                        {company?.phone ? `PBX: ${company.phone}` : 'PBX: +505 2244-8899 • Cel: +505 8888-1234'}
-                      </p>
-                    </div>
+                  {paperFormat === 'letter' ? (
+                    /* FORMAL LETTER / A4 INVOICE SHEET */
+                    <div
+                      id="printable-ticket"
+                      className="bg-white text-slate-900 p-8 sm:p-9 shadow-lg border border-slate-200/90 rounded-2xl font-sans text-xs space-y-5 w-full max-w-[620px] paper-letter leading-normal transition-all"
+                    >
+                      {/* Header: Empresa & Recuadro Factura */}
+                      <div className="flex justify-between items-start gap-4 pb-4 border-b border-slate-200">
+                        <div className="space-y-1">
+                          {company?.logo ? (
+                            <img src={company.logo} alt="Logo" className="h-12 w-auto object-contain mb-2" />
+                          ) : (
+                            <div className="w-10 h-10 rounded-xl bg-slate-900 text-white flex items-center justify-center font-black text-base mb-1">
+                              {company?.name ? company.name.substring(0, 2).toUpperCase() : 'SF'}
+                            </div>
+                          )}
+                          <h2 className="text-base font-black uppercase text-slate-900 tracking-tight">
+                            {company?.name || 'AGENCIA DE BEBIDAS SENDADIST'}
+                          </h2>
+                          {company?.razon_social && (
+                            <p className="text-[11px] font-semibold text-slate-600">
+                              {company.razon_social}
+                            </p>
+                          )}
+                          <p className="text-[11px] text-slate-600">
+                            <span className="font-bold">RUC:</span> {company?.ruc || 'J0310000349281'}
+                          </p>
+                          <p className="text-[11px] text-slate-600 max-w-xs leading-tight">
+                            {company?.address || 'Semáforos El Mayoreo 2c al Norte, Managua'}
+                          </p>
+                          <p className="text-[11px] text-slate-600">
+                            <span className="font-bold">Tel:</span> {company?.phone || 'PBX: +505 2244-8899 • Cel: +505 8888-1234'}
+                            {company?.email && <span className="ml-2">• {company.email}</span>}
+                          </p>
+                        </div>
 
-                    <div className="border-b border-dashed border-slate-300 my-2"></div>
+                        {/* Recuadro Factura */}
+                        <div className="w-56 p-3.5 rounded-xl border-2 border-slate-900 bg-slate-50/70 text-center space-y-1.5 shrink-0">
+                          <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+                            RUC: {company?.ruc || 'J0310000349281'}
+                          </p>
+                          <div className="bg-slate-900 text-white py-1 px-2 rounded-lg font-black text-xs uppercase tracking-wider">
+                            FACTURA DE VENTA
+                          </div>
+                          <p className="text-sm font-black text-slate-900 tracking-tight pt-0.5">
+                            {printSale.ticket_number || `#FACT-${printSale.id}`}
+                          </p>
+                          <div className="pt-1 flex items-center justify-center gap-1.5">
+                            <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider ${
+                              ((printSale.payment_method || '').toLowerCase().includes('cred') || (printSale as any).credit_term_days)
+                                ? 'bg-amber-100 text-amber-900 border border-amber-300'
+                                : 'bg-emerald-100 text-emerald-900 border border-emerald-300'
+                            }`}>
+                              {printSale.payment_method?.toUpperCase()}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
 
-                    {/* Metadata Ticket */}
-                    <div className="space-y-1 text-[10.5px]">
-                      <div className="flex justify-between items-center font-bold text-slate-900">
-                        <span>FAC: {printSale.ticket_number || `#FACT-${printSale.id}`}</span>
-                        <span className="px-1.5 py-0.2 rounded border border-slate-400 text-[9px] font-bold uppercase">
-                          {printSale.payment_method?.toUpperCase()}
-                        </span>
+                      {/* Datos del Cliente y la Operación */}
+                      <div className="bg-slate-50/80 rounded-xl p-3.5 border border-slate-200/80 grid grid-cols-2 gap-y-2 gap-x-4 text-[11px]">
+                        <div>
+                          <span className="text-slate-400 font-semibold block text-[10px] uppercase">Señor(es) / Cliente:</span>
+                          <span className="font-bold text-slate-900 text-xs">
+                            {printSale.customer?.name || (printSale as any).customer_name || 'Consumidor Final'}
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-slate-400 font-semibold block text-[10px] uppercase">Fecha de Emisión:</span>
+                          <span className="font-semibold text-slate-800">
+                            {formatDateTime(printSale.created_at)}
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-slate-400 font-semibold block text-[10px] uppercase">Dirección / Ubicación:</span>
+                          <span className="text-slate-700">
+                            {printSale.customer?.address || 'Barrio Altagracia, del Pali 2c al lago, Managua'}
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-slate-400 font-semibold block text-[10px] uppercase">Teléfono de Contacto:</span>
+                          <span className="text-slate-700">
+                            {printSale.customer?.phone || 'No registrado'}
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-slate-400 font-semibold block text-[10px] uppercase">Atendido por:</span>
+                          <span className="text-slate-700 font-medium">
+                            {printSale.user_name || 'Cajero'} ({getUserRole(printSale).toUpperCase()})
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-slate-400 font-semibold block text-[10px] uppercase">Condición de Pago:</span>
+                          <span className="font-bold text-slate-800">
+                            {((printSale.payment_method || '').toLowerCase().includes('cred') || (printSale as any).credit_term_days)
+                              ? `Crédito ${(printSale as any).credit_term_days ? `(${(printSale as any).credit_term_days} días)` : ''}`
+                              : 'Contado Inmediato'}
+                          </span>
+                        </div>
                       </div>
-                      <div className="text-slate-600">
-                        Fecha: {formatDateTime(printSale.created_at)}
-                      </div>
-                      <div className="text-slate-600">
-                        Cajero: {printSale.user_name || 'Cajero'} ({getUserRole(printSale).toUpperCase()})
-                      </div>
-                    </div>
 
-                    <div className="border-b border-dashed border-slate-300 my-2"></div>
-
-                    {/* Cliente */}
-                    <div className="space-y-0.5 text-[10.5px]">
-                      <div className="font-bold text-slate-900">
-                        Cliente: {printSale.customer?.name || (printSale as any).customer_name || 'Consumidor Final'}
+                      {/* Tabla de Productos */}
+                      <div className="overflow-hidden rounded-xl border border-slate-200">
+                        <table className="w-full text-left text-[11px]">
+                          <thead className="bg-slate-900 text-white font-bold uppercase text-[9.5px] tracking-wider">
+                            <tr>
+                              <th className="py-2 px-3 w-14 text-center">Cant.</th>
+                              <th className="py-2 px-3">Descripción / Producto</th>
+                              <th className="py-2 px-3 w-28 text-right">P. Unitario</th>
+                              <th className="py-2 px-3 w-28 text-right">Total</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-200">
+                            {printSale.items && printSale.items.length > 0 ? (
+                              printSale.items.map((item, idx) => (
+                                <tr key={idx} className={idx % 2 === 0 ? 'bg-white' : 'bg-slate-50/50'}>
+                                  <td className="py-2 px-3 text-center font-bold text-slate-800">
+                                    {item.quantity}
+                                  </td>
+                                  <td className="py-2 px-3 font-medium text-slate-900">
+                                    {item.product_name}
+                                  </td>
+                                  <td className="py-2 px-3 text-right text-slate-700">
+                                    C$ {item.unit_price_cordobas.toFixed(2)}
+                                  </td>
+                                  <td className="py-2 px-3 text-right font-bold text-slate-900">
+                                    C$ {item.total_cordobas.toFixed(2)}
+                                  </td>
+                                </tr>
+                              ))
+                            ) : (
+                              <tr>
+                                <td className="py-2 px-3 text-center font-bold">1</td>
+                                <td className="py-2 px-3">Venta General de Productos</td>
+                                <td className="py-2 px-3 text-right">C$ {(printSale.total_cordobas || 0).toFixed(2)}</td>
+                                <td className="py-2 px-3 text-right font-bold">C$ {(printSale.total_cordobas || 0).toFixed(2)}</td>
+                              </tr>
+                            )}
+                          </tbody>
+                        </table>
                       </div>
-                      <div className="text-slate-600 text-[9.5px]">
-                        {printSale.customer?.address || 'Barrio Altagracia, del Pali 2c al lago, Managua'}
-                      </div>
-                    </div>
 
-                    <div className="border-b border-dashed border-slate-300 my-2"></div>
-
-                    {/* Tabla de Artículos */}
-                    <div>
-                      <div className="flex justify-between font-bold text-[10px] text-slate-700 pb-1">
-                        <span>Cant Descripción</span>
-                        <span>Total</span>
-                      </div>
-                      <div className="space-y-1.5 pt-0.5 text-[10.5px]">
-                        {printSale.items && printSale.items.length > 0 ? (
-                          printSale.items.map((item, idx) => (
-                            <div key={idx} className="flex justify-between items-start gap-1">
-                              <div className="flex-1 min-w-0">
-                                <div className="flex gap-1.5">
-                                  <span className="font-bold">{item.quantity}x</span>
-                                  <span className="truncate">{item.product_name}</span>
-                                </div>
-                                <span className="text-[9.5px] text-slate-500 pl-4 block">
-                                  P.U: C${item.unit_price_cordobas.toFixed(2)}
+                      {/* Bloque Inferior: Crédito/Notas a la izquierda, Totales a la derecha */}
+                      <div className="grid grid-cols-12 gap-6 pt-1 items-start">
+                        
+                        {/* Izquierda: Términos / Crédito / Firmas */}
+                        <div className="col-span-7 space-y-3.5">
+                          {/* Saldo Crédito si aplica */}
+                          {((printSale.payment_method || '').toLowerCase().includes('cred') || (printSale as any).credit_term_days) && (
+                            <div className="bg-amber-50/70 border border-amber-200 rounded-xl p-3 text-[11px] space-y-1">
+                              <span className="font-black text-amber-900 text-[10px] uppercase tracking-wider block">
+                                Estado de Cuenta del Cliente
+                              </span>
+                              <div className="flex justify-between text-slate-700">
+                                <span>Saldo Anterior:</span>
+                                <span className="font-semibold">
+                                  C$ {((printSale.customer?.current_debt || 0) + (printSale.total_cordobas || 0)).toFixed(2)}
                                 </span>
                               </div>
-                              <span className="font-bold whitespace-nowrap">
-                                C${item.total_cordobas.toFixed(2)}
-                              </span>
+                              <div className="flex justify-between text-slate-700">
+                                <span>Monto de esta Factura:</span>
+                                <span className="font-semibold">C$ {(printSale.total_cordobas || 0).toFixed(2)}</span>
+                              </div>
+                              <div className="flex justify-between font-bold text-amber-950 pt-1 border-t border-amber-200">
+                                <span>Nuevo Saldo Cartera:</span>
+                                <span>C$ {(printSale.customer?.current_debt || printSale.total_cordobas || 0).toFixed(2)}</span>
+                              </div>
                             </div>
-                          ))
-                        ) : (
-                          <div className="flex justify-between items-center">
-                            <span>1x Venta de Productos</span>
-                            <span className="font-bold">C${(printSale.total_cordobas || 0).toFixed(2)}</span>
+                          )}
+
+                          <div className="space-y-0.5 text-slate-600 text-[10.5px]">
+                            <p className="font-bold uppercase text-slate-800">
+                              {company?.ticket_footer || '¡Gracias por su compra y preferencia!'}
+                            </p>
+                            <p className="text-[9.5px] text-slate-500">
+                              Revise su producto antes de firmar o retirar. Esta factura constituye un título valor mercantil.
+                            </p>
+                          </div>
+
+                          {/* Firmas */}
+                          <div className="grid grid-cols-2 gap-4 pt-6 text-center">
+                            <div>
+                              <div className="border-t border-slate-400 mx-2 pt-1 font-semibold text-[10px] text-slate-700">
+                                Entregado Conforme
+                              </div>
+                              <span className="text-[9px] text-slate-400">Emisor / Vendedor</span>
+                            </div>
+                            <div>
+                              <div className="border-t border-slate-400 mx-2 pt-1 font-semibold text-[10px] text-slate-700">
+                                Recibido Conforme
+                              </div>
+                              <span className="text-[9px] text-slate-400">Cliente / Receptor</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Derecha: Resumen de Totales */}
+                        <div className="col-span-5 bg-slate-50/80 rounded-xl p-3.5 border border-slate-200 space-y-1.5 text-right text-[11px]">
+                          {printSale.subtotal_cordobas !== undefined && (
+                            <div className="flex justify-between text-slate-600">
+                              <span>Subtotal:</span>
+                              <span className="font-semibold">C$ {printSale.subtotal_cordobas.toFixed(2)}</span>
+                            </div>
+                          )}
+                          {printSale.discount_amount ? (
+                            <div className="flex justify-between text-rose-600 font-semibold">
+                              <span>Descuento:</span>
+                              <span>-C$ {printSale.discount_amount.toFixed(2)}</span>
+                            </div>
+                          ) : null}
+                          {printSale.tax_amount ? (
+                            <div className="flex justify-between text-slate-600">
+                              <span>IVA ({printSale.tax_rate || 15}%):</span>
+                              <span className="font-semibold">+C$ {printSale.tax_amount.toFixed(2)}</span>
+                            </div>
+                          ) : null}
+                          <div className="border-t-2 border-slate-900 pt-2 flex justify-between items-baseline font-black text-sm text-slate-900">
+                            <span className="tracking-wide">TOTAL:</span>
+                            <span className="text-base text-cyan-700">
+                              C$ {(printSale.total_cordobas || 0).toLocaleString('es-NI', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            </span>
+                          </div>
+                          {printSale.total_usd ? (
+                            <div className="flex justify-between text-slate-500 font-semibold text-[10px] pt-1">
+                              <span>Equivalente en USD:</span>
+                              <span>$ {printSale.total_usd.toFixed(2)} USD</span>
+                            </div>
+                          ) : null}
+                        </div>
+
+                      </div>
+
+                      {/* Pie de Página / Código */}
+                      <div className="pt-3 border-t border-slate-200 flex justify-between items-center text-[9px] text-slate-400">
+                        <span>Sistema SendaFact • Facturación Electrónica y POS</span>
+                        <span className="font-mono">{printSale.ticket_number || `#FACT-${printSale.id}`}</span>
+                      </div>
+
+                    </div>
+                  ) : (
+                    /* THERMAL TICKET (80mm / 58mm) */
+                    <div
+                      id="printable-ticket"
+                      className={`bg-white text-slate-900 p-6 sm:p-7 shadow-lg border border-slate-200/90 font-mono text-[11px] leading-tight space-y-3 transition-all duration-200 ${
+                        paperFormat === '58mm' ? 'w-[275px] max-w-[275px] paper-58mm' : 'w-[360px] max-w-[360px] paper-80mm'
+                      }`}
+                    >
+                      {/* Emisor / Comercio */}
+                      <div className="text-center space-y-0.5">
+                        <h2 className="text-xs font-black uppercase tracking-tight text-slate-900">
+                          {company?.name || 'AGENCIA DE BEBIDAS SENDADIST'}
+                        </h2>
+                        <p className="text-[10px] text-slate-600 font-semibold">
+                          RUC: {company?.ruc || 'J0310000349281'}
+                        </p>
+                        <p className="text-[9.5px] text-slate-600 leading-tight">
+                          {company?.address || 'Semáforos El Mayoreo 2c al Norte, Managua'}
+                        </p>
+                        <p className="text-[9.5px] text-slate-600">
+                          {company?.phone ? `PBX: ${company.phone}` : 'PBX: +505 2244-8899 • Cel: +505 8888-1234'}
+                        </p>
+                      </div>
+
+                      <div className="border-b border-dashed border-slate-300 my-2"></div>
+
+                      {/* Metadata Ticket */}
+                      <div className="space-y-1 text-[10.5px]">
+                        <div className="flex justify-between items-center font-bold text-slate-900">
+                          <span>FAC: {printSale.ticket_number || `#FACT-${printSale.id}`}</span>
+                          <span className="px-1.5 py-0.2 rounded border border-slate-400 text-[9px] font-bold uppercase">
+                            {printSale.payment_method?.toUpperCase()}
+                          </span>
+                        </div>
+                        <div className="text-slate-600">
+                          Fecha: {formatDateTime(printSale.created_at)}
+                        </div>
+                        <div className="text-slate-600">
+                          Cajero: {printSale.user_name || 'Cajero'} ({getUserRole(printSale).toUpperCase()})
+                        </div>
+                      </div>
+
+                      <div className="border-b border-dashed border-slate-300 my-2"></div>
+
+                      {/* Cliente */}
+                      <div className="space-y-0.5 text-[10.5px]">
+                        <div className="font-bold text-slate-900">
+                          Cliente: {printSale.customer?.name || (printSale as any).customer_name || 'Consumidor Final'}
+                        </div>
+                        <div className="text-slate-600 text-[9.5px]">
+                          {printSale.customer?.address || 'Barrio Altagracia, del Pali 2c al lago, Managua'}
+                        </div>
+                      </div>
+
+                      <div className="border-b border-dashed border-slate-300 my-2"></div>
+
+                      {/* Tabla de Artículos */}
+                      <div>
+                        <div className="flex justify-between font-bold text-[10px] text-slate-700 pb-1">
+                          <span>Cant Descripción</span>
+                          <span>Total</span>
+                        </div>
+                        <div className="space-y-1.5 pt-0.5 text-[10.5px]">
+                          {printSale.items && printSale.items.length > 0 ? (
+                            printSale.items.map((item, idx) => (
+                              <div key={idx} className="flex justify-between items-start gap-1">
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex gap-1.5">
+                                    <span className="font-bold">{item.quantity}x</span>
+                                    <span className="truncate">{item.product_name}</span>
+                                  </div>
+                                  <span className="text-[9.5px] text-slate-500 pl-4 block">
+                                    P.U: C${item.unit_price_cordobas.toFixed(2)}
+                                  </span>
+                                </div>
+                                <span className="font-bold whitespace-nowrap">
+                                  C${item.total_cordobas.toFixed(2)}
+                                </span>
+                              </div>
+                            ))
+                          ) : (
+                            <div className="flex justify-between items-center">
+                              <span>1x Venta de Productos</span>
+                              <span className="font-bold">C${(printSale.total_cordobas || 0).toFixed(2)}</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="border-b border-dashed border-slate-300 my-2"></div>
+
+                      {/* Totales */}
+                      <div className="space-y-1 text-right text-[10.5px]">
+                        {printSale.subtotal_cordobas !== undefined && (
+                          <div className="flex justify-between text-slate-600">
+                            <span>Subtotal:</span>
+                            <span className="font-semibold">C$ {printSale.subtotal_cordobas.toFixed(2)}</span>
                           </div>
                         )}
+                        {printSale.discount_amount ? (
+                          <div className="flex justify-between text-rose-600 font-semibold">
+                            <span>Descuento:</span>
+                            <span>-C$ {printSale.discount_amount.toFixed(2)}</span>
+                          </div>
+                        ) : null}
+                        {printSale.tax_amount ? (
+                          <div className="flex justify-between text-slate-600">
+                            <span>IVA ({printSale.tax_rate || 15}%):</span>
+                            <span className="font-semibold">+C$ {printSale.tax_amount.toFixed(2)}</span>
+                          </div>
+                        ) : null}
+                        <div className="border-t-2 border-slate-900 my-1 pt-1.5 flex justify-between items-baseline font-black text-sm text-slate-900">
+                          <span className="tracking-wide">TOTAL:</span>
+                          <span>
+                            C$ {(printSale.total_cordobas || 0).toLocaleString('es-NI', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          </span>
+                        </div>
                       </div>
-                    </div>
 
-                    <div className="border-b border-dashed border-slate-300 my-2"></div>
-
-                    {/* Totales */}
-                    <div className="space-y-1 text-right text-[10.5px]">
-                      {printSale.subtotal_cordobas !== undefined && (
-                        <div className="flex justify-between text-slate-600">
-                          <span>Subtotal:</span>
-                          <span className="font-semibold">C$ {printSale.subtotal_cordobas.toFixed(2)}</span>
+                      {/* Crédito: Saldo Anterior y Nuevo Saldo */}
+                      {((printSale.payment_method || '').toLowerCase().includes('cred') || (printSale as any).credit_term_days) && (
+                        <div className="border border-dashed border-slate-300 rounded p-2 my-1.5 space-y-1 text-[10px]">
+                          <div className="flex justify-between text-slate-600">
+                            <span>Saldo Anterior:</span>
+                            <span className="font-semibold">
+                              C${((printSale.customer?.current_debt || 0) + (printSale.total_cordobas || 0)).toFixed(2)}
+                            </span>
+                          </div>
+                          <div className="flex justify-between font-bold text-slate-900">
+                            <span>Nuevo Saldo Cartera:</span>
+                            <span>
+                              C${(printSale.customer?.current_debt || printSale.total_cordobas || 0).toFixed(2)}
+                            </span>
+                          </div>
                         </div>
                       )}
-                      {printSale.discount_amount ? (
-                        <div className="flex justify-between text-rose-600 font-semibold">
-                          <span>Descuento:</span>
-                          <span>-C$ {printSale.discount_amount.toFixed(2)}</span>
-                        </div>
-                      ) : null}
-                      {printSale.tax_amount ? (
-                        <div className="flex justify-between text-slate-600">
-                          <span>IVA ({printSale.tax_rate || 15}%):</span>
-                          <span className="font-semibold">+C$ {printSale.tax_amount.toFixed(2)}</span>
-                        </div>
-                      ) : null}
-                      <div className="border-t-2 border-slate-900 my-1 pt-1.5 flex justify-between items-baseline font-black text-sm text-slate-900">
-                        <span className="tracking-wide">TOTAL:</span>
-                        <span>
-                          C$ {(printSale.total_cordobas || 0).toLocaleString('es-NI', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                        </span>
+
+                      <div className="border-b border-dashed border-slate-300 my-2"></div>
+
+                      {/* Mensaje de Pie */}
+                      <div className="text-center space-y-0.5 text-[9.5px] text-slate-600">
+                        <p className="font-bold uppercase tracking-wider text-slate-800">
+                          {company?.ticket_footer || '¡GRACIAS POR SU PREFERENCIA!'}
+                        </p>
+                        <p className="text-[9px]">Revise su producto antes de firmar o retirar.</p>
                       </div>
-                    </div>
 
-                    {/* Crédito: Saldo Anterior y Nuevo Saldo */}
-                    {((printSale.payment_method || '').toLowerCase().includes('cred') || (printSale as any).credit_term_days) && (
-                      <div className="border border-dashed border-slate-300 rounded p-2 my-1.5 space-y-1 text-[10px]">
-                        <div className="flex justify-between text-slate-600">
-                          <span>Saldo Anterior:</span>
-                          <span className="font-semibold">
-                            C${((printSale.customer?.current_debt || 0) + (printSale.total_cordobas || 0)).toFixed(2)}
-                          </span>
+                      {/* Código de Barras Simulado */}
+                      <div className="pt-2 text-center space-y-0.5 select-none">
+                        <div className="font-mono text-xs tracking-[0.25em] text-slate-700">
+                          ||| | |||| ||| | || | ||| |||| |
                         </div>
-                        <div className="flex justify-between font-bold text-slate-900">
-                          <span>Nuevo Saldo Cartera:</span>
-                          <span>
-                            C${(printSale.customer?.current_debt || printSale.total_cordobas || 0).toFixed(2)}
-                          </span>
-                        </div>
+                        <p className="text-[8.5px] text-slate-500 font-mono tracking-wider">
+                          {printSale.ticket_number || `#FACT-${printSale.id}`}
+                        </p>
                       </div>
-                    )}
 
-                    <div className="border-b border-dashed border-slate-300 my-2"></div>
-
-                    {/* Mensaje de Pie */}
-                    <div className="text-center space-y-0.5 text-[9.5px] text-slate-600">
-                      <p className="font-bold uppercase tracking-wider text-slate-800">
-                        {company?.ticket_footer || '¡GRACIAS POR SU PREFERENCIA!'}
-                      </p>
-                      <p className="text-[9px]">Revise su producto antes de firmar o retirar.</p>
                     </div>
-
-                    {/* Código de Barras Simulado */}
-                    <div className="pt-2 text-center space-y-0.5 select-none">
-                      <div className="font-mono text-xs tracking-[0.25em] text-slate-700">
-                        ||| | |||| ||| | || | ||| |||| |
-                      </div>
-                      <p className="text-[8.5px] text-slate-500 font-mono tracking-wider">
-                        {printSale.ticket_number || `#FACT-${printSale.id}`}
-                      </p>
-                    </div>
-
-                  </div>
+                  )}
                 </div>
 
               </div>

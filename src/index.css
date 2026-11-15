@@ -188,6 +188,18 @@
     width: 80mm !important;
     max-width: 80mm !important;
   }
+  #printable-ticket.paper-letter {
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 8mm 12mm !important;
+    box-shadow: none !important;
+    border: none !important;
+    font-family: inherit !important;
+  }
   .no-print {
     display: none !important;
   }
