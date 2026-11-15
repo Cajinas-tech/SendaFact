@@ -1182,13 +1182,11 @@ export const InvoicesPage: React.FC = () => {
 
       {/* 5. MODAL: IMPRESIÓN DIRECTA DE COMPROBANTE / FACTURA (REDiseñado con Formato POS y Vista Previa en Vivo) */}
       {showPrintModal && printSale && createPortal(
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-5 bg-slate-950/75 backdrop-blur-xs animate-in fade-in duration-150 overflow-y-auto">
-          <div className="w-full max-w-4xl bg-white dark:bg-[#0b1329] rounded-[28px] border border-slate-200 dark:border-slate-800 shadow-2xl overflow-hidden my-auto animate-in zoom-in-95 duration-200">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-2 sm:p-4 md:p-6 bg-slate-950/75 backdrop-blur-xs animate-in fade-in duration-150 overflow-hidden">
+          <div className="w-full max-w-5xl h-[92vh] max-h-[850px] min-h-[560px] bg-white dark:bg-[#0b1329] rounded-[28px] border border-slate-200 dark:border-slate-800 shadow-2xl flex flex-col md:flex-row overflow-hidden animate-in zoom-in-95 duration-200">
             
-            <div className="grid grid-cols-1 md:grid-cols-12 divide-y md:divide-y-0 md:divide-x divide-slate-100 dark:divide-slate-800/80">
-              
-              {/* LEFT COLUMN: CONTROLS & METADATA */}
-              <div className="md:col-span-5 p-6 sm:p-7 flex flex-col justify-between space-y-6 bg-white dark:bg-[#0b1329]">
+            {/* LEFT COLUMN: CONTROLS & METADATA */}
+            <div className="w-full md:w-[380px] lg:w-[410px] shrink-0 p-5 sm:p-7 flex flex-col justify-between overflow-y-auto modal-scroll bg-white dark:bg-[#0b1329] border-b md:border-b-0 md:border-r border-slate-100 dark:border-slate-800/80">
                 
                 <div className="space-y-5">
                   {/* Title Header */}
@@ -1268,63 +1266,81 @@ export const InvoicesPage: React.FC = () => {
                     <label className="text-[11px] font-black tracking-wider text-slate-500 uppercase block">
                       FORMATO DE IMPRESIÓN
                     </label>
-                    <div className="grid grid-cols-3 gap-2">
+                    <div className="grid grid-cols-3 gap-2 sm:gap-2.5">
                       
                       {/* Option 80 mm */}
                       <button
                         type="button"
                         onClick={() => setPaperFormat('80mm')}
-                        className={`p-3 rounded-2xl text-left transition-all cursor-pointer relative ${
+                        className={`p-3 rounded-2xl text-left transition-all cursor-pointer flex flex-col justify-between min-h-[72px] ${
                           paperFormat === '80mm'
-                            ? 'border-2 border-cyan-500 bg-cyan-50/20 dark:bg-cyan-950/20 shadow-xs'
+                            ? 'border-2 border-cyan-500 bg-cyan-50/30 dark:bg-cyan-950/30 shadow-xs'
                             : 'border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/40 hover:border-slate-300 dark:hover:border-slate-700'
                         }`}
                       >
-                        {paperFormat === '80mm' && (
-                          <div className="absolute top-2.5 right-2.5 w-4 h-4 rounded-full border-2 border-cyan-500 text-cyan-600 dark:text-cyan-400 flex items-center justify-center">
-                            <Check className="w-2.5 h-2.5 stroke-[3]" />
-                          </div>
-                        )}
-                        <p className="font-black text-sm text-slate-900 dark:text-white">80 mm</p>
-                        <p className="text-[10px] text-slate-400 font-medium mt-0.5">Caja / POS</p>
+                        <div className="flex items-center justify-between gap-1 w-full">
+                          <span className="font-black text-xs sm:text-sm text-slate-900 dark:text-white truncate">
+                            80 mm
+                          </span>
+                          {paperFormat === '80mm' ? (
+                            <div className="w-4 h-4 rounded-full bg-cyan-500 text-white flex items-center justify-center shrink-0 shadow-xs">
+                              <Check className="w-2.5 h-2.5 stroke-[3]" />
+                            </div>
+                          ) : (
+                            <div className="w-4 h-4 rounded-full border border-slate-300 dark:border-slate-700 shrink-0" />
+                          )}
+                        </div>
+                        <p className="text-[10px] text-slate-400 font-medium truncate mt-1">Caja / POS</p>
                       </button>
 
                       {/* Option 58 mm */}
                       <button
                         type="button"
                         onClick={() => setPaperFormat('58mm')}
-                        className={`p-3 rounded-2xl text-left transition-all cursor-pointer relative ${
+                        className={`p-3 rounded-2xl text-left transition-all cursor-pointer flex flex-col justify-between min-h-[72px] ${
                           paperFormat === '58mm'
-                            ? 'border-2 border-cyan-500 bg-cyan-50/20 dark:bg-cyan-950/20 shadow-xs'
+                            ? 'border-2 border-cyan-500 bg-cyan-50/30 dark:bg-cyan-950/30 shadow-xs'
                             : 'border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/40 hover:border-slate-300 dark:hover:border-slate-700'
                         }`}
                       >
-                        {paperFormat === '58mm' && (
-                          <div className="absolute top-2.5 right-2.5 w-4 h-4 rounded-full border-2 border-cyan-500 text-cyan-600 dark:text-cyan-400 flex items-center justify-center">
-                            <Check className="w-2.5 h-2.5 stroke-[3]" />
-                          </div>
-                        )}
-                        <p className="font-black text-sm text-slate-900 dark:text-white">58 mm</p>
-                        <p className="text-[10px] text-slate-400 font-medium mt-0.5">Bluetooth</p>
+                        <div className="flex items-center justify-between gap-1 w-full">
+                          <span className="font-black text-xs sm:text-sm text-slate-900 dark:text-white truncate">
+                            58 mm
+                          </span>
+                          {paperFormat === '58mm' ? (
+                            <div className="w-4 h-4 rounded-full bg-cyan-500 text-white flex items-center justify-center shrink-0 shadow-xs">
+                              <Check className="w-2.5 h-2.5 stroke-[3]" />
+                            </div>
+                          ) : (
+                            <div className="w-4 h-4 rounded-full border border-slate-300 dark:border-slate-700 shrink-0" />
+                          )}
+                        </div>
+                        <p className="text-[10px] text-slate-400 font-medium truncate mt-1">Bluetooth</p>
                       </button>
 
                       {/* Option Carta / A4 */}
                       <button
                         type="button"
                         onClick={() => setPaperFormat('letter')}
-                        className={`p-3 rounded-2xl text-left transition-all cursor-pointer relative ${
+                        className={`p-3 rounded-2xl text-left transition-all cursor-pointer flex flex-col justify-between min-h-[72px] ${
                           paperFormat === 'letter'
-                            ? 'border-2 border-cyan-500 bg-cyan-50/20 dark:bg-cyan-950/20 shadow-xs'
+                            ? 'border-2 border-cyan-500 bg-cyan-50/30 dark:bg-cyan-950/30 shadow-xs'
                             : 'border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/40 hover:border-slate-300 dark:hover:border-slate-700'
                         }`}
                       >
-                        {paperFormat === 'letter' && (
-                          <div className="absolute top-2.5 right-2.5 w-4 h-4 rounded-full border-2 border-cyan-500 text-cyan-600 dark:text-cyan-400 flex items-center justify-center">
-                            <Check className="w-2.5 h-2.5 stroke-[3]" />
-                          </div>
-                        )}
-                        <p className="font-black text-sm text-slate-900 dark:text-white">Carta (A4)</p>
-                        <p className="text-[10px] text-slate-400 font-medium mt-0.5">Oficina / PDF</p>
+                        <div className="flex items-center justify-between gap-1 w-full">
+                          <span className="font-black text-xs sm:text-sm text-slate-900 dark:text-white truncate">
+                            Carta (A4)
+                          </span>
+                          {paperFormat === 'letter' ? (
+                            <div className="w-4 h-4 rounded-full bg-cyan-500 text-white flex items-center justify-center shrink-0 shadow-xs">
+                              <Check className="w-2.5 h-2.5 stroke-[3]" />
+                            </div>
+                          ) : (
+                            <div className="w-4 h-4 rounded-full border border-slate-300 dark:border-slate-700 shrink-0" />
+                          )}
+                        </div>
+                        <p className="text-[10px] text-slate-400 font-medium truncate mt-1">Oficina / PDF</p>
                       </button>
 
                     </div>
@@ -1365,27 +1381,32 @@ export const InvoicesPage: React.FC = () => {
               </div>
 
               {/* RIGHT COLUMN: LIVE TICKET / INVOICE PREVIEW */}
-              <div className="md:col-span-7 bg-slate-50/80 dark:bg-slate-900/40 p-5 sm:p-7 flex flex-col justify-between max-h-[88vh] overflow-y-auto modal-scroll">
+              <div className="flex-1 h-full flex flex-col bg-slate-50/80 dark:bg-slate-900/40 overflow-hidden">
                 
-                {/* Header info */}
-                <div className="no-print flex items-center justify-between pb-3 border-b border-slate-200/60 dark:border-slate-800/60 shrink-0">
-                  <div className="flex items-center gap-2 text-xs font-semibold text-slate-500 dark:text-slate-400">
-                    <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-                    <span>
+                {/* Header info (PINNED AT TOP) */}
+                <div className="no-print px-5 sm:px-7 py-3.5 sm:py-4 flex items-center justify-between border-b border-slate-200/60 dark:border-slate-800/60 bg-white/70 dark:bg-slate-900/70 backdrop-blur-xs shrink-0 z-10">
+                  <div className="flex items-center gap-2.5 text-xs font-semibold text-slate-600 dark:text-slate-300">
+                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 shrink-0"></span>
+                    <span className="font-bold">
                       Vista Previa en Vivo ({paperFormat === 'letter' ? 'Formato Carta / A4' : `Ancho ${paperFormat}`})
+                    </span>
+                    <span className="hidden sm:inline-block px-2 py-0.5 rounded-md text-[10px] font-mono bg-slate-200/60 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
+                      {paperFormat === 'letter' ? 'Carta / A4' : paperFormat === '80mm' ? '80 x 297 mm' : '58 x 210 mm'}
                     </span>
                   </div>
                   <button
                     type="button"
                     onClick={() => setShowPrintModal(false)}
-                    className="p-1 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-200/50 dark:hover:bg-slate-800 transition cursor-pointer"
+                    className="p-1.5 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-200/50 dark:hover:bg-slate-800 transition cursor-pointer"
+                    title="Cerrar ventana"
                   >
                     <X className="w-5 h-5" />
                   </button>
                 </div>
 
-                {/* Centered Ticket Paper or Letter Sheet */}
-                <div className="flex justify-center py-4 w-full">
+                {/* Scrollable Viewport */}
+                <div className="flex-1 overflow-y-auto modal-scroll p-4 sm:p-6 lg:p-7 flex justify-center items-start">
+                  <div className="flex justify-center w-full">
                   {paperFormat === 'letter' ? (
                     /* FORMAL LETTER / A4 INVOICE SHEET */
                     <div
