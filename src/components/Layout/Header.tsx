@@ -138,7 +138,7 @@ export default function Header({ titleBadge = 'DASHBOARD / ESTADÍSTICAS', onOpe
           <Bell className="w-3.5 h-3.5 text-red-500 fill-red-500/20 group-hover:rotate-12 transition-transform duration-200 shrink-0" />
           <span className="text-xs font-bold text-slate-800 dark:text-slate-200 tracking-wide">Alertas</span>
           {alertasCount > 0 ? (
-            <span className="bg-red-600 text-white text-[10px] font-black w-4.5 h-4.5 min-w-[18px] h-[18px] rounded-full flex items-center justify-center leading-none shadow-xs animate-pulse">
+            <span className="bg-red-600 text-white text-[10px] font-black w-4.5 h-4.5 min-w-[18px] h-[18px] rounded-full flex items-center justify-center leading-none shadow-xs">
               {alertasCount}
             </span>
           ) : (
