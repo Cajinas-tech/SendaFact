@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { 
   Plus, 
   Search, 
@@ -382,351 +383,454 @@ export default function ProductsPage() {
       </div>
 
       {/* MODAL CREAR PRODUCTO */}
-      {createModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4 animate-fade-in">
-          <div className="bg-white dark:bg-slate-800 rounded-3xl p-6 sm:p-8 max-w-xl w-full shadow-2xl border border-slate-200 dark:border-slate-700 space-y-5 max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-700 pb-3">
-              <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-xl bg-blue-50 dark:bg-blue-950/60 text-blue-600 flex items-center justify-center">
-                  <Plus className="w-4 h-4" />
+      {createModal && createPortal(
+        <div className="fixed inset-0 z-[120] flex items-center justify-center p-3 sm:p-4 bg-slate-950/70 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white dark:bg-[#0f172a] rounded-[28px] border border-slate-200/90 dark:border-slate-800 shadow-2xl w-full max-w-xl max-h-[92vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-200">
+            
+            {/* Modal Header - Fixed */}
+            <div className="px-6 py-5 flex items-center justify-between border-b border-slate-100 dark:border-slate-800/80 bg-white dark:bg-[#0f172a] shrink-0">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center font-bold border border-blue-100 dark:border-blue-900/50 shadow-xs">
+                  <Plus className="w-5 h-5 stroke-[2.8]" />
                 </div>
-                <h3 className="text-base font-black text-slate-900 dark:text-white uppercase">Registrar Nuevo Producto</h3>
+                <div>
+                  <h3 className="text-base sm:text-lg font-black text-slate-900 dark:text-white uppercase tracking-tight">
+                    Registrar Nuevo Producto
+                  </h3>
+                  <p className="text-[11px] text-slate-400 dark:text-slate-500 font-medium">
+                    Ingresa los datos para registrar el producto en el catálogo
+                  </p>
+                </div>
               </div>
-              <button onClick={() => setCreateModal(false)} className="text-slate-400 hover:text-slate-600">
+              <button
+                type="button"
+                onClick={() => setCreateModal(false)}
+                className="p-2 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/80 transition cursor-pointer"
+              >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <form onSubmit={handleCreateSubmit} className="space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="sm:col-span-2">
-                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">Nombre del Producto</label>
-                  <input
-                    type="text"
-                    required
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    placeholder="Ej. PUERTA DE ALUMINIO-VIDRIO"
-                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-semibold outline-none"
-                  />
-                </div>
+            {/* Modal Form */}
+            <form onSubmit={handleCreateSubmit} className="flex flex-col flex-1 min-h-0 overflow-hidden">
+              
+              {/* Scrollable Content with sleek contained scrollbar */}
+              <div className="px-6 py-5 overflow-y-auto modal-scroll space-y-4.5 flex-1 pr-5">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  
+                  {/* Nombre del Producto */}
+                  <div className="sm:col-span-2">
+                    <label className="text-[11px] font-black text-slate-700 dark:text-slate-300 tracking-wider mb-1.5 block uppercase">
+                      Nombre del Producto *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={formData.name}
+                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                      placeholder="Ej. PUERTA DE ALUMINIO-VIDRIO"
+                      className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 text-xs font-bold text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition outline-none placeholder:text-slate-400 placeholder:font-normal uppercase"
+                      autoFocus
+                    />
+                  </div>
 
-                {/* Subir Imagen */}
-                <div className="sm:col-span-2">
-                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">
-                    Imagen del Producto (JPG, PNG, WEBP)
-                  </label>
-                  <div className="flex items-center gap-3.5 p-3 rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/50">
-                    <div className="w-14 h-14 rounded-xl bg-white dark:bg-slate-800 p-1 border border-slate-200 dark:border-slate-700 flex items-center justify-center overflow-hidden shrink-0 shadow-2xs">
-                      {imagePreview ? (
-                        <img src={imagePreview} alt="Preview" className="w-full h-full object-contain" />
-                      ) : (
-                        <ImageIcon className="w-6 h-6 text-slate-300" />
-                      )}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <input
-                        type="file"
-                        accept="image/png, image/jpeg, image/jpg, image/webp, image/svg+xml"
-                        onChange={handleImageChange}
-                        className="w-full text-xs text-slate-500 file:mr-3 file:py-2 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-blue-50 file:text-blue-600 hover:file:bg-blue-100 dark:file:bg-blue-950 dark:file:text-blue-400 cursor-pointer"
-                      />
-                      <p className="text-[10px] text-slate-400 mt-1">Selecciona una imagen en formato JPG o PNG desde tu dispositivo.</p>
+                  {/* Subir Imagen */}
+                  <div className="sm:col-span-2">
+                    <label className="text-[11px] font-black text-slate-700 dark:text-slate-300 tracking-wider mb-1.5 block uppercase">
+                      Imagen del Producto (JPG, PNG, WEBP)
+                    </label>
+                    <div className="flex items-center gap-3.5 p-3 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-950/40">
+                      <div className="w-14 h-14 rounded-xl bg-white dark:bg-slate-900 p-1 border border-slate-200 dark:border-slate-700 flex items-center justify-center overflow-hidden shrink-0 shadow-2xs">
+                        {imagePreview ? (
+                          <img src={imagePreview} alt="Preview" className="w-full h-full object-contain" />
+                        ) : (
+                          <ImageIcon className="w-6 h-6 text-slate-300 dark:text-slate-600" />
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <input
+                          type="file"
+                          accept="image/png, image/jpeg, image/jpg, image/webp, image/svg+xml"
+                          onChange={handleImageChange}
+                          className="w-full text-xs text-slate-500 file:mr-3 file:py-2 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-blue-50 file:text-blue-600 hover:file:bg-blue-100 dark:file:bg-blue-950 dark:file:text-blue-400 cursor-pointer"
+                        />
+                        <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-1">
+                          Selecciona una imagen en formato JPG o PNG desde tu dispositivo.
+                        </p>
+                      </div>
                     </div>
                   </div>
-                </div>
 
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">Categoría</label>
-                  <select
-                    value={formData.category_id}
-                    onChange={(e) => setFormData({ ...formData, category_id: Number(e.target.value) })}
-                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-bold outline-none"
-                  >
-                    {categories.map((c) => (
-                      <option key={c.id} value={c.id}>{c.name}</option>
-                    ))}
-                  </select>
-                </div>
+                  {/* Categoría */}
+                  <div>
+                    <label className="text-[11px] font-black text-slate-700 dark:text-slate-300 tracking-wider mb-1.5 block uppercase">
+                      Categoría
+                    </label>
+                    <select
+                      value={formData.category_id}
+                      onChange={(e) => setFormData({ ...formData, category_id: Number(e.target.value) })}
+                      className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 text-xs font-bold text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition outline-none uppercase"
+                    >
+                      {categories.map((c) => (
+                        <option key={c.id} value={c.id}>{c.name}</option>
+                      ))}
+                    </select>
+                  </div>
 
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">SKU / Código</label>
-                  <input
-                    type="text"
-                    value={formData.sku}
-                    onChange={(e) => setFormData({ ...formData, sku: e.target.value })}
-                    placeholder="#SKU-9859"
-                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 font-mono text-xs font-bold outline-none"
-                  />
-                </div>
+                  {/* SKU / Código */}
+                  <div>
+                    <label className="text-[11px] font-black text-slate-700 dark:text-slate-300 tracking-wider mb-1.5 block uppercase">
+                      SKU / Código
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.sku}
+                      onChange={(e) => setFormData({ ...formData, sku: e.target.value })}
+                      placeholder="#SKU-7244"
+                      className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 font-mono text-xs font-bold text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition outline-none"
+                    />
+                  </div>
 
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">Precio Venta (C$ Córdobas)</label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    required
-                    value={formData.price_cordobas}
-                    onChange={(e) => setFormData({ ...formData, price_cordobas: e.target.value })}
-                    placeholder="28.00"
-                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 font-mono text-xs font-bold text-blue-600 outline-none"
-                  />
-                </div>
+                  {/* Precio Venta */}
+                  <div>
+                    <label className="text-[11px] font-black text-slate-700 dark:text-slate-300 tracking-wider mb-1.5 block uppercase">
+                      Precio Venta (C$ Córdobas) *
+                    </label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      required
+                      value={formData.price_cordobas}
+                      onChange={(e) => setFormData({ ...formData, price_cordobas: e.target.value })}
+                      placeholder="28.00"
+                      className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 font-mono text-xs font-black text-blue-600 dark:text-blue-400 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition outline-none"
+                    />
+                  </div>
 
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">Costo Unitario (C$)</label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    value={formData.cost_price}
-                    onChange={(e) => setFormData({ ...formData, cost_price: e.target.value })}
-                    placeholder="0.00"
-                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 font-mono text-xs font-bold outline-none"
-                  />
-                </div>
+                  {/* Costo Unitario */}
+                  <div>
+                    <label className="text-[11px] font-black text-slate-700 dark:text-slate-300 tracking-wider mb-1.5 block uppercase">
+                      Costo Unitario (C$)
+                    </label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={formData.cost_price}
+                      onChange={(e) => setFormData({ ...formData, cost_price: e.target.value })}
+                      placeholder="0.00"
+                      className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 font-mono text-xs font-bold text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition outline-none"
+                    />
+                  </div>
 
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">Stock Inicial</label>
-                  <input
-                    type="number"
-                    value={formData.stock}
-                    onChange={(e) => setFormData({ ...formData, stock: e.target.value })}
-                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 font-mono text-xs font-bold outline-none"
-                  />
-                </div>
+                  {/* Stock Inicial */}
+                  <div>
+                    <label className="text-[11px] font-black text-slate-700 dark:text-slate-300 tracking-wider mb-1.5 block uppercase">
+                      Stock Inicial
+                    </label>
+                    <input
+                      type="number"
+                      value={formData.stock}
+                      onChange={(e) => setFormData({ ...formData, stock: e.target.value })}
+                      className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 font-mono text-xs font-bold text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition outline-none"
+                    />
+                  </div>
 
-                {/* UNIDAD DE MEDIDA */}
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">Unidad de Medida</label>
-                  <select
-                    value={formData.unit}
-                    onChange={(e) => setFormData({ ...formData, unit: e.target.value })}
-                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-bold outline-none"
-                  >
-                    <option value="UNIDAD">UNIDAD</option>
-                    <option value="CAJA">CAJA</option>
-                    <option value="TRES LITROS">TRES LITROS</option>
-                    <option value="DOS LITROS">DOS LITROS</option>
-                    <option value="UN LITRO">UN LITRO</option>
-                    <option value="MEDIO LITRO">MEDIO LITRO</option>
-                    <option value="LIBRA">LIBRA</option>
-                    <option value="ONZA">ONZA</option>
-                  </select>
-                </div>
+                  {/* Unidad de Medida */}
+                  <div>
+                    <label className="text-[11px] font-black text-slate-700 dark:text-slate-300 tracking-wider mb-1.5 block uppercase">
+                      Unidad de Medida
+                    </label>
+                    <select
+                      value={formData.unit}
+                      onChange={(e) => setFormData({ ...formData, unit: e.target.value })}
+                      className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 text-xs font-bold text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition outline-none uppercase"
+                    >
+                      <option value="UNIDAD">UNIDAD</option>
+                      <option value="CAJA">CAJA</option>
+                      <option value="TRES LITROS">TRES LITROS</option>
+                      <option value="DOS LITROS">DOS LITROS</option>
+                      <option value="UN LITRO">UN LITRO</option>
+                      <option value="MEDIO LITRO">MEDIO LITRO</option>
+                      <option value="LIBRA">LIBRA</option>
+                      <option value="ONZA">ONZA</option>
+                    </select>
+                  </div>
 
-                {/* FECHA DE VENCIMIENTO */}
-                <div className="sm:col-span-2">
-                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">Fecha de Vencimiento</label>
-                  <input
-                    type="date"
-                    value={formData.expiry_date}
-                    onChange={(e) => setFormData({ ...formData, expiry_date: e.target.value })}
-                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 font-mono text-xs font-bold outline-none text-slate-800 dark:text-slate-200"
-                  />
-                </div>
+                  {/* Fecha de Vencimiento */}
+                  <div className="sm:col-span-2">
+                    <label className="text-[11px] font-black text-slate-700 dark:text-slate-300 tracking-wider mb-1.5 block uppercase">
+                      Fecha de Vencimiento
+                    </label>
+                    <input
+                      type="date"
+                      value={formData.expiry_date}
+                      onChange={(e) => setFormData({ ...formData, expiry_date: e.target.value })}
+                      className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 font-mono text-xs font-bold text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition outline-none"
+                    />
+                  </div>
 
-                <div className="sm:col-span-2">
-                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">Detalle o Descripción del Producto</label>
-                  <input
-                    type="text"
-                    value={formData.subtitle}
-                    onChange={(e) => setFormData({ ...formData, subtitle: e.target.value })}
-                    placeholder="Ej. BEBIDA GASEOSA"
-                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs outline-none"
-                  />
+                  {/* Detalle o Descripción del Producto */}
+                  <div className="sm:col-span-2">
+                    <label className="text-[11px] font-black text-slate-700 dark:text-slate-300 tracking-wider mb-1.5 block uppercase">
+                      Detalle o Descripción del Producto
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.subtitle}
+                      onChange={(e) => setFormData({ ...formData, subtitle: e.target.value })}
+                      placeholder="Ej. BEBIDA GASEOSA"
+                      className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 text-xs font-semibold text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition outline-none placeholder:text-slate-400 placeholder:font-normal uppercase"
+                    />
+                  </div>
+
                 </div>
               </div>
 
-              <div className="flex justify-end gap-2 pt-3 border-t border-slate-100 dark:border-slate-700">
+              {/* Modal Footer - Fixed */}
+              <div className="px-6 py-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-900/60 flex items-center justify-end gap-3 shrink-0">
                 <button
                   type="button"
                   onClick={() => setCreateModal(false)}
-                  className="px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold"
+                  className="px-5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition cursor-pointer"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
-                  className="px-6 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs uppercase shadow-md shadow-blue-500/25"
+                  className="px-6 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-extrabold text-xs uppercase shadow-md shadow-blue-500/25 transition cursor-pointer flex items-center gap-2"
                 >
-                  Guardar Producto
+                  <Check className="w-4 h-4" />
+                  <span>Guardar Producto</span>
                 </button>
               </div>
+
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* MODAL EDITAR PRODUCTO */}
-      {editModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4 animate-fade-in">
-          <div className="bg-white dark:bg-slate-800 rounded-3xl p-6 sm:p-8 max-w-xl w-full shadow-2xl border border-slate-200 dark:border-slate-700 space-y-5 max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-700 pb-3">
-              <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-xl bg-blue-50 dark:bg-blue-950/60 text-blue-600 flex items-center justify-center">
-                  <Edit3 className="w-4 h-4" />
+      {editModal && createPortal(
+        <div className="fixed inset-0 z-[120] flex items-center justify-center p-3 sm:p-4 bg-slate-950/70 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white dark:bg-[#0f172a] rounded-[28px] border border-slate-200/90 dark:border-slate-800 shadow-2xl w-full max-w-xl max-h-[92vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-200">
+            
+            {/* Modal Header - Fixed */}
+            <div className="px-6 py-5 flex items-center justify-between border-b border-slate-100 dark:border-slate-800/80 bg-white dark:bg-[#0f172a] shrink-0">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center font-bold border border-blue-100 dark:border-blue-900/50 shadow-xs">
+                  <Edit3 className="w-5 h-5 stroke-[2.8]" />
                 </div>
-                <h3 className="text-base font-black text-slate-900 dark:text-white uppercase">Editar Producto</h3>
+                <div>
+                  <h3 className="text-base sm:text-lg font-black text-slate-900 dark:text-white uppercase tracking-tight">
+                    Editar Producto
+                  </h3>
+                  <p className="text-[11px] text-slate-400 dark:text-slate-500 font-medium">
+                    Modifica los parámetros comerciales y existencias del producto
+                  </p>
+                </div>
               </div>
-              <button onClick={() => setEditModal(false)} className="text-slate-400 hover:text-slate-600">
+              <button
+                type="button"
+                onClick={() => setEditModal(false)}
+                className="p-2 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/80 transition cursor-pointer"
+              >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <form onSubmit={handleEditSubmit} className="space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="sm:col-span-2">
-                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">Nombre del Producto</label>
-                  <input
-                    type="text"
-                    required
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-semibold outline-none"
-                  />
-                </div>
+            {/* Modal Form */}
+            <form onSubmit={handleEditSubmit} className="flex flex-col flex-1 min-h-0 overflow-hidden">
+              
+              {/* Scrollable Content with sleek contained scrollbar */}
+              <div className="px-6 py-5 overflow-y-auto modal-scroll space-y-4.5 flex-1 pr-5">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  
+                  {/* Nombre del Producto */}
+                  <div className="sm:col-span-2">
+                    <label className="text-[11px] font-black text-slate-700 dark:text-slate-300 tracking-wider mb-1.5 block uppercase">
+                      Nombre del Producto *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={formData.name}
+                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                      className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 text-xs font-bold text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition outline-none uppercase"
+                    />
+                  </div>
 
-                {/* Subir Imagen */}
-                <div className="sm:col-span-2">
-                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">
-                    Imagen del Producto (JPG, PNG)
-                  </label>
-                  <div className="flex items-center gap-3.5 p-3 rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/50">
-                    <div className="w-14 h-14 rounded-xl bg-white dark:bg-slate-800 p-1 border border-slate-200 dark:border-slate-700 flex items-center justify-center overflow-hidden shrink-0 shadow-2xs">
-                      {imagePreview ? (
-                        <img src={imagePreview} alt="Preview" className="w-full h-full object-contain" />
-                      ) : (
-                        <ImageIcon className="w-6 h-6 text-slate-300" />
-                      )}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <input
-                        type="file"
-                        accept="image/png, image/jpeg, image/jpg, image/webp, image/svg+xml"
-                        onChange={handleImageChange}
-                        className="w-full text-xs text-slate-500 file:mr-3 file:py-2 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-blue-50 file:text-blue-600 hover:file:bg-blue-100 dark:file:bg-blue-950 dark:file:text-blue-400 cursor-pointer"
-                      />
-                      <p className="text-[10px] text-slate-400 mt-1">Selecciona una nueva foto para reemplazar la imagen del producto.</p>
+                  {/* Subir Imagen */}
+                  <div className="sm:col-span-2">
+                    <label className="text-[11px] font-black text-slate-700 dark:text-slate-300 tracking-wider mb-1.5 block uppercase">
+                      Imagen del Producto (JPG, PNG)
+                    </label>
+                    <div className="flex items-center gap-3.5 p-3 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-950/40">
+                      <div className="w-14 h-14 rounded-xl bg-white dark:bg-slate-900 p-1 border border-slate-200 dark:border-slate-700 flex items-center justify-center overflow-hidden shrink-0 shadow-2xs">
+                        {imagePreview ? (
+                          <img src={imagePreview} alt="Preview" className="w-full h-full object-contain" />
+                        ) : (
+                          <ImageIcon className="w-6 h-6 text-slate-300 dark:text-slate-600" />
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <input
+                          type="file"
+                          accept="image/png, image/jpeg, image/jpg, image/webp, image/svg+xml"
+                          onChange={handleImageChange}
+                          className="w-full text-xs text-slate-500 file:mr-3 file:py-2 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-blue-50 file:text-blue-600 hover:file:bg-blue-100 dark:file:bg-blue-950 dark:file:text-blue-400 cursor-pointer"
+                        />
+                        <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-1">
+                          Selecciona una nueva foto para reemplazar la imagen del producto.
+                        </p>
+                      </div>
                     </div>
                   </div>
-                </div>
 
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">Categoría</label>
-                  <select
-                    value={formData.category_id}
-                    onChange={(e) => setFormData({ ...formData, category_id: Number(e.target.value) })}
-                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-bold outline-none"
-                  >
-                    {categories.map((c) => (
-                      <option key={c.id} value={c.id}>{c.name}</option>
-                    ))}
-                  </select>
-                </div>
+                  {/* Categoría */}
+                  <div>
+                    <label className="text-[11px] font-black text-slate-700 dark:text-slate-300 tracking-wider mb-1.5 block uppercase">
+                      Categoría
+                    </label>
+                    <select
+                      value={formData.category_id}
+                      onChange={(e) => setFormData({ ...formData, category_id: Number(e.target.value) })}
+                      className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 text-xs font-bold text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition outline-none uppercase"
+                    >
+                      {categories.map((c) => (
+                        <option key={c.id} value={c.id}>{c.name}</option>
+                      ))}
+                    </select>
+                  </div>
 
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">SKU / Código</label>
-                  <input
-                    type="text"
-                    value={formData.sku}
-                    onChange={(e) => setFormData({ ...formData, sku: e.target.value })}
-                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 font-mono text-xs font-bold outline-none"
-                  />
-                </div>
+                  {/* SKU / Código */}
+                  <div>
+                    <label className="text-[11px] font-black text-slate-700 dark:text-slate-300 tracking-wider mb-1.5 block uppercase">
+                      SKU / Código
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.sku}
+                      onChange={(e) => setFormData({ ...formData, sku: e.target.value })}
+                      className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 font-mono text-xs font-bold text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition outline-none"
+                    />
+                  </div>
 
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">Precio Venta (C$ Córdobas)</label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    required
-                    value={formData.price_cordobas}
-                    onChange={(e) => setFormData({ ...formData, price_cordobas: e.target.value })}
-                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 font-mono text-xs font-bold text-blue-600 outline-none"
-                  />
-                </div>
+                  {/* Precio Venta */}
+                  <div>
+                    <label className="text-[11px] font-black text-slate-700 dark:text-slate-300 tracking-wider mb-1.5 block uppercase">
+                      Precio Venta (C$ Córdobas) *
+                    </label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      required
+                      value={formData.price_cordobas}
+                      onChange={(e) => setFormData({ ...formData, price_cordobas: e.target.value })}
+                      className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 font-mono text-xs font-black text-blue-600 dark:text-blue-400 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition outline-none"
+                    />
+                  </div>
 
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">Costo Unitario (C$)</label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    value={formData.cost_price}
-                    onChange={(e) => setFormData({ ...formData, cost_price: e.target.value })}
-                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 font-mono text-xs font-bold outline-none"
-                  />
-                </div>
+                  {/* Costo Unitario */}
+                  <div>
+                    <label className="text-[11px] font-black text-slate-700 dark:text-slate-300 tracking-wider mb-1.5 block uppercase">
+                      Costo Unitario (C$)
+                    </label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={formData.cost_price}
+                      onChange={(e) => setFormData({ ...formData, cost_price: e.target.value })}
+                      className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 font-mono text-xs font-bold text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition outline-none"
+                    />
+                  </div>
 
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">Stock</label>
-                  <input
-                    type="number"
-                    value={formData.stock}
-                    onChange={(e) => setFormData({ ...formData, stock: e.target.value })}
-                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 font-mono text-xs font-bold outline-none"
-                  />
-                </div>
+                  {/* Stock */}
+                  <div>
+                    <label className="text-[11px] font-black text-slate-700 dark:text-slate-300 tracking-wider mb-1.5 block uppercase">
+                      Stock
+                    </label>
+                    <input
+                      type="number"
+                      value={formData.stock}
+                      onChange={(e) => setFormData({ ...formData, stock: e.target.value })}
+                      className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 font-mono text-xs font-bold text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition outline-none"
+                    />
+                  </div>
 
-                {/* UNIDAD DE MEDIDA */}
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">Unidad de Medida</label>
-                  <select
-                    value={formData.unit}
-                    onChange={(e) => setFormData({ ...formData, unit: e.target.value })}
-                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-bold outline-none"
-                  >
-                    <option value="UNIDAD">UNIDAD</option>
-                    <option value="CAJA">CAJA</option>
-                    <option value="TRES LITROS">TRES LITROS</option>
-                    <option value="DOS LITROS">DOS LITROS</option>
-                    <option value="UN LITRO">UN LITRO</option>
-                    <option value="MEDIO LITRO">MEDIO LITRO</option>
-                    <option value="LIBRA">LIBRA</option>
-                    <option value="ONZA">ONZA</option>
-                  </select>
-                </div>
+                  {/* Unidad de Medida */}
+                  <div>
+                    <label className="text-[11px] font-black text-slate-700 dark:text-slate-300 tracking-wider mb-1.5 block uppercase">
+                      Unidad de Medida
+                    </label>
+                    <select
+                      value={formData.unit}
+                      onChange={(e) => setFormData({ ...formData, unit: e.target.value })}
+                      className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 text-xs font-bold text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition outline-none uppercase"
+                    >
+                      <option value="UNIDAD">UNIDAD</option>
+                      <option value="CAJA">CAJA</option>
+                      <option value="TRES LITROS">TRES LITROS</option>
+                      <option value="DOS LITROS">DOS LITROS</option>
+                      <option value="UN LITRO">UN LITRO</option>
+                      <option value="MEDIO LITRO">MEDIO LITRO</option>
+                      <option value="LIBRA">LIBRA</option>
+                      <option value="ONZA">ONZA</option>
+                    </select>
+                  </div>
 
-                {/* FECHA DE VENCIMIENTO */}
-                <div className="sm:col-span-2">
-                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">Fecha de Vencimiento</label>
-                  <input
-                    type="date"
-                    value={formData.expiry_date}
-                    onChange={(e) => setFormData({ ...formData, expiry_date: e.target.value })}
-                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 font-mono text-xs font-bold outline-none text-slate-800 dark:text-slate-200"
-                  />
-                </div>
+                  {/* Fecha de Vencimiento */}
+                  <div className="sm:col-span-2">
+                    <label className="text-[11px] font-black text-slate-700 dark:text-slate-300 tracking-wider mb-1.5 block uppercase">
+                      Fecha de Vencimiento
+                    </label>
+                    <input
+                      type="date"
+                      value={formData.expiry_date}
+                      onChange={(e) => setFormData({ ...formData, expiry_date: e.target.value })}
+                      className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 font-mono text-xs font-bold text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition outline-none"
+                    />
+                  </div>
 
-                <div className="sm:col-span-2">
-                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">Detalle o Descripción del Producto</label>
-                  <input
-                    type="text"
-                    value={formData.subtitle}
-                    onChange={(e) => setFormData({ ...formData, subtitle: e.target.value })}
-                    placeholder="Ej. BEBIDA GASEOSA"
-                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs outline-none"
-                  />
+                  {/* Detalle o Descripción del Producto */}
+                  <div className="sm:col-span-2">
+                    <label className="text-[11px] font-black text-slate-700 dark:text-slate-300 tracking-wider mb-1.5 block uppercase">
+                      Detalle o Descripción del Producto
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.subtitle}
+                      onChange={(e) => setFormData({ ...formData, subtitle: e.target.value })}
+                      placeholder="Ej. BEBIDA GASEOSA"
+                      className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 text-xs font-semibold text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition outline-none placeholder:text-slate-400 placeholder:font-normal uppercase"
+                    />
+                  </div>
+
                 </div>
               </div>
 
-              <div className="flex justify-end gap-2 pt-3 border-t border-slate-100 dark:border-slate-700">
+              {/* Modal Footer - Fixed */}
+              <div className="px-6 py-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-900/60 flex items-center justify-end gap-3 shrink-0">
                 <button
                   type="button"
                   onClick={() => setEditModal(false)}
-                  className="px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold"
+                  className="px-5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition cursor-pointer"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
-                  className="px-6 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs uppercase shadow-md shadow-blue-500/25"
+                  className="px-6 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-extrabold text-xs uppercase shadow-md shadow-blue-500/25 transition cursor-pointer flex items-center gap-2"
                 >
-                  Actualizar Producto
+                  <Check className="w-4 h-4" />
+                  <span>Actualizar Producto</span>
                 </button>
               </div>
+
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Modal de Confirmación de Eliminación Animado */}
