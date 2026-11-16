@@ -862,19 +862,24 @@ export default function ProductsPage() {
       )}
 
       {/* MODAL 1: REGISTRAR MERMA / AJUSTE RÁPIDO */}
-      {modalMerma && (
-        <div className="fixed inset-0 z-[120] flex items-center justify-center bg-slate-950/60 backdrop-blur-xs p-4 animate-in fade-in duration-200">
-          <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-2xl w-full max-w-lg overflow-hidden animate-in zoom-in-95 duration-200">
-            <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
-              <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 rounded-2xl bg-rose-500 text-white flex items-center justify-center shadow-md shadow-rose-500/20">
-                  <ShieldAlert className="w-5 h-5" />
+      {modalMerma && createPortal(
+        <div 
+          className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-xs animate-in fade-in duration-200"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setModalMerma(false);
+          }}
+        >
+          <div className="bg-white dark:bg-[#0f172a] rounded-3xl border border-slate-200/90 dark:border-slate-800 shadow-2xl w-full max-w-lg overflow-hidden animate-in zoom-in-95 duration-200 my-auto">
+            <div className="px-6 py-4.5 border-b border-slate-100 dark:border-slate-800/80 flex items-center justify-between bg-white dark:bg-[#0f172a]">
+              <div className="flex items-center space-x-3.5">
+                <div className="w-11 h-11 rounded-2xl bg-rose-500 text-white flex items-center justify-center shadow-md shadow-rose-500/25 shrink-0">
+                  <ShieldAlert className="w-5 h-5 stroke-[2.2]" />
                 </div>
                 <div>
                   <h3 className="text-base font-black text-slate-900 dark:text-white uppercase tracking-tight">
-                    Registrar Merma / Ajuste
+                    REGISTRAR MERMA / AJUSTE
                   </h3>
-                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                  <p className="text-xs text-slate-400 dark:text-slate-500 font-medium">
                     Baja por daño, fecha de vencimiento o auditoría física
                   </p>
                 </div>
@@ -883,6 +888,7 @@ export default function ProductsPage() {
                 type="button"
                 onClick={() => setModalMerma(false)}
                 className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-400 hover:text-slate-600 dark:hover:text-white flex items-center justify-center transition-colors cursor-pointer"
+                title="Cerrar"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -890,8 +896,8 @@ export default function ProductsPage() {
 
             <form onSubmit={handleGuardarMerma} className="p-6 space-y-4">
               <div>
-                <label className="block text-[11px] font-black uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1.5">
-                  Producto Afectado *
+                <label className="block text-[11px] font-black uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5">
+                  PRODUCTO AFECTADO *
                 </label>
                 <select
                   value={formMerma.productoId}
@@ -909,15 +915,15 @@ export default function ProductsPage() {
                 >
                   {products.map(p => (
                     <option key={p.id} value={p.id}>
-                      {p.name} - Stock: {p.stock}
+                      {p.name} ({p.name}) - Stock Total: {p.stock}
                     </option>
                   ))}
                 </select>
               </div>
 
               <div>
-                <label className="block text-[11px] font-black uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1.5">
-                  Lote Específico a Descargar *
+                <label className="block text-[11px] font-black uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5">
+                  LOTE ESPECÍFICO A DESCARGAR *
                 </label>
                 <select
                   value={formMerma.idLote}
@@ -931,15 +937,15 @@ export default function ProductsPage() {
                       </option>
                     ))
                   ) : (
-                    <option value="LOT-2026-277">Lote: LOT-2026-277 | Stock: {productoSeleccionadoMerma?.stock || 0} unds</option>
+                    <option value="LOT-2026-834">Lote: LOT-2026-834 | Stock Disp: 23 unds | Vence: 2027-04-04</option>
                   )}
                 </select>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-[11px] font-black uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1.5">
-                    Tipo de Operación *
+                  <label className="block text-[11px] font-black uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5">
+                    TIPO DE OPERACIÓN *
                   </label>
                   <select
                     value={formMerma.tipo}
@@ -952,8 +958,8 @@ export default function ProductsPage() {
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-black uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1.5">
-                    Cantidad a Descargar *
+                  <label className="block text-[11px] font-black uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5">
+                    CANTIDAD A DESCARGAR *
                   </label>
                   <input
                     type="number"
@@ -967,16 +973,16 @@ export default function ProductsPage() {
               </div>
 
               <div>
-                <label className="block text-[11px] font-black uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1.5">
-                  Motivo o Justificación *
+                <label className="block text-[11px] font-black uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5">
+                  MOTIVO O JUSTIFICACIÓN *
                 </label>
                 <textarea
                   rows={2}
                   required
                   value={formMerma.motivo}
                   onChange={(e) => setFormMerma({ ...formMerma, motivo: e.target.value })}
-                  placeholder="Describa el motivo de la baja..."
-                  className="w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-rose-500"
+                  placeholder="Producto dañado / vencido"
+                  className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-rose-500"
                 />
               </div>
 
@@ -984,36 +990,42 @@ export default function ProductsPage() {
                 <button
                   type="button"
                   onClick={() => setModalMerma(false)}
-                  className="px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                  className="px-5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-extrabold shadow-md shadow-rose-500/20 transition-all active:scale-95 cursor-pointer"
+                  className="px-6 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold shadow-md shadow-rose-500/20 transition-all active:scale-95 cursor-pointer"
                 >
                   Procesar Baja
                 </button>
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* MODAL 2: ENTRADA DE MERCANCÍA RÁPIDA */}
-      {modalEntrada && (
-        <div className="fixed inset-0 z-[120] flex items-center justify-center bg-slate-950/60 backdrop-blur-xs p-4 animate-in fade-in duration-200">
-          <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-2xl w-full max-w-lg overflow-hidden animate-in zoom-in-95 duration-200">
-            <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
-              <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 rounded-2xl bg-emerald-600 text-white flex items-center justify-center shadow-md shadow-emerald-600/20">
+      {modalEntrada && createPortal(
+        <div 
+          className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-xs animate-in fade-in duration-200"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setModalEntrada(false);
+          }}
+        >
+          <div className="bg-white dark:bg-[#0f172a] rounded-3xl border border-slate-200/90 dark:border-slate-800 shadow-2xl w-full max-w-lg overflow-hidden animate-in zoom-in-95 duration-200 my-auto">
+            <div className="px-6 py-4.5 border-b border-slate-100 dark:border-slate-800/80 flex items-center justify-between bg-white dark:bg-[#0f172a]">
+              <div className="flex items-center space-x-3.5">
+                <div className="w-11 h-11 rounded-2xl bg-emerald-600 text-white flex items-center justify-center shadow-md shadow-emerald-600/25 shrink-0">
                   <Plus className="w-5 h-5 stroke-[2.5]" />
                 </div>
                 <div>
                   <h3 className="text-base font-black text-slate-900 dark:text-white uppercase tracking-tight">
-                    Entrada de Mercancía
+                    ENTRADA DE MERCANCÍA
                   </h3>
-                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                  <p className="text-xs text-slate-400 dark:text-slate-500 font-medium">
                     Registrar nuevo lote de inventario por compra o proveedor
                   </p>
                 </div>
@@ -1022,6 +1034,7 @@ export default function ProductsPage() {
                 type="button"
                 onClick={() => setModalEntrada(false)}
                 className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-400 hover:text-slate-600 dark:hover:text-white flex items-center justify-center transition-colors cursor-pointer"
+                title="Cerrar"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -1029,8 +1042,8 @@ export default function ProductsPage() {
 
             <form onSubmit={handleGuardarEntrada} className="p-6 space-y-4">
               <div>
-                <label className="block text-[11px] font-black uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1.5">
-                  Producto Destino *
+                <label className="block text-[11px] font-black uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5">
+                  PRODUCTO DESTINO *
                 </label>
                 <select
                   value={formEntrada.productoId}
@@ -1047,8 +1060,8 @@ export default function ProductsPage() {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-[11px] font-black uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1.5">
-                    N° Lote / Identificador *
+                  <label className="block text-[11px] font-black uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5">
+                    N° LOTE / IDENTIFICADOR *
                   </label>
                   <input
                     type="text"
@@ -1061,8 +1074,8 @@ export default function ProductsPage() {
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-black uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1.5">
-                    Cantidad Recibida (Unds) *
+                  <label className="block text-[11px] font-black uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5">
+                    CANTIDAD RECIBIDA (UNDS) *
                   </label>
                   <input
                     type="number"
@@ -1077,8 +1090,8 @@ export default function ProductsPage() {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-[11px] font-black uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1.5">
-                    Fecha de Vencimiento *
+                  <label className="block text-[11px] font-black uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5">
+                    FECHA DE VENCIMIENTO *
                   </label>
                   <input
                     type="date"
@@ -1090,8 +1103,8 @@ export default function ProductsPage() {
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-black uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1.5">
-                    Costo Unit. Compra (C$) *
+                  <label className="block text-[11px] font-black uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5">
+                    COSTO UNIT. COMPRA (C$) *
                   </label>
                   <input
                     type="number"
@@ -1109,20 +1122,21 @@ export default function ProductsPage() {
                 <button
                   type="button"
                   onClick={() => setModalEntrada(false)}
-                  className="px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                  className="px-5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-extrabold shadow-md shadow-emerald-600/20 transition-all active:scale-95 cursor-pointer"
+                  className="px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-md shadow-emerald-600/20 transition-all active:scale-95 cursor-pointer"
                 >
                   Confirmar Ingreso
                 </button>
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* MODAL 3: CREAR PRODUCTO */}
