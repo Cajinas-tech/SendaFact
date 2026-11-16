@@ -325,7 +325,7 @@ export default function DashboardPage() {
               {lowStockProducts.map((prod) => (
                 <div key={prod.id} className="flex items-center justify-between p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/60 dark:border-slate-700/60 hover:scale-[1.01] transition-transform">
                   <div className="flex items-center gap-3">
-                    <span className="w-3 h-3 rounded-full bg-amber-500 shrink-0 animate-ping" />
+                    <span className="w-2.5 h-2.5 rounded-full bg-amber-500 shrink-0" />
                     <div>
                       <h5 className="text-sm font-bold text-slate-800 dark:text-white">{prod.name}</h5>
                       <p className="text-xs text-slate-400">SKU: {prod.sku}</p>
