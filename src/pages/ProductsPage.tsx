@@ -60,9 +60,10 @@ export default function ProductsPage() {
   const [formEntrada, setFormEntrada] = useState({
     productoId: '',
     idLote: '',
-    cantidad: 24,
+    cantidad: 12,
     fechaVencimiento: '',
-    costoCompra: 20.00
+    costoCompra: 20.00,
+    facturaProveedor: ''
   });
 
   // Form State Producto (Crear / Editar)
@@ -325,9 +326,10 @@ export default function ProductsPage() {
     setFormEntrada({
       productoId: prod ? String(prod.id) : '',
       idLote: 'LOT-' + new Date().getFullYear() + '-' + Math.floor(100 + Math.random() * 900),
-      cantidad: 24,
+      cantidad: 12,
       fechaVencimiento: defDate.toISOString().split('T')[0],
-      costoCompra: prod?.cost_price || 20.00
+      costoCompra: prod?.cost_price || 20.00,
+      facturaProveedor: ''
     });
     setModalEntrada(true);
   };
@@ -370,6 +372,10 @@ export default function ProductsPage() {
     const currentUser = storage.getCurrentUser();
     const userName = currentUser?.name || 'Jairo';
 
+    const reasonText = formEntrada.facturaProveedor?.trim()
+      ? `Ingreso nuevo lote ${formEntrada.idLote} (Fact: ${formEntrada.facturaProveedor.trim()})`
+      : `Ingreso nuevo lote ${formEntrada.idLote}`;
+
     const newMov: Movement = {
       id: 'MOV-' + Date.now().toString().slice(-6),
       product_id: prod.id,
@@ -381,7 +387,7 @@ export default function ProductsPage() {
       quantity: cant,
       previous_stock: prod.stock,
       new_stock: prod.stock + cant,
-      reason: `Ingreso nuevo lote ${formEntrada.idLote}`,
+      reason: reasonText,
       user: userName,
       user_name: userName,
       created_at: new Date().toISOString()
@@ -1052,7 +1058,7 @@ export default function ProductsPage() {
                 >
                   {products.map(p => (
                     <option key={p.id} value={p.id}>
-                      {p.name} - Stock actual: {p.stock}
+                      {p.name} ({p.subtitle || p.name}) - Stock actual: {p.stock}
                     </option>
                   ))}
                 </select>
@@ -1116,6 +1122,19 @@ export default function ProductsPage() {
                     className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-emerald-500"
                   />
                 </div>
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-black uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5">
+                  N° FACTURA PROVEEDOR / REFERENCIA (OPCIONAL)
+                </label>
+                <input
+                  type="text"
+                  placeholder="Ej: FAC-PROV-99382"
+                  value={formEntrada.facturaProveedor}
+                  onChange={(e) => setFormEntrada({ ...formEntrada, facturaProveedor: e.target.value })}
+                  className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-semibold text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-emerald-500 placeholder:text-slate-400 dark:placeholder:text-slate-500"
+                />
               </div>
 
               <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-end space-x-3">

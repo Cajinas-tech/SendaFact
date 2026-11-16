@@ -94,7 +94,8 @@ export const MovementsPage: React.FC = () => {
     idLote: '',
     cantidad: 12,
     fechaVencimiento: '',
-    costoCompra: 20.00
+    costoCompra: 20.00,
+    facturaProveedor: ''
   });
 
   const loadData = () => {
@@ -240,7 +241,8 @@ export const MovementsPage: React.FC = () => {
       idLote: 'LOT-' + new Date().getFullYear() + '-' + Math.floor(100 + Math.random() * 900),
       cantidad: 12,
       fechaVencimiento: defDate.toISOString().split('T')[0],
-      costoCompra: prod?.cost_price || 20.00
+      costoCompra: prod?.cost_price || 20.00,
+      facturaProveedor: ''
     });
     setModalEntrada(true);
   };
@@ -285,13 +287,17 @@ export const MovementsPage: React.FC = () => {
 
     storage.saveProduct(updatedProd);
 
+    const reasonText = formEntrada.facturaProveedor?.trim()
+      ? `Entrada Lote ${nuevoLote.idLote} (Fact: ${formEntrada.facturaProveedor.trim()})`
+      : `Entrada Lote ${nuevoLote.idLote} (Compra / Proveedor)`;
+
     const newMov: Movement = {
       id: 'MOV-' + Date.now().toString().slice(-6),
       product_id: prod.id,
       product_name: prod.name,
       type: 'in',
       quantity: cant,
-      reason: `Entrada Lote ${nuevoLote.idLote} (Compra / Proveedor)`,
+      reason: reasonText,
       user: 'Jairo Cajina',
       created_at: new Date().toISOString()
     };
@@ -1187,6 +1193,19 @@ export const MovementsPage: React.FC = () => {
                     className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-emerald-500"
                   />
                 </div>
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-black uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1.5">
+                  N° FACTURA PROVEEDOR / REFERENCIA (OPCIONAL)
+                </label>
+                <input
+                  type="text"
+                  placeholder="Ej: FAC-PROV-99382"
+                  value={formEntrada.facturaProveedor}
+                  onChange={(e) => setFormEntrada({ ...formEntrada, facturaProveedor: e.target.value })}
+                  className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-semibold text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-emerald-500 placeholder:text-slate-400 dark:placeholder:text-slate-500"
+                />
               </div>
 
               <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-end space-x-3">
