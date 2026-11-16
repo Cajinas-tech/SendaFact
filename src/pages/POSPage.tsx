@@ -615,23 +615,26 @@ export default function POSPage() {
                     Descuento
                   </label>
                   {discountValue > 0 ? (
-                    <div className="p-2 rounded-xl border border-rose-200 dark:border-rose-900/60 bg-rose-50/80 dark:bg-rose-950/30 flex items-center justify-between">
+                    <div 
+                      onClick={() => setDiscountModalOpen(true)}
+                      className="p-2 rounded-xl border border-rose-200 dark:border-rose-900/60 bg-rose-50/80 dark:bg-rose-950/30 flex items-center justify-between cursor-pointer hover:bg-rose-100/60 dark:hover:bg-rose-900/40 transition"
+                    >
                       <div className="flex items-center gap-1.5 truncate">
+                        <Tag className="w-3.5 h-3.5 text-rose-600 dark:text-rose-400 -rotate-45" />
                         <span className="text-xs font-black text-rose-600 dark:text-rose-400">
                           {discountType === 'percentage' ? `-${discountValue}%` : `-C$${discountValue}`}
                         </span>
                       </div>
                       <div className="flex items-center gap-1">
-                        <button
-                          type="button"
-                          onClick={() => setDiscountModalOpen(true)}
-                          className="text-[10px] font-extrabold text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
-                        >
+                        <span className="text-[10px] font-extrabold text-blue-600 dark:text-blue-400 hover:underline">
                           Editar
-                        </button>
+                        </span>
                         <button
                           type="button"
-                          onClick={() => setDiscountValue(0)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setDiscountValue(0);
+                          }}
                           className="p-0.5 text-slate-400 hover:text-rose-600 transition cursor-pointer"
                           title="Quitar Descuento"
                         >
@@ -643,11 +646,10 @@ export default function POSPage() {
                     <button
                       type="button"
                       onClick={() => setDiscountModalOpen(true)}
-                      disabled={cart.length === 0}
-                      className="w-full py-2.5 px-3 rounded-xl border border-dashed border-amber-300 dark:border-amber-700/80 bg-amber-50/50 dark:bg-amber-950/20 text-amber-700 dark:text-amber-400 hover:bg-amber-100/60 dark:hover:bg-amber-950/40 text-xs font-bold flex items-center justify-between transition cursor-pointer disabled:opacity-40 shadow-2xs"
+                      className="w-full py-2.5 px-3 rounded-xl border border-dashed border-amber-300 dark:border-amber-700/80 bg-amber-50/50 dark:bg-amber-950/20 text-amber-700 dark:text-amber-400 hover:bg-amber-100/60 dark:hover:bg-amber-950/40 text-xs font-bold flex items-center justify-between transition cursor-pointer shadow-2xs active:scale-[0.99]"
                     >
                       <span className="flex items-center gap-1.5">
-                        <Tag className="w-3.5 h-3.5" />
+                        <Tag className="w-3.5 h-3.5 -rotate-45" />
                         <span>Descuento</span>
                       </span>
                       <span className="text-[10px] font-black bg-amber-200/70 dark:bg-amber-900/60 px-1.5 py-0.5 rounded">

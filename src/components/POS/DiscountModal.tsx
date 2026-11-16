@@ -43,14 +43,14 @@ export default function DiscountModal({
 
   const percentagePresets = [5, 10, 15, 20, 25, 30, 50];
 
-  // Calculate estimated discount
+  // Calcular descuento estimado
   let estimatedDiscount = 0;
   if (tab === 'percentage') {
     const p = parseFloat(percentValue) || 0;
     estimatedDiscount = (baseSubtotal * Math.min(Math.max(p, 0), 100)) / 100;
   } else {
     const f = parseFloat(fixedValue) || 0;
-    estimatedDiscount = Math.min(Math.max(f, 0), baseSubtotal);
+    estimatedDiscount = baseSubtotal > 0 ? Math.min(Math.max(f, 0), baseSubtotal) : 0;
   }
 
   const newSubtotal = Math.max(baseSubtotal - estimatedDiscount, 0);
@@ -62,28 +62,28 @@ export default function DiscountModal({
       onApplyDiscount('percentage', Math.min(Math.max(val, 0), 100));
     } else {
       const val = parseFloat(fixedValue) || 0;
-      onApplyDiscount('fixed', Math.min(Math.max(val, 0), baseSubtotal));
+      onApplyDiscount('fixed', Math.max(val, 0));
     }
     onClose();
   };
 
-  const handleClearDiscount = () => {
-    onApplyDiscount('percentage', 0);
-    onClose();
-  };
-
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xs animate-in fade-in duration-200">
+    <div 
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xs animate-in fade-in duration-200"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+    >
       <div className="bg-white dark:bg-[#0f172a] rounded-3xl border border-slate-200/90 dark:border-slate-800 shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200">
         
         {/* Header */}
-        <div className="p-5 sm:p-6 pb-4 flex items-start justify-between border-b border-slate-100 dark:border-slate-800">
+        <div className="p-6 pb-4 flex items-start justify-between border-b border-slate-100 dark:border-slate-800">
           <div className="flex items-center gap-3">
-            <div className="w-11 h-11 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200/80 dark:border-amber-800/60 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0 shadow-xs">
-              <Tag className="w-5 h-5" />
+            <div className="w-12 h-12 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200/80 dark:border-amber-800/60 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0 shadow-xs">
+              <Tag className="w-5 h-5 -rotate-45" />
             </div>
             <div>
-              <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white">
+              <h3 className="text-lg font-bold text-slate-900 dark:text-white">
                 Aplicar Descuento
               </h3>
               <p className="text-xs text-slate-500 dark:text-slate-400">
@@ -101,10 +101,10 @@ export default function DiscountModal({
         </div>
 
         {/* Body */}
-        <form onSubmit={handleSubmit} className="p-5 sm:p-6 space-y-5">
+        <form onSubmit={handleSubmit} className="p-6 space-y-5">
           
           {/* Tab Switcher */}
-          <div className="grid grid-cols-2 p-1 bg-slate-100 dark:bg-slate-800/80 rounded-2xl border border-slate-200 dark:border-slate-700/80">
+          <div className="grid grid-cols-2 p-1.5 bg-slate-100 dark:bg-slate-800/80 rounded-2xl border border-slate-200 dark:border-slate-700/80">
             <button
               type="button"
               onClick={() => setTab('percentage')}
@@ -133,13 +133,13 @@ export default function DiscountModal({
           {tab === 'percentage' && (
             <div className="space-y-4">
               {/* Presets */}
-              <div className="flex flex-wrap gap-2">
+              <div className="grid grid-cols-7 gap-1.5 sm:gap-2">
                 {percentagePresets.map((pct) => (
                   <button
                     key={pct}
                     type="button"
                     onClick={() => setPercentValue(String(pct))}
-                    className={`px-3 py-1.5 rounded-xl text-xs font-black transition border cursor-pointer ${
+                    className={`py-2 rounded-xl text-xs font-bold transition border cursor-pointer text-center ${
                       percentValue === String(pct)
                         ? 'border-blue-500 bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 shadow-xs'
                         : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'
@@ -187,7 +187,6 @@ export default function DiscountModal({
                     type="number"
                     step="any"
                     min="0"
-                    max={baseSubtotal}
                     value={fixedValue}
                     onChange={(e) => setFixedValue(e.target.value)}
                     placeholder="Ej. 50.00"
@@ -207,44 +206,35 @@ export default function DiscountModal({
             <div className="flex justify-between text-slate-600 dark:text-slate-400 font-medium">
               <span>Subtotal base:</span>
               <span className="font-mono font-bold text-slate-800 dark:text-slate-200">
-                C$ {baseSubtotal.toLocaleString('es-NI', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                C${baseSubtotal.toFixed(2)}
               </span>
             </div>
             <div className="flex justify-between text-rose-600 dark:text-rose-400 font-bold">
               <span>Descuento estimado:</span>
               <span className="font-mono">
-                -C$ {estimatedDiscount.toLocaleString('es-NI', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                -C${estimatedDiscount.toFixed(2)}
               </span>
             </div>
             <div className="pt-2 border-t border-slate-200 dark:border-slate-700 flex justify-between font-black text-sm text-slate-900 dark:text-white">
               <span>Nuevo Subtotal:</span>
               <span className="font-mono text-blue-600 dark:text-blue-400">
-                C$ {newSubtotal.toLocaleString('es-NI', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                C${newSubtotal.toFixed(2)}
               </span>
             </div>
           </div>
 
           {/* Footer Buttons */}
-          <div className="flex items-center justify-end gap-3 pt-2">
-            {estimatedDiscount > 0 && (
-              <button
-                type="button"
-                onClick={handleClearDiscount}
-                className="mr-auto text-xs font-bold text-rose-500 hover:text-rose-600 dark:hover:text-rose-400 underline transition cursor-pointer"
-              >
-                Quitar Descuento
-              </button>
-            )}
+          <div className="flex items-center gap-3 pt-2">
             <button
               type="button"
               onClick={onClose}
-              className="px-5 py-2.5 rounded-full border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold text-xs uppercase tracking-wider transition cursor-pointer"
+              className="w-1/3 py-3 rounded-2xl border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200 font-black text-xs uppercase tracking-wider transition cursor-pointer text-center"
             >
-              Cancelar
+              CANCELAR
             </button>
             <button
               type="submit"
-              className="px-6 py-2.5 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs uppercase tracking-wider shadow-lg shadow-emerald-500/25 transition flex items-center gap-1.5 cursor-pointer"
+              className="flex-1 py-3 px-5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs uppercase tracking-wider shadow-lg shadow-emerald-500/25 transition flex items-center justify-center gap-1.5 cursor-pointer text-center"
             >
               <Check className="w-4 h-4 stroke-[3]" />
               <span>APLICAR DESCUENTO</span>
