@@ -147,7 +147,10 @@ export interface Movement {
   product_name: string;
   sku?: string;
   type: 'in' | 'out' | 'adjust' | 'adjustment';
+  sub_type?: 'VENTA' | 'ENTRADA' | 'MERMA' | 'AJUSTE';
   quantity: number;
+  unit_cost?: number;
+  lot_number?: string;
   previous_stock?: number;
   new_stock?: number;
   reason: string;

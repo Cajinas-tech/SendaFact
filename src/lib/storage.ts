@@ -866,9 +866,14 @@ const DEFAULT_CREDITS: CreditAccount[] = [
 ];
 
 const DEFAULT_MOVEMENTS: Movement[] = [
-  { id: 1, product_id: 1, product_name: 'PUERTA DE ALUMINIO-VIDRIO', sku: '#SKU-9859', type: 'in', quantity: 10, previous_stock: 0, new_stock: 10, reason: 'Inventario Inicial', user_name: 'Admin', created_at: '2026-09-01' },
-  { id: 2, product_id: 2, product_name: 'VENTANA ALUMINIO-VIDRIO', sku: '#SKU-5640', type: 'in', quantity: 10, previous_stock: 0, new_stock: 10, reason: 'Inventario Inicial', user_name: 'Admin', created_at: '2026-09-01' },
-  { id: 3, product_id: 1, product_name: 'PUERTA DE ALUMINIO-VIDRIO', sku: '#SKU-9859', type: 'out', quantity: 1, previous_stock: 11, new_stock: 10, reason: 'Venta #NOVA-V-1001', user_name: 'Jairo Cajina', created_at: '2026-09-09' },
+  { id: 'MOV-1008', product_id: 3, product_name: 'AGUA FUENTE PURA 600ML', sku: '#SKU-6208', type: 'out', sub_type: 'VENTA', quantity: 1, lot_number: 'LOT-2026-277', unit_cost: 20.00, reason: 'Venta FACT-20261019-461704 (Abarrotería San José)', user_name: 'Jairo Cajina (Admin)', user: 'Jairo Cajina (Admin)', created_at: '2026-10-19T11:05:00Z' },
+  { id: 'MOV-1007', product_id: 1, product_name: 'BIG COLA 500ML', sku: '#SKU-3291', type: 'out', sub_type: 'VENTA', quantity: 1, lot_number: 'LOT-2026-834', unit_cost: 20.00, reason: 'Venta FACT-20261019-461704 (Abarrotería San José)', user_name: 'Jairo Cajina (Admin)', user: 'Jairo Cajina (Admin)', created_at: '2026-10-19T11:05:00Z' },
+  { id: 'MOV-1006', product_id: 2, product_name: 'COCA COLA 500ML', sku: '#SKU-8589', type: 'out', sub_type: 'VENTA', quantity: 1, lot_number: 'LOT-2026-894', unit_cost: 24.00, reason: 'Venta NOVA-V-6985 (Cliente Ocasional / Público General)', user_name: 'Jairo', user: 'Jairo', created_at: '2026-10-03T20:25:00Z' },
+  { id: 'MOV-1005', product_id: 1, product_name: 'BIG COLA 500ML', sku: '#SKU-3291', type: 'out', sub_type: 'VENTA', quantity: 1, lot_number: 'LOT-SKU-3291', unit_cost: 16.00, reason: 'Venta NOVA-V-6985 (Cliente Ocasional / Público General)', user_name: 'Jairo', user: 'Jairo', created_at: '2026-10-03T20:25:00Z' },
+  { id: 'MOV-1004', product_id: 3, product_name: 'AGUA FUENTE PURA 600ML', sku: '#SKU-6208', type: 'out', sub_type: 'VENTA', quantity: 1, lot_number: 'LOT-SKU-3914', unit_cost: 25.00, reason: 'Venta NOVA-V-6985 (Cliente Ocasional / Público General)', user_name: 'Jairo', user: 'Jairo', created_at: '2026-10-03T20:25:00Z' },
+  { id: 'MOV-1003', product_id: 2, product_name: 'COCA COLA 500ML', sku: '#SKU-8589', type: 'in', sub_type: 'ENTRADA', quantity: 24, lot_number: 'LOT-2026-108', unit_cost: 20.00, reason: 'Ingreso nuevo lote LOT-2026-108', user_name: 'Jairo', user: 'Jairo', created_at: '2026-10-03T20:25:00Z' },
+  { id: 'MOV-1002', product_id: 3, product_name: 'AGUA FUENTE PURA 600ML', sku: '#SKU-6208', type: 'in', sub_type: 'ENTRADA', quantity: 24, lot_number: 'LOT-2026-277', unit_cost: 20.00, reason: 'Ingreso nuevo lote LOT-2026-277', user_name: 'Jairo', user: 'Jairo', created_at: '2026-10-03T20:24:00Z' },
+  { id: 'MOV-1001', product_id: 1, product_name: 'BIG COLA 500ML', sku: '#SKU-3291', type: 'in', sub_type: 'ENTRADA', quantity: 24, lot_number: 'LOT-2026-627', unit_cost: 20.00, reason: 'Ingreso nuevo lote LOT-2026-627', user_name: 'Jairo', user: 'Jairo', created_at: '2026-10-03T20:24:00Z' },
 ];
 
 export const storage = {
