@@ -216,10 +216,90 @@ const DEFAULT_PRODUCTS: Product[] = [
 ];
 
 const DEFAULT_CUSTOMERS: Customer[] = [
-  { id: 1, name: 'Eduardo López', document_number: '001-010190-0001A', phone: '444334405', email: 'eduardo@gmail.com', address: 'Colonia Centro, Calle 4', credit_limit: 5000.00, current_debt: 1450.00, sales_count: 3, credits_count: 1 },
-  { id: 2, name: 'Residencial Las Colinas - Casa #42', document_number: 'J031000004444', phone: '88776655', email: 'colinas@gmail.com', address: 'Las Colinas, Managua', credit_limit: 20000.00, current_debt: 0.00, sales_count: 1, credits_count: 0 },
-  { id: 3, name: 'Constructora El Progreso S.A.', document_number: 'J031000005555', phone: '22554433', email: 'progresosa@gmail.com', address: 'Km 9 Carretera a Masaya', credit_limit: 50000.00, current_debt: 0.00, sales_count: 4, credits_count: 0 },
-  { id: 4, name: 'Cliente Ocasional / General', document_number: '000-000000-0000X', phone: '+505 8888 8888', email: 'cliente@general.com', address: 'Managua', credit_limit: 0.00, current_debt: 0.00, sales_count: 12, credits_count: 0 },
+  { 
+    id: 1, 
+    name: 'Abarrotería San José', 
+    contact_name: 'Don José Martínez',
+    document_number: '#LI-001', 
+    phone: '+50588881234', 
+    email: 'sanjose@abarroteria.ni', 
+    address: 'Barrio Altagracia, del Pali 2c al lago, Managua', 
+    credit_limit: 10000.00, 
+    dias_plazo: 15,
+    current_debt: 3502.90, 
+    sales_count: 5, 
+    credits_count: 2 
+  },
+  { 
+    id: 2, 
+    name: 'Pulpería La Bendición', 
+    contact_name: 'Doña María López',
+    document_number: '#LI-002', 
+    phone: '+50587654321', 
+    email: 'labendicion@gmail.com', 
+    address: 'Mercado Roberto Huembes, Entrada Principal Managua', 
+    credit_limit: 7000.00, 
+    dias_plazo: 8,
+    current_debt: 6800.00, 
+    sales_count: 3, 
+    credits_count: 1 
+  },
+  { 
+    id: 3, 
+    name: 'Comidería y Pulpería Doña Chepita', 
+    contact_name: 'Josefa Ramos',
+    document_number: '#LI-003', 
+    phone: '+50589123456', 
+    email: 'donachepita@hotmail.com', 
+    address: 'Colonia Centroamérica, Semáforos 1c arriba', 
+    credit_limit: 8000.00, 
+    dias_plazo: 30,
+    current_debt: 8900.00, 
+    sales_count: 4, 
+    credits_count: 2 
+  },
+  { 
+    id: 4, 
+    name: 'Minisúper El Éxito', 
+    contact_name: 'Carlos Chamorro',
+    document_number: '#LI-004', 
+    phone: '+50583456789', 
+    email: 'elexito@gmail.com', 
+    address: 'Carretera Masaya km 12.5, Residencial San José', 
+    credit_limit: 15000.00, 
+    dias_plazo: 15,
+    current_debt: 0.00, 
+    sales_count: 8, 
+    credits_count: 0 
+  },
+  { 
+    id: 5, 
+    name: 'Cliente Mostrador / Venta Rápida', 
+    contact_name: 'Público General',
+    document_number: '#LI-005', 
+    phone: '+50588888888', 
+    email: 'mostrador@sendafact.ni', 
+    address: 'Venta Directa en Almacén', 
+    credit_limit: 0.00, 
+    dias_plazo: 0,
+    current_debt: 0.00, 
+    sales_count: 25, 
+    credits_count: 0 
+  },
+  { 
+    id: 6, 
+    name: 'Eduardo López', 
+    contact_name: 'Eduardo López',
+    document_number: '#DUARDO', 
+    phone: '+444334405', 
+    email: 'eduardo@gmail.com', 
+    address: 'Colonia Centro, Calle 4', 
+    credit_limit: 10000.00, 
+    dias_plazo: 15,
+    current_debt: 0.00, 
+    sales_count: 3, 
+    credits_count: 0 
+  }
 ];
 
 const DEFAULT_SETTINGS: CompanySetting = {
@@ -989,7 +1069,20 @@ export const storage = {
       this.setCustomers(DEFAULT_CUSTOMERS);
       return DEFAULT_CUSTOMERS;
     }
-    try { return JSON.parse(raw) || DEFAULT_CUSTOMERS; } catch (e) { return DEFAULT_CUSTOMERS; }
+    try {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) {
+        const hasAbarroteria = parsed.some((c: any) => c.name?.includes('Abarrotería San José'));
+        if (!hasAbarroteria && parsed.length <= 4) {
+          this.setCustomers(DEFAULT_CUSTOMERS);
+          return DEFAULT_CUSTOMERS;
+        }
+        return parsed;
+      }
+      return DEFAULT_CUSTOMERS;
+    } catch (e) {
+      return DEFAULT_CUSTOMERS;
+    }
   },
   setCustomers(customers: Customer[]) {
     localStorage.setItem(STORAGE_KEYS.CUSTOMERS, JSON.stringify(customers));

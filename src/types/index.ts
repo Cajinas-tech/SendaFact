@@ -44,12 +44,14 @@ export interface Product {
 export interface Customer {
   id: number;
   name: string;
+  contact_name?: string;
   document_number?: string;
   phone?: string;
   email?: string;
   address?: string;
   credit_limit: number;
   current_debt: number;
+  dias_plazo?: number;
   sales_count?: number;
   credits_count?: number;
   created_at?: string;
