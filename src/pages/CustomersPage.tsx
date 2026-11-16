@@ -3,12 +3,27 @@ import { createPortal } from 'react-dom';
 import { 
   Users, UserPlus, Search, Phone, Mail, 
   MapPin, Edit3, DollarSign, CheckCircle2, CreditCard,
-  Download, History, X, Check, ArrowRight, ShieldAlert,
-  Building2, UserCheck, Calendar
+  Download, History, X, Check, Printer, MessageSquare
 } from 'lucide-react';
 import { storage } from '../lib/storage';
 import { Customer, CreditPayment } from '../types';
 import { useToast } from '../components/UI/Toast';
+
+interface PrintReceiptData {
+  docId: string;
+  ticketNumber: string;
+  cliente: string;
+  clientePhone?: string;
+  tipo: string;
+  metodoDisplay: string;
+  monto: number;
+  saldoAnterior: number;
+  saldoActual: number;
+  fechaStr: string;
+  facturaAplicada: string;
+  referencia: string;
+  barcodeId: string;
+}
 
 export const CustomersPage: React.FC = () => {
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -20,6 +35,8 @@ export const CustomersPage: React.FC = () => {
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
   const [abonoCustomer, setAbonoCustomer] = useState<Customer | null>(null);
   const [historyCustomer, setHistoryCustomer] = useState<Customer | null>(null);
+  const [printReceiptData, setPrintReceiptData] = useState<PrintReceiptData | null>(null);
+  const [paperFormat, setPaperFormat] = useState<'80mm' | '58mm'>('80mm');
   
   const { success, warning, error, info } = useToast();
 
@@ -38,9 +55,8 @@ export const CustomersPage: React.FC = () => {
   // Form State Abono
   const [formAbono, setFormAbono] = useState({
     amount: '',
-    method: 'efectivo',
-    receipt: '',
-    notes: ''
+    method: 'Efectivo (Ingreso a Caja)',
+    reference: ''
   });
 
   const loadData = () => {
@@ -150,14 +166,13 @@ export const CustomersPage: React.FC = () => {
   const openAbonoModal = (c: Customer) => {
     setAbonoCustomer(c);
     setFormAbono({
-      amount: c.current_debt > 0 ? String(Math.min(c.current_debt, 1000)) : '',
-      method: 'efectivo',
-      receipt: `REC-${Math.floor(100 + Math.random() * 900)}`,
-      notes: ''
+      amount: '',
+      method: 'Efectivo (Ingreso a Caja)',
+      reference: ''
     });
   };
 
-  // Guardar Abono
+  // Guardar Abono y Abrir Ticket de Impresión
   const handleGuardarAbono = (e: React.FormEvent) => {
     e.preventDefault();
     if (!abonoCustomer) return;
@@ -168,11 +183,12 @@ export const CustomersPage: React.FC = () => {
       return;
     }
 
-    if (monto > (abonoCustomer.current_debt || 0)) {
+    const saldoAnterior = abonoCustomer.current_debt || 0;
+    if (monto > saldoAnterior && saldoAnterior > 0) {
       warning('Aviso', 'El monto ingresado es mayor al saldo pendiente actual del cliente.');
     }
 
-    const nuevaDeuda = Math.max(0, (abonoCustomer.current_debt || 0) - monto);
+    const nuevaDeuda = Math.max(0, saldoAnterior - monto);
     const updatedCust: Customer = {
       ...abonoCustomer,
       current_debt: Number(nuevaDeuda.toFixed(2))
@@ -187,19 +203,22 @@ export const CustomersPage: React.FC = () => {
       cr.customer_name?.toLowerCase() === abonoCustomer.name.toLowerCase()
     );
 
+    const receiptId = Math.random().toString(36).substring(2, 8).toUpperCase();
+    const refCode = formAbono.reference.trim() || `ABO-${Math.floor(1000 + Math.random() * 9000)}`;
+
     if (custCredit) {
       const nuevoPago: CreditPayment = {
         id: Date.now(),
         credit_id: custCredit.id,
         customer_name: abonoCustomer.name,
         amount_cordobas: monto,
-        payment_method: formAbono.method === 'efectivo' ? 'Efectivo' : (formAbono.method === 'tarjeta' ? 'Tarjeta' : 'Transferencia'),
-        receipt_number: formAbono.receipt || `REC-${Date.now().toString().slice(-4)}`,
+        payment_method: formAbono.method.includes('Tarjeta') ? 'Tarjeta' : (formAbono.method.includes('Transferencia') ? 'Transferencia' : 'Efectivo'),
+        receipt_number: `REC-${receiptId}`,
         created_at: new Date().toISOString()
       };
       const pagosActuales = custCredit.payments ? [...custCredit.payments] : [];
       pagosActuales.push(nuevoPago);
-      const remDebt = Math.max(0, (custCredit.remaining_debt || custCredit.total_debt) - monto);
+      const remDebt = Math.max(0, (custCredit.remaining_debt ?? custCredit.total_debt) - monto);
       
       const updatedCredit = {
         ...custCredit,
@@ -210,12 +229,67 @@ export const CustomersPage: React.FC = () => {
       storage.saveCredit(updatedCredit);
     }
 
+    // Preparar datos del Ticket de Impresión
+    const now = new Date();
+    const fechaFormateada = now.toLocaleString('es-NI', { 
+      day: '2-digit', 
+      month: '2-digit', 
+      year: 'numeric', 
+      hour: '2-digit', 
+      minute: '2-digit', 
+      hour12: true 
+    });
+
+    const isTarjeta = formAbono.method.includes('Tarjeta');
+    const isTransf = formAbono.method.includes('Transferencia');
+    const tipoLabel = isTarjeta ? 'ABONO (TARJETA)' : (isTransf ? 'ABONO (TRANSFERENCIA)' : 'ABONO (EFECTIVO)');
+    const metodoSimple = isTarjeta ? 'Tarjeta' : (isTransf ? 'Transferencia' : 'Efectivo');
+
+    const ticketData: PrintReceiptData = {
+      docId: `#REC-${receiptId}`,
+      ticketNumber: `#${receiptId}`,
+      cliente: abonoCustomer.name,
+      clientePhone: abonoCustomer.phone,
+      tipo: tipoLabel,
+      metodoDisplay: metodoSimple,
+      monto: monto,
+      saldoAnterior: saldoAnterior,
+      saldoActual: nuevaDeuda,
+      fechaStr: fechaFormateada,
+      facturaAplicada: `FACT-20261019-${Math.floor(100000 + Math.random() * 900000)}`,
+      referencia: refCode,
+      barcodeId: `#ABONO-${receiptId}`
+    };
+
     setAbonoCustomer(null);
     loadData();
+    setPrintReceiptData(ticketData);
     success(
       '¡Abono Registrado!',
-      `Se aplicó C$ ${monto.toFixed(2)} a la cuenta de ${abonoCustomer.name}. Nuevo saldo: C$ ${nuevaDeuda.toFixed(2)}`
+      `Se aplicó C$ ${monto.toFixed(2)} a la cuenta de ${abonoCustomer.name}.`
     );
+  };
+
+  // Enviar Recibo por WhatsApp
+  const handleSendWhatsApp = () => {
+    if (!printReceiptData) return;
+    const phone = (printReceiptData.clientePhone || '').replace(/\D/g, '');
+    const text = 
+      `*RECIBO OFICIAL DE ABONO*\n` +
+      `--------------------------------\n` +
+      `*Recibo:* ${printReceiptData.docId}\n` +
+      `*Cliente:* ${printReceiptData.cliente}\n` +
+      `*Fecha:* ${printReceiptData.fechaStr}\n` +
+      `*Método:* ${printReceiptData.metodoDisplay}\n` +
+      `*Ref:* ${printReceiptData.referencia}\n` +
+      `--------------------------------\n` +
+      `*MONTO ABONADO:* C$ ${printReceiptData.monto.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}\n` +
+      `*Saldo Anterior:* C$ ${printReceiptData.saldoAnterior.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}\n` +
+      `*Saldo Pendiente:* C$ ${printReceiptData.saldoActual.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}\n` +
+      `--------------------------------\n` +
+      `_¡Gracias por su preferencia!_`;
+    const url = phone ? `https://wa.me/${phone}?text=${encodeURIComponent(text)}` : `https://wa.me/?text=${encodeURIComponent(text)}`;
+    window.open(url, '_blank');
   };
 
   // Exportar Cartera a CSV / Excel
@@ -721,7 +795,7 @@ export const CustomersPage: React.FC = () => {
         document.body
       )}
 
-      {/* MODAL 2: REGISTRAR ABONO A CARTERA */}
+      {/* MODAL 2: REGISTRAR ABONO DE CUENTA (EXACTO A IMAGEN 2) */}
       {abonoCustomer && createPortal(
         <div 
           className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-xs animate-in fade-in duration-200"
@@ -733,15 +807,15 @@ export const CustomersPage: React.FC = () => {
             {/* Header */}
             <div className="px-6 py-4.5 border-b border-slate-100 dark:border-slate-800/80 flex items-center justify-between bg-white dark:bg-[#0f172a]">
               <div className="flex items-center space-x-3.5">
-                <div className="w-11 h-11 rounded-2xl bg-emerald-600 text-white flex items-center justify-center shadow-md shadow-emerald-600/25 shrink-0">
-                  <DollarSign className="w-5 h-5 stroke-[2.5]" />
+                <div className="w-10 h-10 rounded-2xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 font-extrabold text-sm flex items-center justify-center border border-emerald-100 dark:border-emerald-900/50 shadow-2xs">
+                  C$
                 </div>
                 <div>
                   <h3 className="text-base font-black text-slate-900 dark:text-white uppercase tracking-tight">
-                    REGISTRAR ABONO
+                    REGISTRAR ABONO DE CUENTA
                   </h3>
                   <p className="text-xs text-slate-400 dark:text-slate-500 font-medium">
-                    Abono a línea de crédito de cartera
+                    {abonoCustomer.name}
                   </p>
                 </div>
               </div>
@@ -756,15 +830,23 @@ export const CustomersPage: React.FC = () => {
 
             {/* Form */}
             <form onSubmit={handleGuardarAbono} className="p-6 space-y-4">
-              {/* Resumen del Cliente */}
-              <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/70 border border-slate-200/80 dark:border-slate-700">
-                <div className="text-xs font-bold text-slate-900 dark:text-white">
-                  {abonoCustomer.name}
+              
+              {/* Saldo Pendiente Actual & Límite Autorizado */}
+              <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-700/80 flex items-center justify-between">
+                <div>
+                  <span className="block text-[11px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                    SALDO PENDIENTE ACTUAL
+                  </span>
+                  <span className="block text-lg font-black font-mono text-rose-600 dark:text-rose-400 mt-0.5">
+                    C${(abonoCustomer.current_debt || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </span>
                 </div>
-                <div className="flex items-center justify-between mt-2 pt-2 border-t border-slate-200/60 dark:border-slate-700/60 text-xs">
-                  <span className="text-slate-500 dark:text-slate-400">Saldo Pendiente:</span>
-                  <span className="font-mono font-black text-rose-600 dark:text-rose-400 text-sm">
-                    C$ {(abonoCustomer.current_debt || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                <div className="text-right">
+                  <span className="block text-[11px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                    LÍMITE AUTORIZADO
+                  </span>
+                  <span className="block text-sm font-bold font-mono text-slate-900 dark:text-white mt-0.5">
+                    C${(abonoCustomer.credit_limit || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </span>
                 </div>
               </div>
@@ -783,37 +865,37 @@ export const CustomersPage: React.FC = () => {
                   value={formAbono.amount}
                   onChange={(e) => setFormAbono({ ...formAbono, amount: e.target.value })}
                   placeholder="0.00"
-                  className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-lg font-mono font-black text-emerald-600 dark:text-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-bold text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-emerald-500"
                 />
               </div>
 
               {/* Método de Pago */}
               <div>
                 <label className="block text-[11px] font-black uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5">
-                  MÉTODO DE PAGO *
+                  MÉTODO DE PAGO
                 </label>
                 <select
                   value={formAbono.method}
                   onChange={(e) => setFormAbono({ ...formAbono, method: e.target.value })}
                   className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-emerald-500 cursor-pointer"
                 >
-                  <option value="efectivo">Efectivo en Caja</option>
-                  <option value="tarjeta">Tarjeta de Débito / Crédito</option>
-                  <option value="transferencia">Transferencia Bancaria / BAC / Banpro</option>
+                  <option value="Efectivo (Ingreso a Caja)">Efectivo (Ingreso a Caja)</option>
+                  <option value="Tarjeta de Débito / Crédito">Tarjeta de Débito / Crédito</option>
+                  <option value="Transferencia Bancaria">Transferencia Bancaria</option>
                 </select>
               </div>
 
-              {/* N° Comprobante */}
+              {/* N° de Referencia (Opcional) */}
               <div>
                 <label className="block text-[11px] font-black uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5">
-                  N° RECIBO / REFERENCIA
+                  N° DE REFERENCIA (OPCIONAL)
                 </label>
                 <input
                   type="text"
-                  value={formAbono.receipt}
-                  onChange={(e) => setFormAbono({ ...formAbono, receipt: e.target.value })}
-                  placeholder="REC-001"
-                  className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-mono font-bold text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  value={formAbono.reference}
+                  onChange={(e) => setFormAbono({ ...formAbono, reference: e.target.value })}
+                  placeholder="Ej. TRANSF-099238"
+                  className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-semibold text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-emerald-500 placeholder:text-slate-400"
                 />
               </div>
 
@@ -830,8 +912,8 @@ export const CustomersPage: React.FC = () => {
                   type="submit"
                   className="px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black uppercase tracking-wider shadow-md shadow-emerald-600/20 transition-all active:scale-95 cursor-pointer flex items-center gap-2"
                 >
-                  <Check className="w-4 h-4 stroke-[3]" />
-                  <span>Confirmar Abono</span>
+                  <MessageSquare className="w-4 h-4 stroke-[2.5]" />
+                  <span>CONFIRMAR & ENVIAR RECIBO</span>
                 </button>
               </div>
             </form>
@@ -840,7 +922,266 @@ export const CustomersPage: React.FC = () => {
         document.body
       )}
 
-      {/* MODAL 3: HISTORIAL DE CUENTA */}
+      {/* MODAL 3: TICKET DE IMPRESIÓN (EXACTO A IMAGEN 3) */}
+      {printReceiptData && createPortal(
+        <div 
+          className="fixed inset-0 z-[160] flex items-center justify-center p-3 sm:p-4 bg-slate-950/70 backdrop-blur-sm animate-in fade-in duration-200"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setPrintReceiptData(null);
+          }}
+        >
+          <div className="bg-white dark:bg-[#0f172a] rounded-[28px] border border-slate-200/90 dark:border-slate-800 shadow-2xl w-full max-w-4xl max-h-[92vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-200">
+            
+            {/* Modal Header */}
+            <div className="no-print px-6 py-4.5 border-b border-slate-100 dark:border-slate-800/80 flex items-center justify-between bg-white dark:bg-[#0f172a] shrink-0">
+              <div className="flex items-center space-x-3.5">
+                <div className="w-10 h-10 rounded-2xl bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center border border-blue-100 dark:border-blue-900/50 shadow-2xs">
+                  <Printer className="w-5 h-5 stroke-[2.2]" />
+                </div>
+                <div>
+                  <h3 className="text-base sm:text-lg font-black text-slate-900 dark:text-white uppercase tracking-tight">
+                    Ticket de Impresión
+                  </h3>
+                  <p className="text-xs text-slate-400 dark:text-slate-500 font-medium">
+                    Recibo Oficial de Abono
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2 text-xs font-semibold text-slate-600 dark:text-slate-300">
+                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 shrink-0"></span>
+                  <span className="font-bold hidden sm:inline">
+                    Vista Previa en Vivo (Ancho {paperFormat})
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setPrintReceiptData(null)}
+                  className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-400 hover:text-slate-600 dark:hover:text-white flex items-center justify-center transition-colors cursor-pointer"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+
+            {/* Modal Body */}
+            <div className="flex-1 overflow-y-auto modal-scroll p-6 grid grid-cols-1 md:grid-cols-12 gap-6 bg-slate-50/50 dark:bg-slate-900/40">
+              
+              {/* Left Column: Metadata & Actions */}
+              <div className="no-print md:col-span-5 space-y-4">
+                
+                {/* Document Metadata Card */}
+                <div className="bg-white dark:bg-[#0f172a] rounded-2xl p-4 border border-slate-200/90 dark:border-slate-800 space-y-2.5 shadow-xs">
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="text-slate-400 font-semibold">Documento:</span>
+                    <span className="font-mono font-bold text-slate-900 dark:text-slate-100">
+                      {printReceiptData.docId}
+                    </span>
+                  </div>
+
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="text-slate-400 font-semibold">Cliente:</span>
+                    <span className="font-bold text-slate-900 dark:text-slate-100 truncate max-w-[180px]">
+                      {printReceiptData.cliente}
+                    </span>
+                  </div>
+
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="text-slate-400 font-semibold">Tipo:</span>
+                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-50 dark:bg-emerald-950/70 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-900/50">
+                      {printReceiptData.tipo}
+                    </span>
+                  </div>
+
+                  <div className="flex justify-between items-center text-xs pt-2 border-t border-slate-100 dark:border-slate-800">
+                    <span className="text-slate-400 font-semibold">Total a Imprimir:</span>
+                    <span className="font-black text-sm text-slate-900 dark:text-white font-mono">
+                      C${printReceiptData.monto.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Formato de Papel POS */}
+                <div className="space-y-2">
+                  <label className="text-[11px] font-black tracking-wider text-slate-500 uppercase block">
+                    FORMATO DE PAPEL POS
+                  </label>
+                  <div className="grid grid-cols-2 gap-2.5">
+                    
+                    {/* Option 80 mm */}
+                    <button
+                      type="button"
+                      onClick={() => setPaperFormat('80mm')}
+                      className={`p-3 rounded-2xl text-left transition-all cursor-pointer flex flex-col justify-between ${
+                        paperFormat === '80mm'
+                          ? 'border-2 border-cyan-500 bg-cyan-50/30 dark:bg-cyan-950/30 shadow-xs'
+                          : 'border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 hover:border-slate-300'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between gap-1 w-full">
+                        <span className="font-black text-xs sm:text-sm text-slate-900 dark:text-white">
+                          80 mm
+                        </span>
+                        {paperFormat === '80mm' ? (
+                          <div className="w-4 h-4 rounded-full bg-cyan-500 text-white flex items-center justify-center shrink-0">
+                            <Check className="w-2.5 h-2.5 stroke-[3]" />
+                          </div>
+                        ) : (
+                          <div className="w-4 h-4 rounded-full border border-slate-300 dark:border-slate-700 shrink-0" />
+                        )}
+                      </div>
+                      <p className="text-[10px] text-slate-400 font-medium mt-1">Caja / Mostrador</p>
+                    </button>
+
+                    {/* Option 58 mm */}
+                    <button
+                      type="button"
+                      onClick={() => setPaperFormat('58mm')}
+                      className={`p-3 rounded-2xl text-left transition-all cursor-pointer flex flex-col justify-between ${
+                        paperFormat === '58mm'
+                          ? 'border-2 border-cyan-500 bg-cyan-50/30 dark:bg-cyan-950/30 shadow-xs'
+                          : 'border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 hover:border-slate-300'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between gap-1 w-full">
+                        <span className="font-black text-xs sm:text-sm text-slate-900 dark:text-white">
+                          58 mm
+                        </span>
+                        {paperFormat === '58mm' ? (
+                          <div className="w-4 h-4 rounded-full bg-cyan-500 text-white flex items-center justify-center shrink-0">
+                            <Check className="w-2.5 h-2.5 stroke-[3]" />
+                          </div>
+                        ) : (
+                          <div className="w-4 h-4 rounded-full border border-slate-300 dark:border-slate-700 shrink-0" />
+                        )}
+                      </div>
+                      <p className="text-[10px] text-slate-400 font-medium mt-1">Móvil / Bluetooth</p>
+                    </button>
+
+                  </div>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="space-y-2.5 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => window.print()}
+                    className="w-full py-3 rounded-xl bg-[#0284c7] hover:bg-[#0369a1] text-white font-black text-xs uppercase tracking-wider shadow-md shadow-sky-500/20 transition flex items-center justify-center gap-2 cursor-pointer active:scale-95"
+                  >
+                    <Printer className="w-4 h-4" />
+                    <span>Imprimir Ticket POS ({paperFormat})</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleSendWhatsApp}
+                    className="w-full py-3 rounded-xl bg-[#059669] hover:bg-[#047857] text-white font-black text-xs uppercase tracking-wider shadow-md shadow-emerald-500/20 transition flex items-center justify-center gap-2 cursor-pointer active:scale-95"
+                  >
+                    <MessageSquare className="w-4 h-4" />
+                    <span>Enviar Recibo WhatsApp</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setPrintReceiptData(null)}
+                    className="w-full py-2 text-center text-xs font-bold text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition cursor-pointer"
+                  >
+                    Cerrar Vista
+                  </button>
+                </div>
+
+              </div>
+
+              {/* Right Column: Live Thermal Receipt Preview */}
+              <div className="md:col-span-7 flex justify-center items-start">
+                <div 
+                  id="printable-ticket"
+                  className={`w-full bg-white text-slate-900 p-6 rounded-2xl shadow-md border border-slate-200/90 font-mono text-xs leading-tight transition-all ${
+                    paperFormat === '58mm' ? 'max-w-[280px]' : 'max-w-[340px]'
+                  }`}
+                >
+                  {/* Empresa */}
+                  <div className="text-center space-y-0.5">
+                    <h4 className="font-extrabold text-sm uppercase tracking-tight text-slate-900">
+                      AGENCIA DE BEBIDAS SENDADIST
+                    </h4>
+                    <p className="text-[11px] text-slate-600">RUC: J0310000349281</p>
+                    <p className="text-[10px] text-slate-500">Semáforos El Mayoreo 2c al Norte, Managua</p>
+                    <p className="text-[10px] text-slate-500">PBX: +505 2244-8899 • Cel: +505 8888-1234</p>
+                  </div>
+
+                  <div className="border-b border-dashed border-slate-300 my-3" />
+
+                  {/* Recuadro Recibo Oficial */}
+                  <div className="bg-slate-100 rounded-lg py-1.5 px-3 text-center my-2">
+                    <span className="font-black text-[11px] uppercase tracking-wider text-slate-800">
+                      RECIBO OFICIAL DE ABONO
+                    </span>
+                  </div>
+
+                  {/* Metadatos */}
+                  <div className="space-y-1 text-[11px] py-1 text-slate-700">
+                    <div><span className="text-slate-500">No. Recibo:</span> <strong className="text-slate-900">{printReceiptData.ticketNumber}</strong></div>
+                    <div><span className="text-slate-500">Fecha:</span> {printReceiptData.fechaStr}</div>
+                    <div><span className="text-slate-500">Factura Aplicada:</span> {printReceiptData.facturaAplicada}</div>
+                  </div>
+
+                  <div className="border-b border-slate-200 my-2.5" />
+
+                  {/* Datos del Cliente y Pago */}
+                  <div className="space-y-1 text-[11px] py-1 text-slate-700">
+                    <div><span className="text-slate-500">Cliente:</span> <strong className="text-slate-900">{printReceiptData.cliente}</strong></div>
+                    <div><span className="text-slate-500">Método de Pago:</span> {printReceiptData.metodoDisplay}</div>
+                    <div><span className="text-slate-500">Ref:</span> {printReceiptData.referencia}</div>
+                  </div>
+
+                  {/* Recuadro Verde Monto Abonado */}
+                  <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3 my-3 text-center">
+                    <div className="text-[10px] font-black uppercase tracking-wider text-emerald-800">
+                      MONTO ABONADO
+                    </div>
+                    <div className="text-xl font-black text-emerald-700 mt-0.5">
+                      C${printReceiptData.monto.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </div>
+                  </div>
+
+                  {/* Saldos */}
+                  <div className="space-y-1.5 text-[11px] pt-1">
+                    <div className="flex justify-between text-slate-600">
+                      <span>Saldo Anterior:</span>
+                      <span className="font-bold">C${printReceiptData.saldoAnterior.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                    </div>
+                    <div className="border-b border-dashed border-slate-300 my-1" />
+                    <div className="flex justify-between font-black text-slate-900 text-xs">
+                      <span>Saldo Pendiente Actual:</span>
+                      <span>C${printReceiptData.saldoActual.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                    </div>
+                  </div>
+
+                  <div className="border-b border-dashed border-slate-300 my-3" />
+
+                  {/* Mensaje de Cierre y Código de Barras Simulado */}
+                  <div className="text-center space-y-1 text-slate-600">
+                    <p className="font-bold text-[11px] text-slate-800">¡GRACIAS POR SU PREFERENCIA!</p>
+                    <p className="text-[10px] text-slate-500">Revise su producto antes de firmar o retirar.</p>
+                    <div className="tracking-[0.25em] text-slate-400 font-mono text-sm py-1">
+                      ||| | ||||| ||| || ||| |||| |
+                    </div>
+                    <p className="text-[10px] font-bold text-slate-500">{printReceiptData.barcodeId}</p>
+                  </div>
+
+                </div>
+              </div>
+
+            </div>
+
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* MODAL 4: HISTORIAL DE CUENTA */}
       {historyCustomer && createPortal(
         <div 
           className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-xs animate-in fade-in duration-200"
