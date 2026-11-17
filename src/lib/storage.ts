@@ -1,9 +1,10 @@
-import { Product, Category, Customer, Sale, CashRegister, Movement, CreditAccount, User, CompanySetting, CashClosingRecord, DenominationCount } from '../types';
+import { Product, Category, Customer, Supplier, Sale, CashRegister, Movement, CreditAccount, User, CompanySetting, CashClosingRecord, DenominationCount } from '../types';
 
 const STORAGE_KEYS = {
   PRODUCTS: 'sendafact_products_v3',
   CATEGORIES: 'sendafact_categories_v3',
   CUSTOMERS: 'sendafact_customers_v3',
+  SUPPLIERS: 'sendafact_suppliers_v3',
   SALES: 'sendafact_sales_v3',
   CASH_REGISTER: 'sendafact_cash_v3',
   CASH_REGISTERS: 'sendafact_cash_registers_list_v3',
@@ -299,6 +300,48 @@ const DEFAULT_CUSTOMERS: Customer[] = [
     current_debt: 0.00, 
     sales_count: 3, 
     credits_count: 0 
+  }
+];
+
+const DEFAULT_SUPPLIERS: Supplier[] = [
+  {
+    id: 1,
+    company_name: 'Distribuidora Láctea del Norte S.A.',
+    name: 'Distribuidora Láctea del Norte S.A.',
+    contact_name: 'Carlos Martínez',
+    ruc: 'J0310000001234',
+    phone: '8888-8888',
+    address: 'Carretera Norte Km 12, Managua',
+    email: 'ventas@lacteosnorte.com',
+    status: 'active',
+    purchases_count: 12,
+    created_at: '2026-08-15T09:00:00Z'
+  },
+  {
+    id: 2,
+    company_name: 'Vidriería y Perfiles de Aluminio S.A.',
+    name: 'Vidriería y Perfiles de Aluminio S.A.',
+    contact_name: 'Ing. Roberto Silva',
+    ruc: 'J0310000005678',
+    phone: '2244-1234',
+    address: 'Pista Suburbana, Rotonda Universitaria 200m abajo, Managua',
+    email: 'pedidos@vidrioperfiles.ni',
+    status: 'active',
+    purchases_count: 18,
+    created_at: '2026-08-20T11:30:00Z'
+  },
+  {
+    id: 3,
+    company_name: 'Comercializadora Industrial El Trébol',
+    name: 'Comercializadora Industrial El Trébol',
+    contact_name: 'Lic. Claudia Morales',
+    ruc: 'J0310000009988',
+    phone: '8765-4321',
+    address: 'Zona Industrial Portezuelo, Nave #4, Managua',
+    email: 'contacto@eltrebol.com.ni',
+    status: 'active',
+    purchases_count: 6,
+    created_at: '2026-09-02T14:15:00Z'
   }
 ];
 
@@ -1094,6 +1137,61 @@ export const storage = {
     else list.unshift(customer);
     this.setCustomers(list);
   },
+  deleteCustomer(id: number | string): Customer[] {
+    const list = this.getCustomers().filter(c => String(c.id) !== String(id));
+    this.setCustomers(list);
+    return list;
+  },
+
+  // SUPPLIERS (PROVEEDORES)
+  getSuppliers(): Supplier[] {
+    const raw = localStorage.getItem(STORAGE_KEYS.SUPPLIERS);
+    if (!raw) {
+      this.setSuppliers(DEFAULT_SUPPLIERS);
+      return DEFAULT_SUPPLIERS;
+    }
+    try {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return parsed;
+      }
+      this.setSuppliers(DEFAULT_SUPPLIERS);
+      return DEFAULT_SUPPLIERS;
+    } catch (e) {
+      return DEFAULT_SUPPLIERS;
+    }
+  },
+  setSuppliers(suppliers: Supplier[]) {
+    localStorage.setItem(STORAGE_KEYS.SUPPLIERS, JSON.stringify(suppliers));
+  },
+  saveSupplier(supplier: Supplier): Supplier {
+    const list = this.getSuppliers();
+    const idx = list.findIndex(s => String(s.id) === String(supplier.id));
+    if (idx >= 0) {
+      list[idx] = {
+        ...list[idx],
+        ...supplier,
+        name: supplier.company_name || supplier.name,
+        updated_at: new Date().toISOString()
+      };
+    } else {
+      const newSupplier: Supplier = {
+        ...supplier,
+        name: supplier.company_name || supplier.name,
+        id: supplier.id || Date.now(),
+        status: supplier.status || 'active',
+        created_at: supplier.created_at || new Date().toISOString()
+      };
+      list.unshift(newSupplier);
+    }
+    this.setSuppliers(list);
+    return supplier;
+  },
+  deleteSupplier(id: number | string): Supplier[] {
+    const list = this.getSuppliers().filter(s => String(s.id) !== String(id));
+    this.setSuppliers(list);
+    return list;
+  },
 
   // SALES
   getSales(): Sale[] {
@@ -1374,6 +1472,7 @@ export const storage = {
     this.setProducts(DEFAULT_PRODUCTS);
     this.setCategories(DEFAULT_CATEGORIES);
     this.setCustomers(DEFAULT_CUSTOMERS);
+    this.setSuppliers(DEFAULT_SUPPLIERS);
     this.setSales(DEFAULT_SALES);
     this.setCashRegister(DEFAULT_CASH);
     this.setMovements(DEFAULT_MOVEMENTS);
@@ -1389,6 +1488,7 @@ export const storage = {
       products: this.getProducts(),
       categories: this.getCategories(),
       customers: this.getCustomers(),
+      suppliers: this.getSuppliers(),
       sales: this.getSales(),
       credits: this.getCredits(),
       movements: this.getMovements(),
@@ -1405,6 +1505,7 @@ export const storage = {
       if (data.products) this.setProducts(data.products);
       if (data.categories) this.setCategories(data.categories);
       if (data.customers) this.setCustomers(data.customers);
+      if (data.suppliers) this.setSuppliers(data.suppliers);
       if (data.sales) this.setSales(data.sales);
       if (data.credits) this.setCredits(data.credits);
       if (data.movements) this.setMovements(data.movements);

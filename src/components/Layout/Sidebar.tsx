@@ -15,7 +15,8 @@ import {
   ChevronLeft,
   ChevronRight,
   X,
-  FileText
+  FileText,
+  Truck
 } from 'lucide-react';
 import { storage } from '../../lib/storage';
 import ConfirmModal from '../UI/ConfirmModal';
@@ -49,8 +50,9 @@ export default function Sidebar({ collapsed, setCollapsed, mobileOpen, setMobile
         { path: '/productos', icon: Package, label: 'Gestión de Productos' },
         { path: '/categorias', icon: Tag, label: 'Categorías' },
         { path: '/movimientos', icon: ClipboardList, label: 'Inventario & Movimientos' },
-        { path: '/creditos', icon: CreditCard, label: 'Créditos y Cuentas' },
+        { path: '/proveedores', icon: Truck, label: 'Gestión de Proveedores' },
         { path: '/clientes', icon: Users, label: 'Gestión de Clientes' },
+        { path: '/creditos', icon: CreditCard, label: 'Créditos y Cuentas' },
       ]
     },
     {

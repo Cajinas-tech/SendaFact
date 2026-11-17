@@ -57,6 +57,22 @@ export interface Customer {
   created_at?: string;
 }
 
+export interface Supplier {
+  id: number;
+  company_name: string;
+  name?: string;
+  contact_name?: string;
+  ruc?: string;
+  phone?: string;
+  email?: string;
+  address?: string;
+  notes?: string;
+  status?: 'active' | 'inactive';
+  purchases_count?: number;
+  created_at?: string;
+  updated_at?: string;
+}
+
 export interface SaleItem {
   id?: number;
   sale_id?: number;
