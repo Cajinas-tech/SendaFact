@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { 
   ArrowLeftRight, ArrowUpRight, ArrowDownRight, 
   Search, Filter, Download, PlusCircle, 
@@ -765,22 +766,32 @@ export const MovementsPage: React.FC = () => {
       )}
 
       {/* MODAL 1: REGISTRAR MOVIMIENTO GENERAL */}
-      {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 backdrop-blur-xs p-4 animate-in fade-in duration-200">
-          <div className="bg-white dark:bg-slate-900 rounded-[28px] border border-slate-200 dark:border-slate-800 shadow-2xl w-full max-w-lg overflow-hidden flex flex-col max-h-[92vh]">
-            <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
-              <div className="flex items-center space-x-3">
-                <div className="w-8 h-8 rounded-xl bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center font-bold">
-                  <PlusCircle className="w-4 h-4 stroke-[2.5]" />
+      {showModal && createPortal(
+        <div 
+          className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-xs animate-in fade-in duration-200"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setShowModal(false);
+          }}
+        >
+          <div className="bg-white dark:bg-[#0f172a] rounded-3xl border border-slate-200/90 dark:border-slate-800 shadow-2xl w-full max-w-lg overflow-hidden animate-in zoom-in-95 duration-200 my-auto flex flex-col max-h-[92vh]">
+            <div className="px-6 py-4.5 border-b border-slate-100 dark:border-slate-800/80 flex items-center justify-between bg-white dark:bg-[#0f172a]">
+              <div className="flex items-center space-x-3.5">
+                <div className="w-11 h-11 rounded-2xl bg-blue-600 text-white flex items-center justify-center shadow-md shadow-blue-600/25 shrink-0">
+                  <PlusCircle className="w-5 h-5 stroke-[2.2]" />
                 </div>
-                <h3 className="text-sm sm:text-base font-black text-slate-900 dark:text-white uppercase tracking-tight">
-                  REGISTRAR MOVIMIENTO DE INVENTARIO
-                </h3>
+                <div>
+                  <h3 className="text-base font-black text-slate-900 dark:text-white uppercase tracking-tight">
+                    REGISTRAR MOVIMIENTO DE INVENTARIO
+                  </h3>
+                  <p className="text-xs text-slate-400 dark:text-slate-500 font-medium">
+                    Entrada, merma o ajuste manual en almacén
+                  </p>
+                </div>
               </div>
               <button
                 type="button"
                 onClick={() => setShowModal(false)}
-                className="w-7 h-7 rounded-full text-slate-400 hover:text-slate-600 dark:hover:text-white flex items-center justify-center transition-colors cursor-pointer"
+                className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-400 hover:text-slate-600 dark:hover:text-white flex items-center justify-center transition-colors cursor-pointer"
                 title="Cerrar"
               >
                 <X className="w-4 h-4" />
@@ -789,7 +800,7 @@ export const MovementsPage: React.FC = () => {
 
             <form onSubmit={handleCreateMovement} className="p-6 overflow-y-auto space-y-4 flex-1">
               <div>
-                <label className="block text-[11px] font-black uppercase tracking-wider text-slate-800 dark:text-slate-200 mb-1.5">
+                <label className="block text-[11px] font-black uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5">
                   TIPO DE MOVIMIENTO
                 </label>
                 <div className="grid grid-cols-3 gap-2">
@@ -835,27 +846,27 @@ export const MovementsPage: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-[11px] font-black uppercase tracking-wider text-slate-800 dark:text-slate-200 mb-1.5">
+                <label className="block text-[11px] font-black uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5">
                   PRODUCTO *
                 </label>
                 <select
                   required
                   value={selectedProductId}
                   onChange={(e) => handleProductChange(e.target.value)}
-                  className="w-full px-4 py-2.5 bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
+                  className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
                 >
                   <option value="">Selecciona un producto...</option>
                   {products.map(p => (
                     <option key={p.id} value={p.id}>
-                      {p.name} ({p.dimensions || p.measurements_spec || p.name}) - Stock actual: {p.stock}
+                      {p.name} ({p.name}) - Stock actual: {p.stock}
                     </option>
                   ))}
                 </select>
               </div>
 
-              <div className="grid grid-cols-2 gap-3.5">
+              <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-[11px] font-black uppercase tracking-wider text-slate-800 dark:text-slate-200 mb-1.5">
+                  <label className="block text-[11px] font-black uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5">
                     N° LOTE / CÓDIGO *
                   </label>
                   <input
@@ -864,12 +875,12 @@ export const MovementsPage: React.FC = () => {
                     value={idLote}
                     onChange={(e) => setIdLote(e.target.value)}
                     placeholder="LOT-2026-170"
-                    className="w-full px-4 py-2.5 bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-semibold text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-semibold text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-black uppercase tracking-wider text-slate-800 dark:text-slate-200 mb-1.5">
+                  <label className="block text-[11px] font-black uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5">
                     CANTIDAD *
                   </label>
                   <input
@@ -878,27 +889,27 @@ export const MovementsPage: React.FC = () => {
                     required
                     value={quantity}
                     onChange={(e) => setQuantity(e.target.value)}
-                    className="w-full px-4 py-2.5 bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
               </div>
 
               {tipoOperacion === 'ENTRADA' && (
-                <div className="grid grid-cols-2 gap-3.5">
+                <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-[11px] font-black uppercase tracking-wider text-slate-800 dark:text-slate-200 mb-1.5">
+                    <label className="block text-[11px] font-black uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5">
                       FECHA DE VENCIMIENTO
                     </label>
                     <input
                       type="date"
                       value={fechaVencimiento}
                       onChange={(e) => setFechaVencimiento(e.target.value)}
-                      className="w-full px-4 py-2.5 bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-semibold text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-semibold text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-[11px] font-black uppercase tracking-wider text-slate-800 dark:text-slate-200 mb-1.5">
+                    <label className="block text-[11px] font-black uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5">
                       COSTO UNIT. (C$)
                     </label>
                     <input
@@ -907,14 +918,14 @@ export const MovementsPage: React.FC = () => {
                       value={costoCompra}
                       onChange={(e) => setCostoCompra(e.target.value)}
                       placeholder="0.00"
-                      className="w-full px-4 py-2.5 bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                   </div>
                 </div>
               )}
 
               <div>
-                <label className="block text-[11px] font-black uppercase tracking-wider text-slate-800 dark:text-slate-200 mb-1.5">
+                <label className="block text-[11px] font-black uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5">
                   MOTIVO / DETALLE
                 </label>
                 <input
@@ -929,7 +940,7 @@ export const MovementsPage: React.FC = () => {
                       ? 'Baja por daño / rotura / vencido'
                       : 'Ajuste de conteo físico'
                   }
-                  className="w-full px-4 py-2.5 bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-semibold text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-semibold text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
 
@@ -937,7 +948,7 @@ export const MovementsPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setShowModal(false)}
-                  className="px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                  className="px-5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
                 >
                   Cancelar
                 </button>
@@ -950,30 +961,38 @@ export const MovementsPage: React.FC = () => {
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
-      {/* MODAL 2: REGISTRAR MERMA / AJUSTE RÁPIDO (EXACTO A IMAGEN 3) */}
-      {modalMerma && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 backdrop-blur-xs p-4 animate-in fade-in duration-200">
-          <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-2xl w-full max-w-lg overflow-hidden">
-            <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
-              <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 rounded-2xl bg-rose-500 text-white flex items-center justify-center shadow-md shadow-rose-500/20">
-                  <ShieldAlert className="w-5 h-5" />
+      {/* MODAL 2: REGISTRAR MERMA / AJUSTE RÁPIDO */}
+      {modalMerma && createPortal(
+        <div 
+          className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-xs animate-in fade-in duration-200"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setModalMerma(false);
+          }}
+        >
+          <div className="bg-white dark:bg-[#0f172a] rounded-3xl border border-slate-200/90 dark:border-slate-800 shadow-2xl w-full max-w-lg overflow-hidden animate-in zoom-in-95 duration-200 my-auto">
+            <div className="px-6 py-4.5 border-b border-slate-100 dark:border-slate-800/80 flex items-center justify-between bg-white dark:bg-[#0f172a]">
+              <div className="flex items-center space-x-3.5">
+                <div className="w-11 h-11 rounded-2xl bg-rose-500 text-white flex items-center justify-center shadow-md shadow-rose-500/25 shrink-0">
+                  <ShieldAlert className="w-5 h-5 stroke-[2.2]" />
                 </div>
                 <div>
                   <h3 className="text-base font-black text-slate-900 dark:text-white uppercase tracking-tight">
-                    Registrar Merma / Ajuste
+                    REGISTRAR MERMA / AJUSTE
                   </h3>
-                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                  <p className="text-xs text-slate-400 dark:text-slate-500 font-medium">
                     Baja por daño, fecha de vencimiento o auditoría física
                   </p>
                 </div>
               </div>
               <button
+                type="button"
                 onClick={() => setModalMerma(false)}
                 className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-400 hover:text-slate-600 dark:hover:text-white flex items-center justify-center transition-colors cursor-pointer"
+                title="Cerrar"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -981,8 +1000,8 @@ export const MovementsPage: React.FC = () => {
 
             <form onSubmit={handleGuardarMerma} className="p-6 space-y-4">
               <div>
-                <label className="block text-[11px] font-black uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1.5">
-                  Producto Afectado *
+                <label className="block text-[11px] font-black uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5">
+                  PRODUCTO AFECTADO *
                 </label>
                 <select
                   value={formMerma.productoId}
@@ -1000,15 +1019,15 @@ export const MovementsPage: React.FC = () => {
                 >
                   {products.map(p => (
                     <option key={p.id} value={p.id}>
-                      {p.name} ({p.dimensions || p.measurements_spec || p.name}) - Stock Total: {p.stock}
+                      {p.name} ({p.name}) - Stock Total: {p.stock}
                     </option>
                   ))}
                 </select>
               </div>
 
               <div>
-                <label className="block text-[11px] font-black uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1.5">
-                  Lote Específico a Descargar *
+                <label className="block text-[11px] font-black uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5">
+                  LOTE ESPECÍFICO A DESCARGAR *
                 </label>
                 <select
                   value={formMerma.idLote}
@@ -1029,8 +1048,8 @@ export const MovementsPage: React.FC = () => {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-[11px] font-black uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1.5">
-                    Tipo de Operación *
+                  <label className="block text-[11px] font-black uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5">
+                    TIPO DE OPERACIÓN *
                   </label>
                   <select
                     value={formMerma.tipo}
@@ -1043,8 +1062,8 @@ export const MovementsPage: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-black uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1.5">
-                    Cantidad a Descargar *
+                  <label className="block text-[11px] font-black uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5">
+                    CANTIDAD A DESCARGAR *
                   </label>
                   <input
                     type="number"
@@ -1058,16 +1077,16 @@ export const MovementsPage: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-[11px] font-black uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1.5">
-                  Motivo o Justificación *
+                <label className="block text-[11px] font-black uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5">
+                  MOTIVO O JUSTIFICACIÓN *
                 </label>
                 <textarea
                   rows={2}
                   required
                   value={formMerma.motivo}
                   onChange={(e) => setFormMerma({ ...formMerma, motivo: e.target.value })}
-                  placeholder="Describa el motivo de la baja..."
-                  className="w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-rose-500"
+                  placeholder="Baja por daño / rotura / vencido"
+                  className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-rose-500"
                 />
               </div>
 
@@ -1075,43 +1094,51 @@ export const MovementsPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setModalMerma(false)}
-                  className="px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                  className="px-5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-extrabold shadow-md shadow-rose-500/20 transition-all active:scale-95 cursor-pointer"
+                  className="px-6 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-extrabold shadow-md shadow-rose-500/20 transition-all active:scale-95 cursor-pointer"
                 >
                   Procesar Baja
                 </button>
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
-      {/* MODAL 3: ENTRADA DE MERCANCÍA RÁPIDA (EXACTO A IMAGEN 4) */}
-      {modalEntrada && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 backdrop-blur-xs p-4 animate-in fade-in duration-200">
-          <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-2xl w-full max-w-lg overflow-hidden">
-            <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
-              <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 rounded-2xl bg-emerald-600 text-white flex items-center justify-center shadow-md shadow-emerald-600/20">
+      {/* MODAL 3: ENTRADA DE MERCANCÍA RÁPIDA */}
+      {modalEntrada && createPortal(
+        <div 
+          className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-xs animate-in fade-in duration-200"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setModalEntrada(false);
+          }}
+        >
+          <div className="bg-white dark:bg-[#0f172a] rounded-3xl border border-slate-200/90 dark:border-slate-800 shadow-2xl w-full max-w-lg overflow-hidden animate-in zoom-in-95 duration-200 my-auto">
+            <div className="px-6 py-4.5 border-b border-slate-100 dark:border-slate-800/80 flex items-center justify-between bg-white dark:bg-[#0f172a]">
+              <div className="flex items-center space-x-3.5">
+                <div className="w-11 h-11 rounded-2xl bg-emerald-600 text-white flex items-center justify-center shadow-md shadow-emerald-600/25 shrink-0">
                   <Plus className="w-5 h-5 stroke-[2.5]" />
                 </div>
                 <div>
                   <h3 className="text-base font-black text-slate-900 dark:text-white uppercase tracking-tight">
-                    Entrada de Mercancía
+                    ENTRADA DE MERCANCÍA
                   </h3>
-                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                  <p className="text-xs text-slate-400 dark:text-slate-500 font-medium">
                     Registrar nuevo lote de inventario por compra o proveedor
                   </p>
                 </div>
               </div>
               <button
+                type="button"
                 onClick={() => setModalEntrada(false)}
                 className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-400 hover:text-slate-600 dark:hover:text-white flex items-center justify-center transition-colors cursor-pointer"
+                title="Cerrar"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -1119,8 +1146,8 @@ export const MovementsPage: React.FC = () => {
 
             <form onSubmit={handleGuardarEntrada} className="p-6 space-y-4">
               <div>
-                <label className="block text-[11px] font-black uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1.5">
-                  Producto Destino *
+                <label className="block text-[11px] font-black uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5">
+                  PRODUCTO DESTINO *
                 </label>
                 <select
                   value={formEntrada.productoId}
@@ -1129,7 +1156,7 @@ export const MovementsPage: React.FC = () => {
                 >
                   {products.map(p => (
                     <option key={p.id} value={p.id}>
-                      {p.name} ({p.dimensions || p.measurements_spec || p.name}) - Stock actual: {p.stock}
+                      {p.name} ({p.name}) - Stock actual: {p.stock}
                     </option>
                   ))}
                 </select>
@@ -1137,8 +1164,8 @@ export const MovementsPage: React.FC = () => {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-[11px] font-black uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1.5">
-                    N° Lote / Identificador *
+                  <label className="block text-[11px] font-black uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5">
+                    N° LOTE / IDENTIFICADOR *
                   </label>
                   <input
                     type="text"
@@ -1151,8 +1178,8 @@ export const MovementsPage: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-black uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1.5">
-                    Cantidad Recibida (Unds) *
+                  <label className="block text-[11px] font-black uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5">
+                    CANTIDAD RECIBIDA (UNDS) *
                   </label>
                   <input
                     type="number"
@@ -1167,8 +1194,8 @@ export const MovementsPage: React.FC = () => {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-[11px] font-black uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1.5">
-                    Fecha de Vencimiento *
+                  <label className="block text-[11px] font-black uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5">
+                    FECHA DE VENCIMIENTO *
                   </label>
                   <input
                     type="date"
@@ -1180,8 +1207,8 @@ export const MovementsPage: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-black uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1.5">
-                    Costo Unit. Compra (C$) *
+                  <label className="block text-[11px] font-black uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5">
+                    COSTO UNIT. COMPRA (C$) *
                   </label>
                   <input
                     type="number"
@@ -1196,7 +1223,7 @@ export const MovementsPage: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-[11px] font-black uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1.5">
+                <label className="block text-[11px] font-black uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5">
                   N° FACTURA PROVEEDOR / REFERENCIA (OPCIONAL)
                 </label>
                 <input
@@ -1212,20 +1239,21 @@ export const MovementsPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setModalEntrada(false)}
-                  className="px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                  className="px-5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-extrabold shadow-md shadow-emerald-600/20 transition-all active:scale-95 cursor-pointer"
+                  className="px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-extrabold shadow-md shadow-emerald-600/20 transition-all active:scale-95 cursor-pointer"
                 >
                   Confirmar Ingreso
                 </button>
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
