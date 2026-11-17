@@ -1,10 +1,11 @@
-import { Product, Category, Customer, Supplier, Sale, CashRegister, Movement, CreditAccount, User, CompanySetting, CashClosingRecord, DenominationCount } from '../types';
+import { Product, Category, Customer, Supplier, Purchase, PurchaseItem, Sale, CashRegister, Movement, CreditAccount, User, CompanySetting, CashClosingRecord, DenominationCount } from '../types';
 
 const STORAGE_KEYS = {
   PRODUCTS: 'sendafact_products_v3',
   CATEGORIES: 'sendafact_categories_v3',
   CUSTOMERS: 'sendafact_customers_v3',
   SUPPLIERS: 'sendafact_suppliers_v3',
+  PURCHASES: 'sendafact_purchases_v3',
   SALES: 'sendafact_sales_v3',
   CASH_REGISTER: 'sendafact_cash_v3',
   CASH_REGISTERS: 'sendafact_cash_registers_list_v3',
@@ -342,6 +343,44 @@ const DEFAULT_SUPPLIERS: Supplier[] = [
     status: 'active',
     purchases_count: 6,
     created_at: '2026-09-02T14:15:00Z'
+  }
+];
+
+const DEFAULT_PURCHASES: Purchase[] = [
+  {
+    id: 1,
+    invoice_number: 'FAC-001-4500',
+    supplier_id: 1,
+    supplier_name: 'Distribuidora Láctea del Norte S.A.',
+    supplier_ruc: 'J0310000001234',
+    purchase_date: '2026-11-15',
+    payment_condition: 'contado',
+    payment_source: 'efectivo',
+    subtotal: 1250.00,
+    discount: 0,
+    tax_iva: 187.50,
+    total_neto: 1437.50,
+    observations: 'Mercadería recibida conforme en bodega central, lote sellado y verificado.',
+    status: 'completed',
+    items: [
+      {
+        id: 1,
+        product_id: 3,
+        product_name: 'Leche Entera Pasteurizada 1L',
+        sku: 'LAC001',
+        category_name: 'LÁCTEOS',
+        current_stock: 24,
+        unit_cost: 25.00,
+        quantity: 50,
+        apply_iva: true,
+        sale_price: 40.00,
+        subtotal: 1250.00,
+        lot_number: 'LOT-202611-01',
+        expiry_date: '2027-02-15'
+      }
+    ],
+    user_name: 'Administrador',
+    created_at: '2026-11-15T10:30:00Z'
   }
 ];
 
@@ -1193,6 +1232,116 @@ export const storage = {
     return list;
   },
 
+  // PURCHASES (COMPRAS E INSUMOS)
+  getPurchases(): Purchase[] {
+    const raw = localStorage.getItem(STORAGE_KEYS.PURCHASES);
+    if (!raw) {
+      this.setPurchases(DEFAULT_PURCHASES);
+      return DEFAULT_PURCHASES;
+    }
+    try {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return parsed;
+      }
+      return DEFAULT_PURCHASES;
+    } catch (e) {
+      return DEFAULT_PURCHASES;
+    }
+  },
+  setPurchases(purchases: Purchase[]) {
+    localStorage.setItem(STORAGE_KEYS.PURCHASES, JSON.stringify(purchases));
+  },
+  savePurchase(purchase: Purchase): Purchase {
+    const list = this.getPurchases();
+    const idx = list.findIndex(p => String(p.id) === String(purchase.id));
+    const isNew = idx < 0;
+
+    if (idx >= 0) {
+      list[idx] = {
+        ...list[idx],
+        ...purchase,
+        updated_at: new Date().toISOString()
+      };
+    } else {
+      const newPurchase: Purchase = {
+        ...purchase,
+        id: purchase.id || Date.now(),
+        created_at: purchase.created_at || new Date().toISOString()
+      };
+      list.unshift(newPurchase);
+    }
+    this.setPurchases(list);
+
+    // Si la compra está completada y es nueva, abastecer inventario y generar movimientos
+    if (isNew && purchase.status === 'completed') {
+      const products = this.getProducts();
+      const movements = this.getMovements();
+
+      purchase.items.forEach(item => {
+        const prodIdx = products.findIndex(p => p.id === item.product_id);
+        if (prodIdx >= 0) {
+          const prevStock = products[prodIdx].stock || 0;
+          const newStock = prevStock + Number(item.quantity);
+          products[prodIdx].stock = newStock;
+          if (item.unit_cost > 0) {
+            products[prodIdx].cost_price = Number(item.unit_cost);
+          }
+          if (item.sale_price && item.sale_price > 0) {
+            products[prodIdx].price_cordobas = Number(item.sale_price);
+          }
+
+          // Registrar movimiento en Kardex
+          movements.unshift({
+            id: Date.now() + Math.floor(Math.random() * 1000),
+            product_id: item.product_id,
+            product_name: item.product_name,
+            sku: item.sku || products[prodIdx].sku,
+            type: 'in',
+            sub_type: 'ENTRADA',
+            quantity: Number(item.quantity),
+            unit_cost: Number(item.unit_cost),
+            previous_stock: prevStock,
+            new_stock: newStock,
+            reason: `Compra Factura ${purchase.invoice_number || 'S/N'} (${purchase.supplier_name})`,
+            user_name: purchase.user_name || 'Administrador',
+            created_at: new Date().toISOString()
+          });
+        }
+      });
+
+      this.setProducts(products);
+      this.setMovements(movements);
+
+      // Actualizar contador de compras del proveedor
+      if (purchase.supplier_id) {
+        const suppliers = this.getSuppliers();
+        const supIdx = suppliers.findIndex(s => s.id === purchase.supplier_id);
+        if (supIdx >= 0) {
+          suppliers[supIdx].purchases_count = (suppliers[supIdx].purchases_count || 0) + 1;
+          this.setSuppliers(suppliers);
+        }
+      }
+
+      // Si es al contado y con efectivo de caja, reflejar en egreso de caja si está abierta
+      if (purchase.payment_condition === 'contado' && purchase.payment_source === 'efectivo') {
+        const cash = this.getCashRegister();
+        if (cash && cash.status === 'open') {
+          cash.total_expenses = (cash.total_expenses || 0) + Number(purchase.total_neto);
+          cash.current_cash = Math.max(0, (cash.current_cash || cash.opening_amount) - Number(purchase.total_neto));
+          this.setCashRegister(cash);
+        }
+      }
+    }
+
+    return purchase;
+  },
+  deletePurchase(id: number | string): Purchase[] {
+    const list = this.getPurchases().filter(p => String(p.id) !== String(id));
+    this.setPurchases(list);
+    return list;
+  },
+
   // SALES
   getSales(): Sale[] {
     const raw = localStorage.getItem(STORAGE_KEYS.SALES);
@@ -1473,6 +1622,7 @@ export const storage = {
     this.setCategories(DEFAULT_CATEGORIES);
     this.setCustomers(DEFAULT_CUSTOMERS);
     this.setSuppliers(DEFAULT_SUPPLIERS);
+    this.setPurchases(DEFAULT_PURCHASES);
     this.setSales(DEFAULT_SALES);
     this.setCashRegister(DEFAULT_CASH);
     this.setMovements(DEFAULT_MOVEMENTS);
@@ -1489,6 +1639,7 @@ export const storage = {
       categories: this.getCategories(),
       customers: this.getCustomers(),
       suppliers: this.getSuppliers(),
+      purchases: this.getPurchases(),
       sales: this.getSales(),
       credits: this.getCredits(),
       movements: this.getMovements(),
@@ -1506,6 +1657,7 @@ export const storage = {
       if (data.categories) this.setCategories(data.categories);
       if (data.customers) this.setCustomers(data.customers);
       if (data.suppliers) this.setSuppliers(data.suppliers);
+      if (data.purchases) this.setPurchases(data.purchases);
       if (data.sales) this.setSales(data.sales);
       if (data.credits) this.setCredits(data.credits);
       if (data.movements) this.setMovements(data.movements);

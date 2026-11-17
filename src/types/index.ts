@@ -73,6 +73,44 @@ export interface Supplier {
   updated_at?: string;
 }
 
+export interface PurchaseItem {
+  id?: number | string;
+  product_id: number;
+  product_name: string;
+  sku?: string;
+  category_name?: string;
+  current_stock: number;
+  unit_cost: number;
+  quantity: number;
+  apply_iva: boolean;
+  sale_price?: number;
+  subtotal: number;
+  lot_number?: string;
+  expiry_date?: string;
+}
+
+export interface Purchase {
+  id: number;
+  invoice_number: string;
+  supplier_id: number;
+  supplier_name: string;
+  supplier_ruc?: string;
+  purchase_date: string;
+  payment_condition: 'contado' | 'credito';
+  payment_source?: 'efectivo' | 'transferencia' | 'credito';
+  due_date?: string;
+  subtotal: number;
+  discount: number;
+  tax_iva: number;
+  total_neto: number;
+  observations?: string;
+  status: 'completed' | 'draft' | 'cancelled';
+  items: PurchaseItem[];
+  user_name?: string;
+  created_at: string;
+  updated_at?: string;
+}
+
 export interface SaleItem {
   id?: number;
   sale_id?: number;

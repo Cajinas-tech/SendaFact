@@ -15,6 +15,7 @@ import { MovementsPage } from './pages/MovementsPage';
 import { CreditsPage } from './pages/CreditsPage';
 import { CustomersPage } from './pages/CustomersPage';
 import { SuppliersPage } from './pages/SuppliersPage';
+import { PurchasesPage } from './pages/PurchasesPage';
 import { SettingsPage } from './pages/SettingsPage';
 import InvoicesPage from './pages/InvoicesPage';
 import { LoginPage } from './pages/LoginPage';
@@ -36,6 +37,7 @@ export default function App() {
       case '/categorias': return 'CATEGORÍAS DE PRODUCTOS';
       case '/movimientos': return 'INVENTARIO & MOVIMIENTOS';
       case '/proveedores': return 'PROVEEDORES';
+      case '/compras': return 'COMPRAS E INSUMOS';
       case '/creditos': return 'CUENTAS POR COBRAR';
       case '/clientes': return 'DIRECTORIO DE CLIENTES';
       case '/ajustes': return 'AJUSTES DEL SISTEMA';
@@ -81,6 +83,7 @@ export default function App() {
               <Route path="/categorias" element={<CategoriesPage />} />
               <Route path="/movimientos" element={<MovementsPage />} />
               <Route path="/proveedores" element={<SuppliersPage />} />
+              <Route path="/compras" element={<PurchasesPage />} />
               <Route path="/creditos" element={<CreditsPage />} />
               <Route path="/clientes" element={<CustomersPage />} />
               <Route path="/ajustes" element={<SettingsPage />} />
