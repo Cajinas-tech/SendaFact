@@ -565,10 +565,10 @@ export const PurchasesPage: React.FC = () => {
                   <select
                     value={supplierId}
                     onChange={(e) => setSupplierId(Number(e.target.value))}
-                    className="w-full bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-700/80 rounded-xl px-3 py-2 text-xs font-semibold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition cursor-pointer appearance-none shadow-2xs pr-8"
+                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700/80 rounded-xl px-3 py-2 text-xs font-semibold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition cursor-pointer appearance-none shadow-2xs pr-8"
                   >
                     {suppliers.map(s => (
-                      <option key={s.id} value={s.id}>
+                      <option key={s.id} value={s.id} className="dark:bg-slate-800 dark:text-white">
                         {s.company_name || s.name} {s.ruc ? `(${s.ruc})` : ''}
                       </option>
                     ))}
@@ -587,7 +587,7 @@ export const PurchasesPage: React.FC = () => {
                   placeholder="Ej. FAC-001-4500"
                   value={invoiceNumber}
                   onChange={(e) => setInvoiceNumber(e.target.value)}
-                  className="w-full bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-700/80 rounded-xl px-3 py-2 text-xs font-semibold text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition shadow-2xs"
+                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700/80 rounded-xl px-3 py-2 text-xs font-semibold text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition shadow-2xs"
                 />
               </div>
 
@@ -601,7 +601,7 @@ export const PurchasesPage: React.FC = () => {
                     type="date"
                     value={purchaseDate}
                     onChange={(e) => setPurchaseDate(e.target.value)}
-                    className="w-full bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-700/80 rounded-xl px-3 py-2 text-xs font-semibold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition shadow-2xs"
+                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700/80 rounded-xl px-3 py-2 text-xs font-semibold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition shadow-2xs"
                   />
                   <Calendar className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
                 </div>
@@ -612,7 +612,7 @@ export const PurchasesPage: React.FC = () => {
                 <label className="block text-[11px] font-black uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5">
                   CONDICIÓN DE PAGO
                 </label>
-                <div className="grid grid-cols-2 gap-1.5 bg-slate-100 dark:bg-slate-850 p-1 rounded-xl border border-slate-200/80 dark:border-slate-700/80">
+                <div className="grid grid-cols-2 gap-1.5 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl border border-slate-200/80 dark:border-slate-700/80">
                   <button
                     type="button"
                     onClick={() => setPaymentCondition('contado')}
@@ -683,7 +683,7 @@ export const PurchasesPage: React.FC = () => {
                       type="date"
                       value={creditDueDate}
                       onChange={(e) => setCreditDueDate(e.target.value)}
-                      className="bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-700/80 rounded-xl px-3 py-1.5 text-xs font-semibold text-slate-900 dark:text-white shadow-2xs"
+                      className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700/80 rounded-xl px-3 py-1.5 text-xs font-semibold text-slate-900 dark:text-white shadow-2xs"
                     />
                   </div>
                   <span className="text-xs font-medium text-amber-600 dark:text-amber-400 flex items-center gap-1.5">
@@ -713,7 +713,7 @@ export const PurchasesPage: React.FC = () => {
                     setShowProductDropdown(true);
                   }}
                   onFocus={() => setShowProductDropdown(true)}
-                  className="w-full bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-700/80 rounded-xl pl-10 pr-4 py-2.5 text-xs sm:text-sm font-semibold text-slate-800 dark:text-slate-200 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition shadow-2xs"
+                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700/80 rounded-xl pl-10 pr-4 py-2.5 text-xs sm:text-sm font-semibold text-slate-800 dark:text-slate-200 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition shadow-2xs"
                 />
 
                 {/* Dropdown de Resultados de Búsqueda */}
@@ -767,7 +767,7 @@ export const PurchasesPage: React.FC = () => {
           <div className="bg-white dark:bg-[#0f172a] rounded-2xl border border-slate-200/90 dark:border-slate-800 shadow-xs overflow-hidden">
             
             {/* Header de la Tabla */}
-            <div className="flex items-center justify-between px-5 py-3.5 border-b border-slate-100 dark:border-slate-800/80 bg-slate-50/70 dark:bg-slate-850/40">
+            <div className="flex items-center justify-between px-5 py-3.5 border-b border-slate-100 dark:border-slate-800/80 bg-slate-50/70 dark:bg-slate-900/60">
               <div className="flex items-center gap-2">
                 <span className="text-xs font-black uppercase tracking-wider text-slate-800 dark:text-slate-200">
                   TABLA INTERACTIVA DE DETALLE
@@ -953,7 +953,7 @@ export const PurchasesPage: React.FC = () => {
                     placeholder="Ej. Mercadería recibida conforme en bodega central, lote sellado y verificado..."
                     value={observations}
                     onChange={(e) => setObservations(e.target.value)}
-                    className="w-full bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-700/80 rounded-xl p-3 text-xs sm:text-sm font-semibold text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition shadow-2xs resize-none"
+                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700/80 rounded-xl p-3 text-xs sm:text-sm font-semibold text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition shadow-2xs resize-none"
                   />
                 </div>
 
@@ -981,7 +981,7 @@ export const PurchasesPage: React.FC = () => {
               </div>
 
               {/* Lado Derecho: Resumen de Totales y Botón Procesar Compra */}
-              <div className="lg:col-span-5 bg-slate-50/80 dark:bg-slate-850/60 p-5 rounded-2xl border border-slate-200/80 dark:border-slate-800 space-y-3.5">
+              <div className="lg:col-span-5 bg-slate-50/80 dark:bg-slate-900/80 p-5 rounded-2xl border border-slate-200/80 dark:border-slate-800 space-y-3.5">
                 
                 {/* Subtotal */}
                 <div className="flex items-center justify-between text-xs font-bold text-slate-600 dark:text-slate-400">
@@ -1166,7 +1166,7 @@ export const PurchasesPage: React.FC = () => {
                       placeholder="SKU-6925"
                       value={newProductForm.sku}
                       onChange={(e) => setNewProductForm({ ...newProductForm, sku: e.target.value })}
-                      className="w-full bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-700/80 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm font-mono font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                      className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700/80 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm font-mono font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
                     />
                   </div>
 
@@ -1179,7 +1179,7 @@ export const PurchasesPage: React.FC = () => {
                       placeholder="Escanee o ingrese código de barra"
                       value={newProductForm.barcode}
                       onChange={(e) => setNewProductForm({ ...newProductForm, barcode: e.target.value })}
-                      className="w-full bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-700/80 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm font-mono text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                      className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700/80 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm font-mono text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
                     />
                   </div>
                 </div>
@@ -1195,7 +1195,7 @@ export const PurchasesPage: React.FC = () => {
                     placeholder="Ej. Leche Entera 1 Litro"
                     value={newProductForm.name}
                     onChange={(e) => setNewProductForm({ ...newProductForm, name: e.target.value })}
-                    className="w-full bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-700/80 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700/80 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
                   />
                 </div>
 
@@ -1208,10 +1208,10 @@ export const PurchasesPage: React.FC = () => {
                     <select
                       value={newProductForm.category_id}
                       onChange={(e) => setNewProductForm({ ...newProductForm, category_id: Number(e.target.value) })}
-                      className="w-full bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-700/80 rounded-xl px-3 py-2 text-xs font-semibold text-slate-900 dark:text-white focus:outline-none"
+                      className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700/80 rounded-xl px-3 py-2 text-xs font-semibold text-slate-900 dark:text-white focus:outline-none"
                     >
                       {categories.map(c => (
-                        <option key={c.id} value={c.id}>{c.name}</option>
+                        <option key={c.id} value={c.id} className="dark:bg-slate-800 dark:text-white">{c.name}</option>
                       ))}
                     </select>
                   </div>
@@ -1223,14 +1223,14 @@ export const PurchasesPage: React.FC = () => {
                     <select
                       value={newProductForm.unit}
                       onChange={(e) => setNewProductForm({ ...newProductForm, unit: e.target.value })}
-                      className="w-full bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-700/80 rounded-xl px-3 py-2 text-xs font-semibold text-slate-900 dark:text-white focus:outline-none"
+                      className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700/80 rounded-xl px-3 py-2 text-xs font-semibold text-slate-900 dark:text-white focus:outline-none"
                     >
-                      <option value="Unidad">Unidad</option>
-                      <option value="Litro">Litro</option>
-                      <option value="Kilogramo">Kilogramo</option>
-                      <option value="Metro">Metro</option>
-                      <option value="Caja">Caja</option>
-                      <option value="Paquete">Paquete</option>
+                      <option value="Unidad" className="dark:bg-slate-800 dark:text-white">Unidad</option>
+                      <option value="Litro" className="dark:bg-slate-800 dark:text-white">Litro</option>
+                      <option value="Kilogramo" className="dark:bg-slate-800 dark:text-white">Kilogramo</option>
+                      <option value="Metro" className="dark:bg-slate-800 dark:text-white">Metro</option>
+                      <option value="Caja" className="dark:bg-slate-800 dark:text-white">Caja</option>
+                      <option value="Paquete" className="dark:bg-slate-800 dark:text-white">Paquete</option>
                     </select>
                   </div>
 
@@ -1241,11 +1241,11 @@ export const PurchasesPage: React.FC = () => {
                     <select
                       value={newProductForm.tipo}
                       onChange={(e) => setNewProductForm({ ...newProductForm, tipo: e.target.value })}
-                      className="w-full bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-700/80 rounded-xl px-3 py-2 text-xs font-semibold text-slate-900 dark:text-white focus:outline-none"
+                      className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700/80 rounded-xl px-3 py-2 text-xs font-semibold text-slate-900 dark:text-white focus:outline-none"
                     >
-                      <option value="Producto Terminado">Producto Terminado</option>
-                      <option value="Materia Prima">Materia Prima</option>
-                      <option value="Insumo">Insumo</option>
+                      <option value="Producto Terminado" className="dark:bg-slate-800 dark:text-white">Producto Terminado</option>
+                      <option value="Materia Prima" className="dark:bg-slate-800 dark:text-white">Materia Prima</option>
+                      <option value="Insumo" className="dark:bg-slate-800 dark:text-white">Insumo</option>
                     </select>
                   </div>
                 </div>
@@ -1263,7 +1263,7 @@ export const PurchasesPage: React.FC = () => {
                       placeholder="0"
                       value={newProductForm.price_cordobas}
                       onChange={(e) => setNewProductForm({ ...newProductForm, price_cordobas: Number(e.target.value) || 0 })}
-                      className="w-full bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-700/80 rounded-xl px-3.5 py-2 text-xs sm:text-sm font-mono font-bold text-slate-900 dark:text-white focus:outline-none"
+                      className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700/80 rounded-xl px-3.5 py-2 text-xs sm:text-sm font-mono font-bold text-slate-900 dark:text-white focus:outline-none"
                     />
                   </div>
 
@@ -1278,7 +1278,7 @@ export const PurchasesPage: React.FC = () => {
                       placeholder="0"
                       value={newProductForm.cost_price}
                       onChange={(e) => setNewProductForm({ ...newProductForm, cost_price: Number(e.target.value) || 0 })}
-                      className="w-full bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-700/80 rounded-xl px-3.5 py-2 text-xs sm:text-sm font-mono font-bold text-slate-900 dark:text-white focus:outline-none"
+                      className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700/80 rounded-xl px-3.5 py-2 text-xs sm:text-sm font-mono font-bold text-slate-900 dark:text-white focus:outline-none"
                     />
                   </div>
                 </div>
@@ -1294,7 +1294,7 @@ export const PurchasesPage: React.FC = () => {
                       min="0"
                       value={newProductForm.stock}
                       onChange={(e) => setNewProductForm({ ...newProductForm, stock: Number(e.target.value) || 0 })}
-                      className="w-full bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-700/80 rounded-xl px-3 py-2 text-xs sm:text-sm font-mono font-bold text-slate-900 dark:text-white focus:outline-none"
+                      className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700/80 rounded-xl px-3 py-2 text-xs sm:text-sm font-mono font-bold text-slate-900 dark:text-white focus:outline-none"
                     />
                   </div>
 
@@ -1307,7 +1307,7 @@ export const PurchasesPage: React.FC = () => {
                       min="1"
                       value={newProductForm.min_stock}
                       onChange={(e) => setNewProductForm({ ...newProductForm, min_stock: Number(e.target.value) || 1 })}
-                      className="w-full bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-700/80 rounded-xl px-3 py-2 text-xs sm:text-sm font-mono font-bold text-slate-900 dark:text-white focus:outline-none"
+                      className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700/80 rounded-xl px-3 py-2 text-xs sm:text-sm font-mono font-bold text-slate-900 dark:text-white focus:outline-none"
                     />
                   </div>
 
@@ -1319,7 +1319,7 @@ export const PurchasesPage: React.FC = () => {
                       type="date"
                       value={newProductForm.expiry_date}
                       onChange={(e) => setNewProductForm({ ...newProductForm, expiry_date: e.target.value })}
-                      className="w-full bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-700/80 rounded-xl px-3 py-2 text-xs font-semibold text-slate-900 dark:text-white focus:outline-none"
+                      className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700/80 rounded-xl px-3 py-2 text-xs font-semibold text-slate-900 dark:text-white focus:outline-none"
                     />
                   </div>
                 </div>
@@ -1344,7 +1344,7 @@ export const PurchasesPage: React.FC = () => {
                       placeholder="Ej. 1.80m Largo × 1.20m Alto × 5.71cm Espesor"
                       value={newProductForm.measurements_spec}
                       onChange={(e) => setNewProductForm({ ...newProductForm, measurements_spec: e.target.value })}
-                      className="w-full bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-700/80 rounded-xl px-3.5 py-2 text-xs font-semibold text-slate-900 dark:text-white focus:outline-none"
+                      className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700/80 rounded-xl px-3.5 py-2 text-xs font-semibold text-slate-900 dark:text-white focus:outline-none"
                     />
                   </div>
 
@@ -1356,7 +1356,7 @@ export const PurchasesPage: React.FC = () => {
                         placeholder="Ej. 1.20 m"
                         value={newProductForm.alto}
                         onChange={(e) => setNewProductForm({ ...newProductForm, alto: e.target.value })}
-                        className="w-full bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-700/80 rounded-xl px-2.5 py-1.5 text-xs text-slate-900 dark:text-white"
+                        className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700/80 rounded-xl px-2.5 py-1.5 text-xs text-slate-900 dark:text-white"
                       />
                     </div>
                     <div>
@@ -1366,7 +1366,7 @@ export const PurchasesPage: React.FC = () => {
                         placeholder="Ej. 1.80 m"
                         value={newProductForm.ancho}
                         onChange={(e) => setNewProductForm({ ...newProductForm, ancho: e.target.value })}
-                        className="w-full bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-700/80 rounded-xl px-2.5 py-1.5 text-xs text-slate-900 dark:text-white"
+                        className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700/80 rounded-xl px-2.5 py-1.5 text-xs text-slate-900 dark:text-white"
                       />
                     </div>
                     <div>
@@ -1376,7 +1376,7 @@ export const PurchasesPage: React.FC = () => {
                         placeholder="Ej. 10 mm"
                         value={newProductForm.espesor}
                         onChange={(e) => setNewProductForm({ ...newProductForm, espesor: e.target.value })}
-                        className="w-full bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-700/80 rounded-xl px-2.5 py-1.5 text-xs text-slate-900 dark:text-white"
+                        className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700/80 rounded-xl px-2.5 py-1.5 text-xs text-slate-900 dark:text-white"
                       />
                     </div>
                   </div>
@@ -1390,7 +1390,7 @@ export const PurchasesPage: React.FC = () => {
                       placeholder="Descripción detallada para la ficha técnica del cliente..."
                       value={newProductForm.description}
                       onChange={(e) => setNewProductForm({ ...newProductForm, description: e.target.value })}
-                      className="w-full bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-700/80 rounded-xl px-3.5 py-2 text-xs font-semibold text-slate-900 dark:text-white focus:outline-none"
+                      className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700/80 rounded-xl px-3.5 py-2 text-xs font-semibold text-slate-900 dark:text-white focus:outline-none"
                     />
                   </div>
 
