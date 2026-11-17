@@ -24,7 +24,8 @@ import {
   Upload,
   Check,
   Eye,
-  RotateCcw
+  RotateCcw,
+  MessageSquare
 } from 'lucide-react';
 import { storage, compressImageFile } from '../lib/storage';
 import { Product, Supplier, Category, Purchase, PurchaseItem, CashRegister } from '../types';
@@ -69,7 +70,32 @@ export const PurchasesPage: React.FC = () => {
   // Modales
   const [showNewProductModal, setShowNewProductModal] = useState(false);
   const [viewingPurchase, setViewingPurchase] = useState<Purchase | null>(null);
+  const [paperFormat, setPaperFormat] = useState<'80mm' | '58mm' | 'letter'>('80mm');
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+
+  // Ajustes de Empresa para Membrete de Impresión
+  const company = storage.getCompanySettings() || {
+    name: 'Senda Sistemas',
+    ruc: 'J0310000001234',
+    address: 'Managua, Nicaragua, Villa Sol Casa E8-23',
+    phone: '+505 8505 9284'
+  };
+
+  // Enviar comprobante por WhatsApp
+  const handleSendWhatsApp = (purchase: Purchase) => {
+    const text = `*COMPROBANTE DE COMPRA E INGRESO A ALMACÉN*\n` +
+      `*Empresa:* ${company.name || 'SENDA SISTEMAS'}\n` +
+      `*Factura:* #${purchase.invoice_number}\n` +
+      `*Proveedor:* ${purchase.supplier_name}\n` +
+      `*Fecha:* ${purchase.purchase_date}\n` +
+      `*Condición:* ${purchase.payment_condition.toUpperCase()} (${purchase.payment_source || ''})\n` +
+      `*Total Neto:* C$ ${purchase.total_neto.toLocaleString('en-US', { minimumFractionDigits: 2 })}\n` +
+      (purchase.observations ? `*Obs:* ${purchase.observations}\n` : '') +
+      `_Mercancía recibida e inventario abastecido exitosamente._`;
+
+    const encoded = encodeURIComponent(text);
+    window.open(`https://wa.me/?text=${encoded}`, '_blank');
+  };
 
   // Estado del Formulario Nuevo Producto (Imágenes 3 y 4)
   const [newProductForm, setNewProductForm] = useState({
@@ -256,6 +282,7 @@ export const PurchasesPage: React.FC = () => {
 
       if (status === 'completed') {
         success(`¡Compra procesada con éxito! Se abasteció el inventario y se registraron los movimientos en Kardex.`);
+        setViewingPurchase(newPurchase);
       } else {
         info(`Borrador de compra guardado correctamente`);
       }
@@ -386,7 +413,11 @@ export const PurchasesPage: React.FC = () => {
 
   // Imprimir comprobante
   const handlePrint = () => {
-    window.print();
+    if (purchases.length > 0) {
+      setViewingPurchase(purchases[0]);
+    } else {
+      window.print();
+    }
   };
 
   return (
@@ -1376,64 +1407,354 @@ export const PurchasesPage: React.FC = () => {
         document.body
       )}
 
-      {/* 7. MODAL: VER DETALLE / COMPROBANTE DE COMPRA */}
+      {/* 7. MODAL: TICKET DE IMPRESIÓN Y VISTA PREVIA EN VIVO (FIEL A IMAGEN 2) */}
       {viewingPurchase && createPortal(
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
-          <div className="relative w-full max-w-xl bg-white dark:bg-[#0c1427] border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-2xl space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
-              <h3 className="text-base font-extrabold text-slate-900 dark:text-white">
-                Comprobante de Recepción: {viewingPurchase.invoice_number}
-              </h3>
-              <button onClick={() => setViewingPurchase(null)} className="p-1 rounded-lg text-slate-400 hover:text-slate-600">
-                <X className="w-5 h-5" />
-              </button>
+        <div 
+          className="fixed inset-0 z-[160] flex items-center justify-center p-3 sm:p-4 bg-slate-950/70 backdrop-blur-sm animate-in fade-in duration-200"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setViewingPurchase(null);
+          }}
+        >
+          <div className="bg-white dark:bg-[#0f172a] rounded-[28px] border border-slate-200/90 dark:border-slate-800 shadow-2xl w-full max-w-4xl max-h-[92vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-200">
+            
+            {/* Header del Modal (no-print) */}
+            <div className="no-print px-6 py-4.5 border-b border-slate-100 dark:border-slate-800/80 flex items-center justify-between bg-white dark:bg-[#0f172a] shrink-0">
+              <div className="flex items-center space-x-3.5">
+                <div className="w-10 h-10 rounded-2xl bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center border border-blue-100 dark:border-blue-900/50 shadow-2xs">
+                  <Printer className="w-5 h-5 stroke-[2.2]" />
+                </div>
+                <div>
+                  <h3 className="text-base sm:text-lg font-black text-slate-900 dark:text-white uppercase tracking-tight">
+                    Ticket de Impresión
+                  </h3>
+                  <p className="text-xs text-slate-400 dark:text-slate-500 font-medium">
+                    Factura de Compra / Entrada de Almacén
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2 text-xs font-semibold text-slate-600 dark:text-slate-300">
+                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 shrink-0 animate-pulse"></span>
+                  <span className="font-bold hidden sm:inline">
+                    Vista Previa en Vivo ({paperFormat === 'letter' ? 'Formato Carta' : `Ancho ${paperFormat}`})
+                  </span>
+                </div>
+                <span className="text-[10px] font-mono px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-500 font-bold hidden sm:inline">
+                  {paperFormat === '58mm' ? '58 x 297 mm' : paperFormat === 'letter' ? '8.5 x 11 pulg' : '80 x 297 mm'}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setViewingPurchase(null)}
+                  className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-400 hover:text-slate-600 dark:hover:text-white flex items-center justify-center transition-colors cursor-pointer"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
             </div>
 
-            <div className="text-xs space-y-1.5 text-slate-600 dark:text-slate-300">
-              <div><strong>Proveedor:</strong> {viewingPurchase.supplier_name}</div>
-              <div><strong>Fecha de Compra:</strong> {viewingPurchase.purchase_date}</div>
-              <div><strong>Condición de Pago:</strong> {viewingPurchase.payment_condition.toUpperCase()} ({viewingPurchase.payment_source})</div>
-              {viewingPurchase.due_date && <div><strong>Vencimiento Crédito:</strong> {viewingPurchase.due_date}</div>}
-              {viewingPurchase.observations && <div><strong>Observaciones:</strong> {viewingPurchase.observations}</div>}
+            {/* Cuerpo del Modal (2 Columnas) */}
+            <div className="flex-1 overflow-y-auto modal-scroll p-6 grid grid-cols-1 md:grid-cols-12 gap-6 bg-slate-50/50 dark:bg-slate-900/40">
+              
+              {/* Columna Izquierda: Metadatos, Selección de Formato y Botones (no-print) */}
+              <div className="no-print md:col-span-5 space-y-4">
+                
+                {/* Tarjeta de Resumen del Documento */}
+                <div className="bg-white dark:bg-[#0f172a] rounded-2xl p-4 border border-slate-200/90 dark:border-slate-800 space-y-2.5 shadow-xs">
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="text-slate-400 font-semibold">Documento:</span>
+                    <span className="font-mono font-bold text-slate-900 dark:text-slate-100">
+                      #{viewingPurchase.invoice_number}
+                    </span>
+                  </div>
+
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="text-slate-400 font-semibold">Proveedor:</span>
+                    <span className="font-bold text-slate-900 dark:text-slate-100 truncate max-w-[180px]" title={viewingPurchase.supplier_name}>
+                      {viewingPurchase.supplier_name}
+                    </span>
+                  </div>
+
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="text-slate-400 font-semibold">Tipo:</span>
+                    <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider ${
+                      viewingPurchase.payment_condition === 'contado'
+                        ? 'bg-emerald-50 dark:bg-emerald-950/70 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-900/50'
+                        : 'bg-purple-50 dark:bg-purple-950/70 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-900/50'
+                    }`}>
+                      {viewingPurchase.payment_condition.toUpperCase()}
+                    </span>
+                  </div>
+
+                  <div className="flex justify-between items-center text-xs pt-2 border-t border-slate-100 dark:border-slate-800">
+                    <span className="text-slate-400 font-semibold">Total a Imprimir:</span>
+                    <span className="font-black text-base text-slate-900 dark:text-white font-mono">
+                      C$ {viewingPurchase.total_neto.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Selector de Formato de Impresión */}
+                <div className="space-y-2">
+                  <label className="text-[11px] font-black tracking-wider text-slate-500 uppercase block">
+                    FORMATO DE IMPRESIÓN
+                  </label>
+                  <div className="grid grid-cols-3 gap-2">
+                    
+                    {/* Opción 80 mm */}
+                    <button
+                      type="button"
+                      onClick={() => setPaperFormat('80mm')}
+                      className={`p-2.5 rounded-2xl text-left transition-all cursor-pointer flex flex-col justify-between ${
+                        paperFormat === '80mm'
+                          ? 'border-2 border-cyan-500 bg-cyan-50/30 dark:bg-cyan-950/30 shadow-xs'
+                          : 'border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 hover:border-slate-300'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between gap-1 w-full">
+                        <span className="font-black text-xs text-slate-900 dark:text-white">
+                          80 mm
+                        </span>
+                        {paperFormat === '80mm' ? (
+                          <div className="w-4 h-4 rounded-full bg-cyan-500 text-white flex items-center justify-center shrink-0">
+                            <Check className="w-2.5 h-2.5 stroke-[3]" />
+                          </div>
+                        ) : (
+                          <div className="w-4 h-4 rounded-full border border-slate-300 dark:border-slate-700 shrink-0" />
+                        )}
+                      </div>
+                      <p className="text-[9px] text-slate-400 font-medium mt-1">Caja / POS</p>
+                    </button>
+
+                    {/* Opción 58 mm */}
+                    <button
+                      type="button"
+                      onClick={() => setPaperFormat('58mm')}
+                      className={`p-2.5 rounded-2xl text-left transition-all cursor-pointer flex flex-col justify-between ${
+                        paperFormat === '58mm'
+                          ? 'border-2 border-cyan-500 bg-cyan-50/30 dark:bg-cyan-950/30 shadow-xs'
+                          : 'border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 hover:border-slate-300'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between gap-1 w-full">
+                        <span className="font-black text-xs text-slate-900 dark:text-white">
+                          58 mm
+                        </span>
+                        {paperFormat === '58mm' ? (
+                          <div className="w-4 h-4 rounded-full bg-cyan-500 text-white flex items-center justify-center shrink-0">
+                            <Check className="w-2.5 h-2.5 stroke-[3]" />
+                          </div>
+                        ) : (
+                          <div className="w-4 h-4 rounded-full border border-slate-300 dark:border-slate-700 shrink-0" />
+                        )}
+                      </div>
+                      <p className="text-[9px] text-slate-400 font-medium mt-1">Bluetooth</p>
+                    </button>
+
+                    {/* Opción Carta */}
+                    <button
+                      type="button"
+                      onClick={() => setPaperFormat('letter')}
+                      className={`p-2.5 rounded-2xl text-left transition-all cursor-pointer flex flex-col justify-between ${
+                        paperFormat === 'letter'
+                          ? 'border-2 border-cyan-500 bg-cyan-50/30 dark:bg-cyan-950/30 shadow-xs'
+                          : 'border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 hover:border-slate-300'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between gap-1 w-full">
+                        <span className="font-black text-xs text-slate-900 dark:text-white truncate">
+                          Carta (...)
+                        </span>
+                        {paperFormat === 'letter' ? (
+                          <div className="w-4 h-4 rounded-full bg-cyan-500 text-white flex items-center justify-center shrink-0">
+                            <Check className="w-2.5 h-2.5 stroke-[3]" />
+                          </div>
+                        ) : (
+                          <div className="w-4 h-4 rounded-full border border-slate-300 dark:border-slate-700 shrink-0" />
+                        )}
+                      </div>
+                      <p className="text-[9px] text-slate-400 font-medium mt-1">Oficina / PDF</p>
+                    </button>
+
+                  </div>
+                </div>
+
+                {/* Botones de Acción */}
+                <div className="space-y-2.5 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => window.print()}
+                    className="w-full py-3 rounded-xl bg-[#0284c7] hover:bg-[#0369a1] text-white font-black text-xs uppercase tracking-wider shadow-md shadow-sky-500/20 transition flex items-center justify-center gap-2 cursor-pointer active:scale-95"
+                  >
+                    <Printer className="w-4 h-4" />
+                    <span>IMPRIMIR TICKET POS ({paperFormat.toUpperCase()})</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handleSendWhatsApp(viewingPurchase)}
+                    className="w-full py-3 rounded-xl bg-[#059669] hover:bg-[#047857] text-white font-black text-xs uppercase tracking-wider shadow-md shadow-emerald-500/20 transition flex items-center justify-center gap-2 cursor-pointer active:scale-95"
+                  >
+                    <MessageSquare className="w-4 h-4" />
+                    <span>ENVIAR POR WHATSAPP</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setViewingPurchase(null)}
+                    className="w-full py-2 text-center text-xs font-bold text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition cursor-pointer"
+                  >
+                    Cerrar Vista
+                  </button>
+                </div>
+
+              </div>
+
+              {/* Columna Derecha: Vista Previa en Vivo del Ticket Térmico */}
+              <div className="md:col-span-7 flex justify-center items-start">
+                <div 
+                  id="printable-ticket"
+                  className={`paper-${paperFormat} w-full bg-white text-slate-900 p-6 rounded-2xl shadow-md border border-slate-200/90 font-mono text-xs leading-tight transition-all ${
+                    paperFormat === '58mm' ? 'max-w-[280px]' : paperFormat === 'letter' ? 'max-w-[480px]' : 'max-w-[340px]'
+                  }`}
+                >
+                  {/* Encabezado Membretado de la Empresa */}
+                  <div className="text-center space-y-0.5">
+                    <h4 className="font-black text-sm uppercase tracking-tight text-slate-900">
+                      {company.name || 'SENDA SISTEMAS'}
+                    </h4>
+                    <p className="text-[11px] text-slate-600">RUC: {company.ruc || 'J0310000001234'}</p>
+                    <p className="text-[10px] text-slate-500">{company.address || 'Managua, Nicaragua, Villa Sol Casa E8-23'}</p>
+                    <p className="text-[10px] text-slate-500">PBX: {company.phone || '+505 8505 9284'}</p>
+                  </div>
+
+                  <div className="border-b border-dashed border-slate-300 my-3" />
+
+                  {/* Datos del Documento */}
+                  <div className="space-y-1 text-[11px]">
+                    <div className="flex justify-between items-center">
+                      <span className="font-bold">FAC: #{viewingPurchase.invoice_number}</span>
+                      <span className="border border-slate-800 px-1.5 py-0.2 rounded text-[9px] font-black uppercase">
+                        {viewingPurchase.payment_source?.toUpperCase() || viewingPurchase.payment_condition.toUpperCase()}
+                      </span>
+                    </div>
+                    <div className="text-slate-600 text-[10px]">
+                      Fecha: {viewingPurchase.purchase_date}
+                    </div>
+                    <div className="text-slate-600 text-[10px]">
+                      Operador: {viewingPurchase.user_name || 'Administrador'}
+                    </div>
+                  </div>
+
+                  <div className="border-b border-dashed border-slate-300 my-2.5" />
+
+                  {/* Datos del Proveedor */}
+                  <div className="space-y-0.5 text-[11px]">
+                    <div className="text-slate-700">
+                      <span className="font-bold">Proveedor: </span>
+                      <span>{viewingPurchase.supplier_name}</span>
+                    </div>
+                    {viewingPurchase.supplier_ruc && (
+                      <div className="text-[10px] text-slate-500">
+                        RUC: {viewingPurchase.supplier_ruc}
+                      </div>
+                    )}
+                    {viewingPurchase.due_date && (
+                      <div className="text-[10px] font-bold text-amber-700">
+                        Vencimiento: {viewingPurchase.due_date}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="border-b border-dashed border-slate-300 my-2.5" />
+
+                  {/* Tabla / Lista de Artículos */}
+                  <div className="space-y-1.5 text-[11px]">
+                    <div className="flex justify-between font-bold text-slate-800 text-[10px] uppercase border-b border-slate-200 pb-1">
+                      <span>Cant Descripción</span>
+                      <span>Total</span>
+                    </div>
+
+                    {viewingPurchase.items.map((item, i) => (
+                      <div key={i} className="space-y-0.5">
+                        <div className="flex justify-between items-start">
+                          <span className="font-bold text-slate-900">
+                            {item.quantity}x {item.product_name}
+                          </span>
+                          <span className="font-bold text-slate-900 ml-2 whitespace-nowrap">
+                            C$ {item.subtotal.toFixed(2)}
+                          </span>
+                        </div>
+                        <div className="text-[10px] text-slate-500 pl-4">
+                          P.U: C$ {item.unit_cost.toFixed(2)} {item.apply_iva ? '(Gravado 15%)' : '(Exento)'}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="border-b border-dashed border-slate-300 my-3" />
+
+                  {/* Resumen de Totales */}
+                  <div className="space-y-1 text-right text-[11px]">
+                    <div className="flex justify-between text-slate-600">
+                      <span>Subtotal:</span>
+                      <span className="font-mono">C$ {viewingPurchase.subtotal.toFixed(2)}</span>
+                    </div>
+
+                    {viewingPurchase.discount > 0 && (
+                      <div className="flex justify-between text-slate-600">
+                        <span>Descuento:</span>
+                        <span className="font-mono">-C$ {viewingPurchase.discount.toFixed(2)}</span>
+                      </div>
+                    )}
+
+                    <div className="flex justify-between text-slate-600">
+                      <span>IVA (15%):</span>
+                      <span className="font-mono">C$ {viewingPurchase.tax_iva.toFixed(2)}</span>
+                    </div>
+
+                    <div className="flex justify-between font-black text-sm text-slate-900 border-t border-slate-300 pt-1 mt-1">
+                      <span>TOTAL:</span>
+                      <span className="font-mono">C$ {viewingPurchase.total_neto.toFixed(2)}</span>
+                    </div>
+                  </div>
+
+                  {/* Observaciones si existen */}
+                  {viewingPurchase.observations && (
+                    <div className="mt-3 p-2 bg-slate-50 rounded text-[10px] text-slate-600 border border-slate-100">
+                      <span className="font-bold">Obs: </span>
+                      {viewingPurchase.observations}
+                    </div>
+                  )}
+
+                  {/* Pie de Firma y Agradecimiento */}
+                  <div className="border-b border-dashed border-slate-300 my-3" />
+                  <div className="text-center space-y-2 text-[10px] text-slate-500 pt-1">
+                    <p className="uppercase font-bold text-slate-700">
+                      ¡ENTRADA DE MERCADERÍA CONFORME!
+                    </p>
+                    <p className="text-[9px]">Revisado y abastecido en bodega central.</p>
+                    <div className="pt-4 pb-1">
+                      <p className="border-t border-slate-400 w-36 mx-auto mb-1"></p>
+                      <p className="text-[9px] uppercase font-bold text-slate-600">Firma de Recepción / Almacén</p>
+                    </div>
+                  </div>
+
+                  {/* Código de barras simulado */}
+                  <div className="text-center pt-2 space-y-0.5">
+                    <div className="tracking-[4px] font-mono font-bold text-xs text-slate-700 select-none">
+                      ||| | |||| || ||| || ||||
+                    </div>
+                    <div className="text-[9px] text-slate-400 font-mono">
+                      #{viewingPurchase.invoice_number}
+                    </div>
+                  </div>
+
+                </div>
+              </div>
+
             </div>
 
-            <div className="border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden">
-              <table className="w-full text-xs text-left">
-                <thead className="bg-slate-100 dark:bg-slate-800 text-[10px] font-black uppercase">
-                  <tr>
-                    <th className="p-2">Producto</th>
-                    <th className="p-2 text-center">Cant.</th>
-                    <th className="p-2 text-right">Costo</th>
-                    <th className="p-2 text-right">Subtotal</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                  {viewingPurchase.items.map((it, idx) => (
-                    <tr key={idx}>
-                      <td className="p-2">{it.product_name}</td>
-                      <td className="p-2 text-center font-mono font-bold">{it.quantity}</td>
-                      <td className="p-2 text-right font-mono">C${it.unit_cost.toFixed(2)}</td>
-                      <td className="p-2 text-right font-mono font-bold">C${it.subtotal.toFixed(2)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-
-            <div className="pt-2 text-right space-y-1 font-mono text-xs">
-              <div>Subtotal: C${viewingPurchase.subtotal.toFixed(2)}</div>
-              <div>IVA 15%: C${viewingPurchase.tax_iva.toFixed(2)}</div>
-              <div className="text-sm font-black text-blue-600 dark:text-blue-400">Total: C${viewingPurchase.total_neto.toFixed(2)}</div>
-            </div>
-
-            <div className="flex justify-end gap-2 pt-2 border-t">
-              <button
-                onClick={() => window.print()}
-                className="px-4 py-2 rounded-xl bg-blue-600 text-white font-bold text-xs"
-              >
-                Imprimir Comprobante
-              </button>
-            </div>
           </div>
         </div>,
         document.body
