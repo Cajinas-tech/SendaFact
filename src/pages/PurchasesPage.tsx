@@ -83,15 +83,51 @@ export const PurchasesPage: React.FC = () => {
 
   // Enviar comprobante por WhatsApp
   const handleSendWhatsApp = (purchase: Purchase) => {
-    const text = `*COMPROBANTE DE COMPRA E INGRESO A ALMACÉN*\n` +
-      `*Empresa:* ${company.name || 'SENDA SISTEMAS'}\n` +
-      `*Factura:* #${purchase.invoice_number}\n` +
+    const sup = suppliers.find(s => s.id === purchase.supplier_id) || 
+      suppliers.find(s => (s.company_name || s.name) === purchase.supplier_name);
+
+    const formatPurchaseDate = (dateStr: string) => {
+      if (!dateStr) return 'N/A';
+      try {
+        const parts = dateStr.split('-');
+        if (parts.length === 3) return `${parts[2]}/${parts[1]}/${parts[0]}`;
+        return dateStr;
+      } catch {
+        return dateStr;
+      }
+    };
+
+    const formatCreatedTime = (isoStr: string) => {
+      if (!isoStr) return '';
+      try {
+        const d = new Date(isoStr);
+        return d.toLocaleDateString('es-NI') + ' ' + d.toLocaleTimeString('es-NI', { hour: '2-digit', minute: '2-digit', hour12: true });
+      } catch {
+        return '';
+      }
+    };
+
+    const itemsText = purchase.items.map(it => 
+      `• ${it.quantity}x ${it.product_name} (P.U: C$ ${it.unit_cost.toFixed(2)}) = C$ ${it.subtotal.toFixed(2)}`
+    ).join('\n');
+
+    const text = `*COMPROBANTE DE COMPRA A PROVEEDOR - ${company.name || 'SENDA SISTEMAS'}*\n` +
+      `*N° Factura Física:* #${purchase.invoice_number}\n` +
       `*Proveedor:* ${purchase.supplier_name}\n` +
-      `*Fecha:* ${purchase.purchase_date}\n` +
-      `*Condición:* ${purchase.payment_condition.toUpperCase()} (${purchase.payment_source || ''})\n` +
-      `*Total Neto:* C$ ${purchase.total_neto.toLocaleString('en-US', { minimumFractionDigits: 2 })}\n` +
-      (purchase.observations ? `*Obs:* ${purchase.observations}\n` : '') +
-      `_Mercancía recibida e inventario abastecido exitosamente._`;
+      (purchase.supplier_ruc || sup?.ruc ? `*RUC Proveedor:* ${purchase.supplier_ruc || sup?.ruc}\n` : '') +
+      `*Fecha de Compra a Proveedor:* ${formatPurchaseDate(purchase.purchase_date)}\n` +
+      `*Fecha de Ingreso en Sistema:* ${formatCreatedTime(purchase.created_at)}\n` +
+      `*Condición de Pago:* ${purchase.payment_condition.toUpperCase()} (${purchase.payment_source || ''})\n` +
+      (purchase.due_date ? `*Vencimiento Crédito:* ${formatPurchaseDate(purchase.due_date)}\n` : '') +
+      `----------------------------------------\n` +
+      `*Artículos Ingresados a Inventario:*\n${itemsText}\n` +
+      `----------------------------------------\n` +
+      `*Subtotal:* C$ ${purchase.subtotal.toLocaleString('en-US', { minimumFractionDigits: 2 })}\n` +
+      (purchase.discount > 0 ? `*Descuento:* -C$ ${purchase.discount.toLocaleString('en-US', { minimumFractionDigits: 2 })}\n` : '') +
+      `*IVA (15%):* C$ ${purchase.tax_iva.toLocaleString('en-US', { minimumFractionDigits: 2 })}\n` +
+      `*TOTAL NETO COMPRA:* C$ ${purchase.total_neto.toLocaleString('en-US', { minimumFractionDigits: 2 })}\n` +
+      (purchase.observations ? `*Observaciones de Bodega:* ${purchase.observations}\n` : '') +
+      `_Mercancía recibida e inventario abastecido en almacén conforme._`;
 
     const encoded = encodeURIComponent(text);
     window.open(`https://wa.me/?text=${encoded}`, '_blank');
@@ -1587,7 +1623,9 @@ export const PurchasesPage: React.FC = () => {
                     className="w-full py-3 rounded-xl bg-[#0284c7] hover:bg-[#0369a1] text-white font-black text-xs uppercase tracking-wider shadow-md shadow-sky-500/20 transition flex items-center justify-center gap-2 cursor-pointer active:scale-95"
                   >
                     <Printer className="w-4 h-4" />
-                    <span>IMPRIMIR TICKET POS ({paperFormat.toUpperCase()})</span>
+                    <span>
+                      {paperFormat === 'letter' ? 'IMPRIMIR COMPROBANTE CARTA / A4' : `IMPRIMIR TICKET POS (${paperFormat.toUpperCase()})`}
+                    </span>
                   </button>
 
                   <button
@@ -1610,147 +1648,409 @@ export const PurchasesPage: React.FC = () => {
 
               </div>
 
-              {/* Columna Derecha: Vista Previa en Vivo del Ticket Térmico */}
+              {/* Columna Derecha: Vista Previa en Vivo del Comprobante / Ticket */}
               <div className="md:col-span-7 flex justify-center items-start">
-                <div 
-                  id="printable-ticket"
-                  className={`paper-${paperFormat} w-full bg-white text-slate-900 p-6 rounded-2xl shadow-md border border-slate-200/90 font-mono text-xs leading-tight transition-all ${
-                    paperFormat === '58mm' ? 'max-w-[280px]' : paperFormat === 'letter' ? 'max-w-[480px]' : 'max-w-[340px]'
-                  }`}
-                >
-                  {/* Encabezado Membretado de la Empresa */}
-                  <div className="text-center space-y-0.5">
-                    <h4 className="font-black text-sm uppercase tracking-tight text-slate-900">
-                      {company.name || 'SENDA SISTEMAS'}
-                    </h4>
-                    <p className="text-[11px] text-slate-600">RUC: {company.ruc || 'J0310000001234'}</p>
-                    <p className="text-[10px] text-slate-500">{company.address || 'Managua, Nicaragua, Villa Sol Casa E8-23'}</p>
-                    <p className="text-[10px] text-slate-500">PBX: {company.phone || '+505 8505 9284'}</p>
-                  </div>
+                {(() => {
+                  const supDetails = suppliers.find(s => s.id === viewingPurchase.supplier_id) || 
+                    suppliers.find(s => (s.company_name || s.name) === viewingPurchase.supplier_name);
 
-                  <div className="border-b border-dashed border-slate-300 my-3" />
+                  const formatPurchaseDate = (dateStr: string) => {
+                    if (!dateStr) return 'N/A';
+                    try {
+                      const parts = dateStr.split('-');
+                      if (parts.length === 3) return `${parts[2]}/${parts[1]}/${parts[0]}`;
+                      return dateStr;
+                    } catch {
+                      return dateStr;
+                    }
+                  };
 
-                  {/* Datos del Documento */}
-                  <div className="space-y-1 text-[11px]">
-                    <div className="flex justify-between items-center">
-                      <span className="font-bold">FAC: #{viewingPurchase.invoice_number}</span>
-                      <span className="border border-slate-800 px-1.5 py-0.2 rounded text-[9px] font-black uppercase">
-                        {viewingPurchase.payment_source?.toUpperCase() || viewingPurchase.payment_condition.toUpperCase()}
-                      </span>
-                    </div>
-                    <div className="text-slate-600 text-[10px]">
-                      Fecha: {viewingPurchase.purchase_date}
-                    </div>
-                    <div className="text-slate-600 text-[10px]">
-                      Operador: {viewingPurchase.user_name || 'Administrador'}
-                    </div>
-                  </div>
+                  const formatCreatedDateTime = (isoStr: string) => {
+                    if (!isoStr) return '';
+                    try {
+                      const d = new Date(isoStr);
+                      return `${d.toLocaleDateString('es-NI')} ${d.toLocaleTimeString('es-NI', { hour: '2-digit', minute: '2-digit', hour12: true })}`;
+                    } catch {
+                      return isoStr;
+                    }
+                  };
 
-                  <div className="border-b border-dashed border-slate-300 my-2.5" />
+                  const subtotalGravado = viewingPurchase.items
+                    .filter(it => it.apply_iva)
+                    .reduce((sum, it) => sum + it.subtotal, 0);
 
-                  {/* Datos del Proveedor */}
-                  <div className="space-y-0.5 text-[11px]">
-                    <div className="text-slate-700">
-                      <span className="font-bold">Proveedor: </span>
-                      <span>{viewingPurchase.supplier_name}</span>
-                    </div>
-                    {viewingPurchase.supplier_ruc && (
-                      <div className="text-[10px] text-slate-500">
-                        RUC: {viewingPurchase.supplier_ruc}
+                  const subtotalExento = viewingPurchase.items
+                    .filter(it => !it.apply_iva)
+                    .reduce((sum, it) => sum + it.subtotal, 0);
+
+                  if (paperFormat === 'letter') {
+                    {/* FORMATO CARTA / OFICINA PROFESIONAL */}
+                    return (
+                      <div 
+                        id="printable-ticket"
+                        className="paper-letter w-full max-w-2xl bg-white text-slate-900 p-7 rounded-2xl shadow-md border border-slate-200/90 font-sans text-xs leading-normal transition-all space-y-4"
+                      >
+                        {/* Cabecera Membretada Carta */}
+                        <div className="flex items-start justify-between border-b pb-4 border-slate-200">
+                          <div>
+                            <h3 className="text-xl font-black text-slate-900 tracking-tight">
+                              {company.name || 'SENDA SISTEMAS'}
+                            </h3>
+                            <p className="text-xs text-slate-600 font-bold mt-0.5">RUC: {company.ruc || 'J0310000001234'}</p>
+                            <p className="text-[11px] text-slate-500">{company.address || 'Managua, Nicaragua, Villa Sol Casa E8-23'}</p>
+                            <p className="text-[11px] text-slate-500">Tel: {company.phone || '+505 8505 9284'}</p>
+                          </div>
+                          <div className="text-right space-y-1">
+                            <span className="inline-block px-3 py-1 rounded-lg bg-blue-50 text-blue-700 border border-blue-200 text-xs font-black uppercase tracking-wider">
+                              COMPROBANTE DE COMPRA
+                            </span>
+                            <div className="font-mono text-sm font-black text-slate-900 mt-1">
+                              FACTURA: #{viewingPurchase.invoice_number}
+                            </div>
+                            <div className="text-[10px] text-slate-400 uppercase font-bold">
+                              Control de Almacén DGI
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Bloques de Metadatos de la Compra y del Proveedor */}
+                        <div className="grid grid-cols-2 gap-3 text-xs">
+                          {/* Datos de la Factura y Fechas */}
+                          <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-200 space-y-1">
+                            <span className="text-[10px] font-black uppercase text-blue-700 tracking-wider block mb-1">
+                              DATOS DE LA FACTURA & RECEPCIÓN
+                            </span>
+                            <div>
+                              <strong className="text-slate-600">N° Factura Proveedor: </strong>
+                              <span className="font-mono font-bold">#{viewingPurchase.invoice_number}</span>
+                            </div>
+                            <div>
+                              <strong className="text-slate-600">Fecha de Compra a Proveedor: </strong>
+                              <span className="font-bold text-blue-600">{formatPurchaseDate(viewingPurchase.purchase_date)}</span>
+                            </div>
+                            <div>
+                              <strong className="text-slate-600">Fecha y Hora de Ingreso: </strong>
+                              <span>{formatCreatedDateTime(viewingPurchase.created_at)}</span>
+                            </div>
+                            <div>
+                              <strong className="text-slate-600">Condición de Pago: </strong>
+                              <span className="font-bold uppercase">{viewingPurchase.payment_condition} ({viewingPurchase.payment_source})</span>
+                            </div>
+                            {viewingPurchase.due_date && (
+                              <div>
+                                <strong className="text-amber-700">Vencimiento Crédito: </strong>
+                                <span className="font-bold text-amber-800">{formatPurchaseDate(viewingPurchase.due_date)}</span>
+                              </div>
+                            )}
+                            <div>
+                              <strong className="text-slate-600">Registrado por: </strong>
+                              <span>{viewingPurchase.user_name || 'Administrador'}</span>
+                            </div>
+                          </div>
+
+                          {/* Datos del Proveedor */}
+                          <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-200 space-y-1">
+                            <span className="text-[10px] font-black uppercase text-blue-700 tracking-wider block mb-1">
+                              DATOS DEL PROVEEDOR
+                            </span>
+                            <div>
+                              <strong className="text-slate-600">Razón Social: </strong>
+                              <span className="font-bold text-slate-900">{viewingPurchase.supplier_name}</span>
+                            </div>
+                            <div>
+                              <strong className="text-slate-600">RUC / Cédula: </strong>
+                              <span className="font-mono">{viewingPurchase.supplier_ruc || supDetails?.ruc || '—'}</span>
+                            </div>
+                            <div>
+                              <strong className="text-slate-600">Teléfono: </strong>
+                              <span>{supDetails?.phone || '—'}</span>
+                            </div>
+                            <div>
+                              <strong className="text-slate-600">Dirección: </strong>
+                              <span className="text-[11px] truncate block" title={supDetails?.address || ''}>
+                                {supDetails?.address || '—'}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Tabla Completa de Artículos Carta */}
+                        <div className="border border-slate-200 rounded-xl overflow-hidden">
+                          <table className="w-full text-left text-xs border-collapse">
+                            <thead>
+                              <tr className="bg-slate-100 text-[10px] font-black uppercase text-slate-700 border-b border-slate-200">
+                                <th className="p-2.5 text-center w-8">#</th>
+                                <th className="p-2.5">SKU</th>
+                                <th className="p-2.5">Descripción del Artículo / Insumo</th>
+                                <th className="p-2.5 text-center">Cant.</th>
+                                <th className="p-2.5 text-right">Costo Unit. (C$)</th>
+                                <th className="p-2.5 text-center">IVA</th>
+                                <th className="p-2.5 text-right">Subtotal (C$)</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-100 text-xs">
+                              {viewingPurchase.items.map((it, idx) => (
+                                <tr key={idx} className={idx % 2 === 0 ? 'bg-white' : 'bg-slate-50/50'}>
+                                  <td className="p-2.5 text-center text-slate-400 font-mono text-[11px]">{idx + 1}</td>
+                                  <td className="p-2.5 font-mono text-slate-600 text-[11px]">{it.sku || 'S/N'}</td>
+                                  <td className="p-2.5 font-bold text-slate-900">{it.product_name}</td>
+                                  <td className="p-2.5 text-center font-mono font-bold text-slate-900">{it.quantity}</td>
+                                  <td className="p-2.5 text-right font-mono">C${it.unit_cost.toFixed(2)}</td>
+                                  <td className="p-2.5 text-center text-[10px] font-bold text-slate-500">
+                                    {it.apply_iva ? '15%' : 'Exento'}
+                                  </td>
+                                  <td className="p-2.5 text-right font-mono font-bold text-slate-900">
+                                    C${it.subtotal.toFixed(2)}
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+
+                        {/* Bloque Inferior: Observaciones y Liquidación Fiscal */}
+                        <div className="grid grid-cols-12 gap-4 items-start pt-1">
+                          <div className="col-span-7 space-y-2">
+                            {viewingPurchase.observations && (
+                              <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 text-xs text-slate-600">
+                                <span className="font-bold text-slate-800 block text-[10px] uppercase mb-0.5">
+                                  Observaciones de Recepción en Almacén:
+                                </span>
+                                {viewingPurchase.observations}
+                              </div>
+                            )}
+                            <div className="text-[10px] text-slate-400 italic">
+                              * El inventario ha sido recalculado e ingresado conforme a la orden.
+                            </div>
+                          </div>
+
+                          <div className="col-span-5 bg-slate-50 p-3.5 rounded-xl border border-slate-200 space-y-1.5 font-mono text-xs">
+                            <div className="flex justify-between text-slate-600">
+                              <span>Subtotal Gravado (15%):</span>
+                              <span>C${subtotalGravado.toFixed(2)}</span>
+                            </div>
+                            {subtotalExento > 0 && (
+                              <div className="flex justify-between text-slate-600">
+                                <span>Subtotal Exento (0%):</span>
+                                <span>C${subtotalExento.toFixed(2)}</span>
+                              </div>
+                            )}
+                            {viewingPurchase.discount > 0 && (
+                              <div className="flex justify-between text-rose-600">
+                                <span>Descuento:</span>
+                                <span>-C${viewingPurchase.discount.toFixed(2)}</span>
+                              </div>
+                            )}
+                            <div className="flex justify-between text-slate-600">
+                              <span>IVA (15% Nicaragua):</span>
+                              <span>C${viewingPurchase.tax_iva.toFixed(2)}</span>
+                            </div>
+                            <div className="flex justify-between font-black text-sm text-blue-700 border-t border-slate-300 pt-1.5 mt-1">
+                              <span>TOTAL COMPRA:</span>
+                              <span>C${viewingPurchase.total_neto.toFixed(2)}</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Firmas de Conformidad */}
+                        <div className="pt-8 grid grid-cols-3 gap-6 text-center text-[10px]">
+                          <div>
+                            <div className="border-t border-slate-400 w-36 mx-auto mb-1"></div>
+                            <p className="font-bold uppercase text-slate-800">Recibido (Almacén)</p>
+                            <p className="text-slate-400">Firma y Sello</p>
+                          </div>
+                          <div>
+                            <div className="border-t border-slate-400 w-36 mx-auto mb-1"></div>
+                            <p className="font-bold uppercase text-slate-800">Entregado (Proveedor)</p>
+                            <p className="text-slate-400">Firma y Cédula</p>
+                          </div>
+                          <div>
+                            <div className="border-t border-slate-400 w-36 mx-auto mb-1"></div>
+                            <p className="font-bold uppercase text-slate-800">Aprobado (Compras)</p>
+                            <p className="text-slate-400">Administración</p>
+                          </div>
+                        </div>
+
+                        {/* Pie de página con código de barras */}
+                        <div className="text-center pt-3 border-t border-slate-100 text-[10px] text-slate-400 space-y-0.5">
+                          <div className="tracking-[5px] font-mono font-bold text-xs text-slate-700 select-none">
+                            ||| | |||| || ||| || ||||
+                          </div>
+                          <div>Comprobante Oficial de Compra • #{viewingPurchase.invoice_number}</div>
+                        </div>
+
                       </div>
-                    )}
-                    {viewingPurchase.due_date && (
-                      <div className="text-[10px] font-bold text-amber-700">
-                        Vencimiento: {viewingPurchase.due_date}
+                    );
+                  }
+
+                  {/* FORMATO TÉRMICO 80MM / 58MM (PUNTO DE VENTA Y CAJA) */}
+                  return (
+                    <div 
+                      id="printable-ticket"
+                      className={`paper-${paperFormat} w-full bg-white text-slate-900 p-6 rounded-2xl shadow-md border border-slate-200/90 font-mono text-xs leading-tight transition-all ${
+                        paperFormat === '58mm' ? 'max-w-[280px]' : 'max-w-[340px]'
+                      }`}
+                    >
+                      {/* Encabezado Membretado de la Empresa */}
+                      <div className="text-center space-y-0.5">
+                        <h4 className="font-black text-sm uppercase tracking-tight text-slate-900">
+                          {company.name || 'SENDA SISTEMAS'}
+                        </h4>
+                        <p className="text-[11px] text-slate-600 font-bold">RUC: {company.ruc || 'J0310000001234'}</p>
+                        <p className="text-[10px] text-slate-500">{company.address || 'Managua, Nicaragua, Villa Sol Casa E8-23'}</p>
+                        <p className="text-[10px] text-slate-500">PBX: {company.phone || '+505 8505 9284'}</p>
                       </div>
-                    )}
-                  </div>
 
-                  <div className="border-b border-dashed border-slate-300 my-2.5" />
+                      <div className="border-b border-dashed border-slate-300 my-2.5" />
 
-                  {/* Tabla / Lista de Artículos */}
-                  <div className="space-y-1.5 text-[11px]">
-                    <div className="flex justify-between font-bold text-slate-800 text-[10px] uppercase border-b border-slate-200 pb-1">
-                      <span>Cant Descripción</span>
-                      <span>Total</span>
-                    </div>
+                      {/* Título Oficial del Comprobante */}
+                      <div className="text-center my-1">
+                        <span className="font-black text-[11px] uppercase tracking-wider text-slate-900 block">
+                          COMPROBANTE DE COMPRA A PROVEEDOR
+                        </span>
+                        <span className="text-[9px] text-slate-500 uppercase">
+                          Ingreso y Abastecimiento de Mercadería
+                        </span>
+                      </div>
 
-                    {viewingPurchase.items.map((item, i) => (
-                      <div key={i} className="space-y-0.5">
-                        <div className="flex justify-between items-start">
-                          <span className="font-bold text-slate-900">
-                            {item.quantity}x {item.product_name}
-                          </span>
-                          <span className="font-bold text-slate-900 ml-2 whitespace-nowrap">
-                            C$ {item.subtotal.toFixed(2)}
+                      <div className="border-b border-dashed border-slate-300 my-2" />
+
+                      {/* Metadatos de la Factura y Fechas de Emisión */}
+                      <div className="space-y-1 text-[11px]">
+                        <div className="flex justify-between items-center">
+                          <span className="font-bold">FAC: #{viewingPurchase.invoice_number}</span>
+                          <span className="border border-slate-800 px-1.5 py-0.2 rounded text-[9px] font-black uppercase">
+                            {viewingPurchase.payment_source?.toUpperCase() || viewingPurchase.payment_condition.toUpperCase()}
                           </span>
                         </div>
-                        <div className="text-[10px] text-slate-500 pl-4">
-                          P.U: C$ {item.unit_cost.toFixed(2)} {item.apply_iva ? '(Gravado 15%)' : '(Exento)'}
+                        <div>
+                          <span className="font-bold text-slate-800">FECHA COMPRA PROV: </span>
+                          <span className="font-bold text-blue-700">{formatPurchaseDate(viewingPurchase.purchase_date)}</span>
+                        </div>
+                        <div className="text-slate-600 text-[10px]">
+                          <span>FECHA/HORA INGRESO: </span>
+                          <span>{formatCreatedDateTime(viewingPurchase.created_at)}</span>
+                        </div>
+                        <div className="text-slate-600 text-[10px]">
+                          <span>Operador: </span>
+                          <span>{viewingPurchase.user_name || 'Administrador'}</span>
                         </div>
                       </div>
-                    ))}
-                  </div>
 
-                  <div className="border-b border-dashed border-slate-300 my-3" />
+                      <div className="border-b border-dashed border-slate-300 my-2.5" />
 
-                  {/* Resumen de Totales */}
-                  <div className="space-y-1 text-right text-[11px]">
-                    <div className="flex justify-between text-slate-600">
-                      <span>Subtotal:</span>
-                      <span className="font-mono">C$ {viewingPurchase.subtotal.toFixed(2)}</span>
-                    </div>
-
-                    {viewingPurchase.discount > 0 && (
-                      <div className="flex justify-between text-slate-600">
-                        <span>Descuento:</span>
-                        <span className="font-mono">-C$ {viewingPurchase.discount.toFixed(2)}</span>
+                      {/* Datos del Proveedor */}
+                      <div className="space-y-0.5 text-[11px]">
+                        <div className="text-slate-800 font-bold">
+                          DATOS DEL PROVEEDOR:
+                        </div>
+                        <div className="text-slate-900 font-bold">
+                          {viewingPurchase.supplier_name}
+                        </div>
+                        {(viewingPurchase.supplier_ruc || supDetails?.ruc) && (
+                          <div className="text-[10px] text-slate-600 font-mono">
+                            RUC: {viewingPurchase.supplier_ruc || supDetails?.ruc}
+                          </div>
+                        )}
+                        {supDetails?.phone && (
+                          <div className="text-[10px] text-slate-600">
+                            Tel: {supDetails.phone}
+                          </div>
+                        )}
+                        {viewingPurchase.due_date && (
+                          <div className="text-[10px] font-bold text-amber-800">
+                            Vencimiento Crédito: {formatPurchaseDate(viewingPurchase.due_date)}
+                          </div>
+                        )}
                       </div>
-                    )}
 
-                    <div className="flex justify-between text-slate-600">
-                      <span>IVA (15%):</span>
-                      <span className="font-mono">C$ {viewingPurchase.tax_iva.toFixed(2)}</span>
-                    </div>
+                      <div className="border-b border-dashed border-slate-300 my-2.5" />
 
-                    <div className="flex justify-between font-black text-sm text-slate-900 border-t border-slate-300 pt-1 mt-1">
-                      <span>TOTAL:</span>
-                      <span className="font-mono">C$ {viewingPurchase.total_neto.toFixed(2)}</span>
-                    </div>
-                  </div>
+                      {/* Lista de Artículos */}
+                      <div className="space-y-1.5 text-[11px]">
+                        <div className="flex justify-between font-bold text-slate-800 text-[10px] uppercase border-b border-slate-200 pb-1">
+                          <span>Cant Descripción</span>
+                          <span>Total</span>
+                        </div>
 
-                  {/* Observaciones si existen */}
-                  {viewingPurchase.observations && (
-                    <div className="mt-3 p-2 bg-slate-50 rounded text-[10px] text-slate-600 border border-slate-100">
-                      <span className="font-bold">Obs: </span>
-                      {viewingPurchase.observations}
-                    </div>
-                  )}
+                        {viewingPurchase.items.map((item, i) => (
+                          <div key={i} className="space-y-0.5">
+                            <div className="flex justify-between items-start">
+                              <span className="font-bold text-slate-900">
+                                {item.quantity}x {item.product_name}
+                              </span>
+                              <span className="font-bold text-slate-900 ml-2 whitespace-nowrap">
+                                C$ {item.subtotal.toFixed(2)}
+                              </span>
+                            </div>
+                            <div className="text-[10px] text-slate-500 pl-4">
+                              P.U: C$ {item.unit_cost.toFixed(2)} {item.apply_iva ? '(Gravado 15%)' : '(Exento)'}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
 
-                  {/* Pie de Firma y Agradecimiento */}
-                  <div className="border-b border-dashed border-slate-300 my-3" />
-                  <div className="text-center space-y-2 text-[10px] text-slate-500 pt-1">
-                    <p className="uppercase font-bold text-slate-700">
-                      ¡ENTRADA DE MERCADERÍA CONFORME!
-                    </p>
-                    <p className="text-[9px]">Revisado y abastecido en bodega central.</p>
-                    <div className="pt-4 pb-1">
-                      <p className="border-t border-slate-400 w-36 mx-auto mb-1"></p>
-                      <p className="text-[9px] uppercase font-bold text-slate-600">Firma de Recepción / Almacén</p>
-                    </div>
-                  </div>
+                      <div className="border-b border-dashed border-slate-300 my-2.5" />
 
-                  {/* Código de barras simulado */}
-                  <div className="text-center pt-2 space-y-0.5">
-                    <div className="tracking-[4px] font-mono font-bold text-xs text-slate-700 select-none">
-                      ||| | |||| || ||| || ||||
-                    </div>
-                    <div className="text-[9px] text-slate-400 font-mono">
-                      #{viewingPurchase.invoice_number}
-                    </div>
-                  </div>
+                      {/* Resumen de Totales Fiscales */}
+                      <div className="space-y-1 text-right text-[11px]">
+                        <div className="flex justify-between text-slate-600">
+                          <span>Subtotal:</span>
+                          <span className="font-mono">C$ {viewingPurchase.subtotal.toFixed(2)}</span>
+                        </div>
 
-                </div>
+                        {viewingPurchase.discount > 0 && (
+                          <div className="flex justify-between text-slate-600">
+                            <span>Descuento:</span>
+                            <span className="font-mono">-C$ {viewingPurchase.discount.toFixed(2)}</span>
+                          </div>
+                        )}
+
+                        <div className="flex justify-between text-slate-600">
+                          <span>IVA (15%):</span>
+                          <span className="font-mono">C$ {viewingPurchase.tax_iva.toFixed(2)}</span>
+                        </div>
+
+                        <div className="flex justify-between font-black text-sm text-slate-900 border-t border-slate-300 pt-1 mt-1">
+                          <span>TOTAL:</span>
+                          <span className="font-mono">C$ {viewingPurchase.total_neto.toFixed(2)}</span>
+                        </div>
+                      </div>
+
+                      {/* Observaciones si existen */}
+                      {viewingPurchase.observations && (
+                        <div className="mt-2.5 p-2 bg-slate-50 rounded text-[10px] text-slate-600 border border-slate-100">
+                          <span className="font-bold">Obs: </span>
+                          {viewingPurchase.observations}
+                        </div>
+                      )}
+
+                      {/* Pie de Firma y Conformidad */}
+                      <div className="border-b border-dashed border-slate-300 my-2.5" />
+                      <div className="text-center space-y-1 text-[10px] text-slate-500 pt-1">
+                        <p className="uppercase font-bold text-slate-700">
+                          ¡ENTRADA DE MERCADERÍA CONFORME!
+                        </p>
+                        <p className="text-[9px]">Revisado y abastecido en bodega.</p>
+                        <div className="pt-4 pb-1">
+                          <p className="border-t border-slate-400 w-36 mx-auto mb-1"></p>
+                          <p className="text-[9px] uppercase font-bold text-slate-600">Firma de Recepción / Almacén</p>
+                        </div>
+                      </div>
+
+                      {/* Código de barras simulado */}
+                      <div className="text-center pt-2 space-y-0.5">
+                        <div className="tracking-[4px] font-mono font-bold text-xs text-slate-700 select-none">
+                          ||| | |||| || ||| || ||||
+                        </div>
+                        <div className="text-[9px] text-slate-400 font-mono">
+                          #{viewingPurchase.invoice_number}
+                        </div>
+                      </div>
+
+                    </div>
+                  );
+                })()}
               </div>
 
             </div>
