@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { storage } from '../lib/storage';
@@ -42,16 +42,25 @@ export function ModalAnulacionSupabase({
   onSuccess
 }: ModalAnulacionProps) {
   const currentUser = storage.getCurrentUser();
-  const defaultAdminEmail = (currentUser?.role === 'admin' && currentUser?.email)
-    ? currentUser.email
-    : 'jairotten84@gmail.com';
 
-  const [emailAdmin, setEmailAdmin] = useState(defaultAdminEmail);
+  // Los campos inician completamente vacíos por seguridad y privacidad
+  const [emailAdmin, setEmailAdmin] = useState('');
   const [passwordAdmin, setPasswordAdmin] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [motivo, setMotivo] = useState('');
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+
+  // Limpiar campos cada vez que se abra la ventana
+  useEffect(() => {
+    if (isOpen) {
+      setEmailAdmin('');
+      setPasswordAdmin('');
+      setMotivo('');
+      setErrorMsg('');
+      setShowPassword(false);
+    }
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
@@ -162,16 +171,61 @@ export function ModalAnulacionSupabase({
 
       // 5. Reversión atómica en almacenamiento local y reintegro de stock
       const sales = storage.getSales();
-      const numericId = typeof facturaId === 'number' ? facturaId : parseInt(String(facturaId), 10);
-      const targetSale = sale || sales.find((s) => s.id === numericId || s.ticket_number === String(facturaId));
+      const sId = sale?.id ?? (typeof facturaId === 'number' ? facturaId : parseInt(String(facturaId), 10));
+      const sTicket = (sale?.ticket_number || String(facturaId || '')).trim().toLowerCase();
+
+      // Buscar el índice del elemento DENTRO del array sales de storage
+      let targetIndex = sales.findIndex((s) => {
+        const matchesId = sId && !isNaN(Number(sId)) && Number(s.id) === Number(sId);
+        const matchesTicket = sTicket && s.ticket_number && s.ticket_number.trim().toLowerCase() === sTicket;
+        const matchesFacturaId = facturaId && String(s.id) === String(facturaId);
+        return matchesId || matchesTicket || matchesFacturaId;
+      });
+
+      let targetSale: Sale;
+
+      if (targetIndex >= 0) {
+        sales[targetIndex].status = 'cancelled';
+        sales[targetIndex].cancellation_reason = motivo.trim();
+        sales[targetIndex].cancelled_by = cleanEmail;
+        sales[targetIndex].cancelled_at = new Date().toISOString();
+        targetSale = sales[targetIndex];
+      } else if (sale) {
+        targetSale = {
+          ...sale,
+          status: 'cancelled',
+          cancellation_reason: motivo.trim(),
+          cancelled_by: cleanEmail,
+          cancelled_at: new Date().toISOString()
+        };
+        sales.unshift(targetSale);
+      } else {
+        targetSale = {
+          id: typeof facturaId === 'number' ? facturaId : Date.now(),
+          ticket_number: String(facturaId),
+          status: 'cancelled',
+          cancellation_reason: motivo.trim(),
+          cancelled_by: cleanEmail,
+          cancelled_at: new Date().toISOString(),
+          customer_id: 1,
+          total_cordobas: 0,
+          created_at: new Date().toISOString()
+        } as Sale;
+        sales.unshift(targetSale);
+      }
+
+      // Guardar el array completo de facturas con el estado 'cancelled' persistido
+      storage.setSales(sales);
+
+      // Si existe el objeto prop sale en memoria, mutar también su referencia
+      if (sale) {
+        sale.status = 'cancelled';
+        sale.cancellation_reason = motivo.trim();
+        sale.cancelled_by = cleanEmail;
+        sale.cancelled_at = targetSale.cancelled_at;
+      }
 
       if (targetSale) {
-        targetSale.status = 'cancelled';
-        targetSale.cancellation_reason = motivo.trim();
-        targetSale.cancelled_by = cleanEmail;
-        targetSale.cancelled_at = new Date().toISOString();
-        storage.setSales(sales);
-
         // Devolución de stock al inventario
         if (targetSale.items && targetSale.items.length > 0) {
           const products = storage.getProducts();
@@ -215,6 +269,7 @@ export function ModalAnulacionSupabase({
       }
 
       // Limpiar formulario y notificar
+      setEmailAdmin('');
       setPasswordAdmin('');
       setMotivo('');
       onSuccess();
@@ -423,10 +478,11 @@ export function ModalAnulacionSupabase({
                       <input
                         type="email"
                         className="w-full pl-8.5 pr-2.5 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-rose-500/30 focus:border-rose-500 transition"
-                        placeholder="admin@sendasistemas.com"
+                        placeholder="ej: admin@empresa.com"
                         value={emailAdmin}
                         onChange={(e) => setEmailAdmin(e.target.value)}
                         required
+                        autoComplete="off"
                       />
                     </div>
                   </div>
@@ -445,6 +501,7 @@ export function ModalAnulacionSupabase({
                         value={passwordAdmin}
                         onChange={(e) => setPasswordAdmin(e.target.value)}
                         required
+                        autoComplete="new-password"
                       />
                       <button
                         type="button"

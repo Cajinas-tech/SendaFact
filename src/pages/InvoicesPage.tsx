@@ -2289,6 +2289,7 @@ export const InvoicesPage: React.FC = () => {
         }}
         onSuccess={() => {
           loadData();
+          setAnulacionSubFilter('anuladas');
           success(
             'Factura Anulada Exitosamente',
             'La factura ha sido anulada con autorización Supabase y los productos fueron reintegrados al inventario.'
