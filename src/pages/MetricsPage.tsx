@@ -596,6 +596,171 @@ export default function MetricsPage() {
     }
   };
 
+  // Export general metrics & profit margins to PDF
+  const handleExportGeneralPDF = () => {
+    try {
+      const now = new Date();
+      const companySettings = storage.getCompanySettings();
+      const companyName = companySettings?.name || 'SENDAFACT POS';
+      const companyRuc = companySettings?.ruc ? `RUC: ${companySettings.ruc}` : '';
+      const companyPhone = companySettings?.phone ? `Tel: ${companySettings.phone}` : '';
+      const companyAddress = companySettings?.address || 'Managua, Nicaragua';
+      const emitDate = now.toLocaleString('es-NI', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+
+      const productRows = analytics.productStatsList.map((p, idx) => `
+        <tr style="background: ${idx % 2 === 0 ? '#ffffff' : '#f8fafc'}; border-bottom: 1px solid #e2e8f0; font-size: 10px;">
+          <td style="padding: 6px 8px; font-family: monospace; font-weight: bold; color: #475569;">${p.sku}</td>
+          <td style="padding: 6px 8px; font-weight: 700; color: #0f172a;">${p.productName}</td>
+          <td style="padding: 6px 8px; color: #64748b;">${p.brand}</td>
+          <td style="padding: 6px 8px; color: #64748b;">${p.category}</td>
+          <td style="padding: 6px 8px; text-align: right; font-family: monospace;">C$ ${p.costPrice.toFixed(2)}</td>
+          <td style="padding: 6px 8px; text-align: right; font-family: monospace; font-weight: 600;">C$ ${p.salePrice.toFixed(2)}</td>
+          <td style="padding: 6px 8px; text-align: center; font-weight: bold;">${p.unitsSold}</td>
+          <td style="padding: 6px 8px; text-align: right; font-family: monospace; color: #64748b;">C$ ${p.totalCost.toFixed(2)}</td>
+          <td style="padding: 6px 8px; text-align: right; font-family: monospace; font-weight: bold;">C$ ${p.totalRevenue.toFixed(2)}</td>
+          <td style="padding: 6px 8px; text-align: right; font-family: monospace; font-weight: bold; color: ${p.totalProfit >= 0 ? '#16a34a' : '#dc2626'};">
+            ${p.totalProfit >= 0 ? '+' : ''}C$ ${p.totalProfit.toFixed(2)}
+          </td>
+          <td style="padding: 6px 8px; text-align: right; font-weight: 800; color: ${p.marginPercent >= 20 ? '#16a34a' : p.marginPercent >= 10 ? '#0284c7' : '#d97706'};">
+            ${p.marginPercent.toFixed(1)}%
+          </td>
+        </tr>
+      `).join('');
+
+      const htmlContent = `
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <title>Reporte_Rentabilidad_General_${now.toISOString().slice(0, 10)}</title>
+  <style>
+    @page { size: letter landscape; margin: 10mm; }
+    * { box-sizing: border-box; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; color: #0f172a; margin: 0; padding: 0; font-size: 10px; }
+    .header { border-bottom: 2px solid #2563eb; padding-bottom: 10px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: flex-start; }
+    .kpi-row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-bottom: 14px; }
+    .kpi-box { background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 6px; padding: 8px; }
+    .kpi-label { font-size: 8px; font-weight: 800; text-transform: uppercase; color: #64748b; margin-bottom: 2px; }
+    .kpi-val { font-size: 13px; font-weight: 900; font-family: monospace; color: #0f172a; }
+    table { width: 100%; border-collapse: collapse; border: 1px solid #cbd5e1; margin-bottom: 12px; }
+    th { background: #0f172a; color: #ffffff; padding: 6px 8px; font-size: 8px; text-transform: uppercase; }
+    @media print { body { width: 100%; } .no-print { display: none !important; } tr { page-break-inside: avoid; } }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div>
+      <h1 style="font-size: 15px; font-weight: 900; text-transform: uppercase; margin: 0;">${companyName}</h1>
+      <p style="font-size: 9px; color: #64748b; margin: 2px 0 0 0;">${companyAddress} • ${companyPhone} ${companyRuc ? '• ' + companyRuc : ''}</p>
+      <div style="font-size: 11px; font-weight: 800; color: #2563eb; margin-top: 3px;">
+        REPORTE GENERAL DE RENTABILIDAD Y MÁRGENES DE PRODUCTOS (PEPS)
+      </div>
+    </div>
+    <div style="text-align: right;">
+      <span style="display: inline-block; padding: 3px 8px; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 9999px; font-size: 9px; font-weight: 800; color: #1d4ed8; text-transform: uppercase;">
+        Filtro: ${timeFilter.toUpperCase()}
+      </span>
+      <p style="font-size: 9px; color: #64748b; margin: 3px 0 0 0;">Emisión: <strong>${emitDate}</strong></p>
+    </div>
+  </div>
+
+  <div class="kpi-row">
+    <div class="kpi-box" style="border-left: 3px solid #2563eb;">
+      <div class="kpi-label">Ventas Totales</div>
+      <div class="kpi-val" style="color: #2563eb;">C$ ${analytics.totalIngresos.toFixed(2)}</div>
+    </div>
+    <div class="kpi-box" style="border-left: 3px solid #f59e0b;">
+      <div class="kpi-label">Costo de Ventas (PEPS)</div>
+      <div class="kpi-val">C$ ${analytics.totalCostoPEPS.toFixed(2)}</div>
+    </div>
+    <div class="kpi-box" style="border-left: 3px solid #16a34a;">
+      <div class="kpi-label">Utilidad Neta Real</div>
+      <div class="kpi-val" style="color: #16a34a;">+C$ ${analytics.utilidadNeta.toFixed(2)}</div>
+    </div>
+    <div class="kpi-box" style="border-left: 3px solid #0d9488;">
+      <div class="kpi-label">Margen Neto Ponderado</div>
+      <div class="kpi-val" style="color: #0d9488;">${analytics.margenNeto.toFixed(1)}%</div>
+    </div>
+    <div class="kpi-box" style="border-left: 3px solid #8b5cf6;">
+      <div class="kpi-label">Total Facturas</div>
+      <div class="kpi-val">${analytics.totalFacturas}</div>
+    </div>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th style="text-align: left;">SKU</th>
+        <th style="text-align: left;">Producto</th>
+        <th style="text-align: left;">Marca</th>
+        <th style="text-align: left;">Categoría</th>
+        <th style="text-align: right;">Costo U.</th>
+        <th style="text-align: right;">Precio V.</th>
+        <th style="text-align: center;">Vendidos</th>
+        <th style="text-align: right;">Costo Inv.</th>
+        <th style="text-align: right;">Total Ventas</th>
+        <th style="text-align: right;">Ganancia Neta</th>
+        <th style="text-align: right;">Margen (%)</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${productRows}
+    </tbody>
+  </table>
+
+  <div style="font-size: 8.5px; color: #64748b; text-align: center; border-top: 1px dashed #cbd5e1; padding-top: 8px;">
+    Documento confidencial emitido por <strong>${companyName}</strong>. Cálculos de costo y margen basados en método PEPS oficial.
+  </div>
+
+  <script>
+    window.onload = function() {
+      setTimeout(function() { window.focus(); window.print(); }, 250);
+    };
+  </script>
+</body>
+</html>
+      `;
+
+      let printWin: Window | null = null;
+      try { printWin = window.open('', '_blank'); } catch(e) { printWin = null; }
+      if (!printWin || printWin.closed || typeof printWin.closed === 'undefined') {
+        const iframe = document.createElement('iframe');
+        iframe.style.position = 'fixed';
+        iframe.style.right = '0';
+        iframe.style.bottom = '0';
+        iframe.style.width = '0';
+        iframe.style.height = '0';
+        iframe.style.border = '0';
+        document.body.appendChild(iframe);
+        const doc = iframe.contentWindow?.document;
+        if (doc) {
+          doc.open();
+          doc.write(htmlContent);
+          doc.close();
+          setTimeout(() => {
+            iframe.contentWindow?.focus();
+            iframe.contentWindow?.print();
+            setTimeout(() => { try { document.body.removeChild(iframe); } catch(e) {} }, 2000);
+          }, 400);
+        }
+      } else {
+        printWin.document.open();
+        printWin.document.write(htmlContent);
+        printWin.document.close();
+      }
+      success('Generando PDF', 'Preparando vista de impresión / guardado en PDF');
+    } catch (e) {
+      console.error(e);
+      info('Error', 'No se pudo generar el PDF');
+    }
+  };
+
   // Top Product Star
   const topProduct = useMemo(() => {
     if (analytics.productStatsList.length === 0) return null;
@@ -814,9 +979,21 @@ export default function MetricsPage() {
             type="button"
             onClick={handleExportExcel}
             className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition shadow-sm hover:shadow-md cursor-pointer active:scale-95"
+            title="Exportar reporte general a Excel (CSV)"
           >
             <Download className="w-4 h-4" />
             <span>Excel</span>
+          </button>
+
+          {/* PDF Export Button */}
+          <button
+            type="button"
+            onClick={handleExportGeneralPDF}
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold transition shadow-sm hover:shadow-md cursor-pointer active:scale-95"
+            title="Exportar reporte de ganancias y márgenes a PDF"
+          >
+            <Printer className="w-4 h-4" />
+            <span>PDF</span>
           </button>
 
           {/* Sync / Demo Reset Button */}
@@ -2106,6 +2283,314 @@ export default function MetricsPage() {
           }
         };
 
+        const handleExportProductPDF = () => {
+          try {
+            const companySettings = storage.getCompanySettings();
+            const companyName = companySettings?.name || 'SENDAFACT POS';
+            const companyRuc = companySettings?.ruc ? `RUC: ${companySettings.ruc}` : '';
+            const companyPhone = companySettings?.phone ? `Tel: ${companySettings.phone}` : '';
+            const companyAddress = companySettings?.address || 'Managua, Nicaragua';
+            const emitDate = new Date().toLocaleString('es-NI', {
+              day: '2-digit',
+              month: 'short',
+              year: 'numeric',
+              hour: '2-digit',
+              minute: '2-digit'
+            });
+
+            const targetInvoices = productInvoices.length > 0 ? productInvoices : selectedProductDetail.salesInvoices;
+            let totalUnidades = 0;
+            let totalCostoInv = 0;
+            let totalFacturado = 0;
+            let totalGanancia = 0;
+
+            const invoiceRows = targetInvoices.map((inv: any, idx: number) => {
+              const invCost = inv.qty * selectedProductDetail.costPrice;
+              const invProfit = inv.total - invCost;
+              const invMargin = inv.total > 0 ? (invProfit / inv.total) * 100 : 0;
+
+              totalUnidades += inv.qty;
+              totalCostoInv += invCost;
+              totalFacturado += inv.total;
+              totalGanancia += invProfit;
+
+              // Items breakdown in this invoice
+              let itemsTableHtml = '';
+              if (inv.sale && inv.sale.items && inv.sale.items.length > 0) {
+                const subRows = inv.sale.items.map((it: any) => {
+                  const itemProd = getProductInfo(it.product_id, it.product_name);
+                  const itQty = it.quantity || 1;
+                  const itUnitPrice = it.unit_price_cordobas || (it.total_cordobas ? it.total_cordobas / itQty : 0);
+                  const itRevenue = it.total_cordobas || (itQty * itUnitPrice);
+                  const itUnitCost = itemProd?.cost_price || (it.product_name === selectedProductDetail.productName ? selectedProductDetail.costPrice : itUnitPrice * 0.7);
+                  const itItemCost = itUnitCost * itQty;
+                  const itItemProfit = itRevenue - itItemCost;
+                  const itItemMargin = itRevenue > 0 ? (itItemProfit / itRevenue) * 100 : 0;
+                  const isCurrent = it.product_name === selectedProductDetail.productName || it.product_id === selectedProductDetail.productId;
+
+                  return `
+                    <tr style="background: ${isCurrent ? '#eff6ff' : '#ffffff'}; border-bottom: 1px solid #f1f5f9; font-size: 9.5px;">
+                      <td style="padding: 4px 8px; ${isCurrent ? 'font-weight: bold; color: #1d4ed8;' : 'color: #334155;'}">
+                        ${isCurrent ? '● ' : ''}${it.product_name}
+                      </td>
+                      <td style="padding: 4px 8px; text-align: center; font-weight: 600;">${itQty}</td>
+                      <td style="padding: 4px 8px; text-align: right; font-family: monospace;">C$ ${itUnitCost.toFixed(2)}</td>
+                      <td style="padding: 4px 8px; text-align: right; font-family: monospace;">C$ ${itUnitPrice.toFixed(2)}</td>
+                      <td style="padding: 4px 8px; text-align: right; font-family: monospace; font-weight: bold;">C$ ${itRevenue.toFixed(2)}</td>
+                      <td style="padding: 4px 8px; text-align: right; font-family: monospace; font-weight: bold; color: ${itItemProfit >= 0 ? '#16a34a' : '#dc2626'};">
+                        ${itItemProfit >= 0 ? '+' : ''}C$ ${itItemProfit.toFixed(2)}
+                      </td>
+                      <td style="padding: 4px 8px; text-align: right; font-weight: bold; color: ${itItemMargin >= 20 ? '#16a34a' : itItemMargin >= 10 ? '#0284c7' : '#d97706'};">
+                        ${itItemMargin.toFixed(1)}%
+                      </td>
+                    </tr>
+                  `;
+                }).join('');
+
+                itemsTableHtml = `
+                  <tr style="background: #f8fafc;">
+                    <td colspan="11" style="padding: 5px 10px 8px 10px; border-bottom: 1px solid #cbd5e1;">
+                      <div style="font-size: 8.5px; font-weight: 800; text-transform: uppercase; color: #475569; margin-bottom: 3px;">
+                        📦 Margen de ganancia de cada producto en este ticket emitido (${inv.ticket}):
+                      </div>
+                      <table style="width: 100%; border-collapse: collapse; border: 1px solid #e2e8f0; border-radius: 4px; overflow: hidden; background: #ffffff;">
+                        <thead>
+                          <tr style="background: #f1f5f9; font-size: 8.5px; text-transform: uppercase; color: #64748b; font-weight: bold;">
+                            <th style="padding: 3px 6px; text-align: left;">Producto Facturado</th>
+                            <th style="padding: 3px 6px; text-align: center;">Cantidad</th>
+                            <th style="padding: 3px 6px; text-align: right;">Costo Unit.</th>
+                            <th style="padding: 3px 6px; text-align: right;">Precio Venta</th>
+                            <th style="padding: 3px 6px; text-align: right;">Total Facturado</th>
+                            <th style="padding: 3px 6px; text-align: right;">Ganancia Neta</th>
+                            <th style="padding: 3px 6px; text-align: right;">Margen (%)</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          ${subRows}
+                        </tbody>
+                      </table>
+                    </td>
+                  </tr>
+                `;
+              }
+
+              return `
+                <tr style="background: ${idx % 2 === 0 ? '#ffffff' : '#f8fafc'}; border-bottom: 1px solid #e2e8f0; font-size: 10.5px;">
+                  <td style="padding: 7px 8px; font-family: monospace; font-weight: bold; color: #0f172a;">${inv.ticket}</td>
+                  <td style="padding: 7px 8px; color: #64748b; font-size: 9.5px;">${new Date(inv.date).toLocaleString('es-NI', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</td>
+                  <td style="padding: 7px 8px; color: #1e293b; font-weight: 600;">${inv.customerName}</td>
+                  <td style="padding: 7px 8px; color: #475569;">${inv.userName}</td>
+                  <td style="padding: 7px 8px; text-align: center;">
+                    <span style="display: inline-block; padding: 2px 6px; border-radius: 9999px; font-size: 8.5px; font-weight: 800; text-transform: uppercase; background: #f1f5f9; color: #334155; border: 1px solid #e2e8f0;">
+                      ${inv.paymentMethod}
+                    </span>
+                  </td>
+                  <td style="padding: 7px 8px; text-align: center; font-weight: bold; color: #0f172a;">${inv.qty}</td>
+                  <td style="padding: 7px 8px; text-align: right; font-family: monospace;">C$ ${selectedProductDetail.salePrice.toFixed(2)}</td>
+                  <td style="padding: 7px 8px; text-align: right; font-family: monospace; color: #64748b;">C$ ${invCost.toFixed(2)}</td>
+                  <td style="padding: 7px 8px; text-align: right; font-family: monospace; font-weight: bold; color: #0f172a;">C$ ${inv.total.toFixed(2)}</td>
+                  <td style="padding: 7px 8px; text-align: right; font-family: monospace; font-weight: bold; color: #16a34a;">+C$ ${invProfit.toFixed(2)}</td>
+                  <td style="padding: 7px 8px; text-align: right; font-weight: 800; color: #0d9488;">${invMargin.toFixed(1)}%</td>
+                </tr>
+                ${itemsTableHtml}
+              `;
+            }).join('');
+
+            const margenGeneral = totalFacturado > 0 ? (totalGanancia / totalFacturado) * 100 : 0;
+
+            const htmlContent = `
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <title>Reporte_Margen_${selectedProductDetail.sku}</title>
+  <style>
+    @page { size: letter portrait; margin: 12mm 10mm; }
+    * { box-sizing: border-box; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; color: #0f172a; margin: 0; padding: 0; font-size: 11px; line-height: 1.35; }
+    .header { border-bottom: 2px solid #2563eb; padding-bottom: 12px; margin-bottom: 14px; display: flex; justify-content: space-between; align-items: flex-start; }
+    .company-title { font-size: 16px; font-weight: 900; color: #0f172a; text-transform: uppercase; margin: 0; }
+    .company-sub { font-size: 10px; color: #64748b; margin: 2px 0 0 0; }
+    .report-badge { display: inline-block; padding: 4px 10px; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 9999px; font-size: 10px; font-weight: 800; color: #1d4ed8; text-transform: uppercase; }
+    .prod-box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px; margin-bottom: 14px; }
+    .kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 10px; }
+    .kpi-item { background: #ffffff; border: 1px solid #cbd5e1; border-radius: 8px; padding: 8px 10px; }
+    .kpi-label { font-size: 8.5px; font-weight: 800; text-transform: uppercase; color: #64748b; margin-bottom: 2px; }
+    .kpi-value { font-size: 14px; font-weight: 900; font-family: monospace; color: #0f172a; }
+    .kpi-sub { font-size: 9px; font-weight: 600; margin-top: 2px; }
+    table.data-table { width: 100%; border-collapse: collapse; border: 1px solid #cbd5e1; border-radius: 8px; overflow: hidden; margin-bottom: 14px; }
+    table.data-table th { background: #0f172a; color: #ffffff; padding: 7px 8px; font-size: 8.5px; font-weight: 800; text-transform: uppercase; }
+    .totals-box { background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 8px; padding: 10px 14px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+    .footer-note { font-size: 9px; color: #64748b; text-align: center; border-top: 1px dashed #cbd5e1; padding-top: 10px; margin-top: 16px; }
+    @media print { body { width: 100%; } .no-print { display: none !important; } tr { page-break-inside: avoid; } }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div>
+      <h1 class="company-title">${companyName}</h1>
+      <p class="company-sub">${companyAddress} • ${companyPhone} ${companyRuc ? '• ' + companyRuc : ''}</p>
+      <div style="margin-top: 4px; font-size: 12px; font-weight: 800; color: #2563eb;">
+        REPORTE DE MARGEN DE GANANCIAS POR FACTURA EMITIDA
+      </div>
+    </div>
+    <div style="text-align: right;">
+      <span class="report-badge">Control de Rentabilidad PEPS</span>
+      <p style="font-size: 9.5px; color: #64748b; margin: 4px 0 0 0;">
+        Emisión: <strong>${emitDate}</strong>
+      </p>
+    </div>
+  </div>
+
+  <div class="prod-box">
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+      <div>
+        <div style="font-size: 9px; font-weight: 800; color: #2563eb; text-transform: uppercase; letter-spacing: 0.5px;">
+          ${selectedProductDetail.brand} • ${selectedProductDetail.category} • SKU: ${selectedProductDetail.sku}
+        </div>
+        <div style="font-size: 15px; font-weight: 900; color: #0f172a; text-transform: uppercase; margin-top: 2px;">
+          ${selectedProductDetail.productName}
+        </div>
+      </div>
+      <div style="text-align: right;">
+        <span style="display: inline-block; padding: 4px 10px; background: #0d9488; color: #ffffff; border-radius: 9999px; font-size: 11px; font-weight: 900;">
+          ${selectedProductDetail.marginPercent.toFixed(1)}% MARGEN
+        </span>
+      </div>
+    </div>
+
+    <div class="kpi-grid">
+      <div class="kpi-item" style="border-left: 3px solid #f59e0b;">
+        <div class="kpi-label">Valor Compra (Costo)</div>
+        <div class="kpi-value">C$ ${selectedProductDetail.costPrice.toFixed(2)}</div>
+        <div class="kpi-sub" style="color: #b45309;">Inversión: C$ ${selectedProductDetail.totalCost.toFixed(2)}</div>
+      </div>
+
+      <div class="kpi-item" style="border-left: 3px solid #2563eb;">
+        <div class="kpi-label">Valor Venta (Precio)</div>
+        <div class="kpi-value" style="color: #2563eb;">C$ ${selectedProductDetail.salePrice.toFixed(2)}</div>
+        <div class="kpi-sub" style="color: #1d4ed8;">Ventas: C$ ${selectedProductDetail.totalRevenue.toFixed(2)}</div>
+      </div>
+
+      <div class="kpi-item" style="border-left: 3px solid #16a34a;">
+        <div class="kpi-label">Ganancia / Unidad</div>
+        <div class="kpi-value" style="color: #16a34a;">+C$ ${selectedProductDetail.unitProfit.toFixed(2)}</div>
+        <div class="kpi-sub" style="color: #15803d;">+${((selectedProductDetail.unitProfit / (selectedProductDetail.costPrice || 1)) * 100).toFixed(1)}% markup</div>
+      </div>
+
+      <div class="kpi-item" style="border-left: 3px solid #0d9488;">
+        <div class="kpi-label">Ganancia Neta Total</div>
+        <div class="kpi-value" style="color: #0d9488;">+C$ ${selectedProductDetail.totalProfit.toFixed(2)}</div>
+        <div class="kpi-sub" style="color: #0f766e;">Rentabilidad directa</div>
+      </div>
+    </div>
+  </div>
+
+  <div style="margin-bottom: 6px; display: flex; justify-content: space-between; align-items: center;">
+    <div style="font-size: 11px; font-weight: 900; text-transform: uppercase; color: #0f172a;">
+      FACTURAS DONDE SE VENDIÓ ESTE PRODUCTO (${targetInvoices.length})
+    </div>
+    <div style="font-size: 9.5px; color: #64748b;">
+      Incluye margen unitario y desglose de cada producto por factura emitida
+    </div>
+  </div>
+
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th style="text-align: left;">N° Ticket</th>
+        <th style="text-align: left;">Fecha y Hora</th>
+        <th style="text-align: left;">Cliente</th>
+        <th style="text-align: left;">Cajero</th>
+        <th style="text-align: center;">Método</th>
+        <th style="text-align: center;">Cant.</th>
+        <th style="text-align: right;">P. Venta</th>
+        <th style="text-align: right;">Costo Inv.</th>
+        <th style="text-align: right;">Total Venta</th>
+        <th style="text-align: right;">Ganancia</th>
+        <th style="text-align: right;">Margen</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${invoiceRows}
+    </tbody>
+  </table>
+
+  <div class="totals-box">
+    <div>
+      <span style="font-size: 10px; font-weight: 800; text-transform: uppercase; color: #475569; display: block;">RESUMEN TOTAL DEL PRODUCTO:</span>
+      <span style="font-size: 9px; color: #64748b;">${targetInvoices.length} facturas emitidas • ${totalUnidades} unidades vendidas</span>
+    </div>
+    <div style="display: flex; gap: 18px; text-align: right;">
+      <div>
+        <span style="font-size: 8.5px; font-weight: 800; text-transform: uppercase; color: #64748b; display: block;">Costo Invertido</span>
+        <span style="font-size: 12px; font-family: monospace; font-weight: bold; color: #334155;">C$ ${totalCostoInv.toFixed(2)}</span>
+      </div>
+      <div>
+        <span style="font-size: 8.5px; font-weight: 800; text-transform: uppercase; color: #64748b; display: block;">Total Facturado</span>
+        <span style="font-size: 12px; font-family: monospace; font-weight: 900; color: #0f172a;">C$ ${totalFacturado.toFixed(2)}</span>
+      </div>
+      <div>
+        <span style="font-size: 8.5px; font-weight: 800; text-transform: uppercase; color: #15803d; display: block;">Ganancia Neta</span>
+        <span style="font-size: 13px; font-family: monospace; font-weight: 900; color: #16a34a;">+C$ ${totalGanancia.toFixed(2)}</span>
+      </div>
+      <div>
+        <span style="font-size: 8.5px; font-weight: 800; text-transform: uppercase; color: #0f766e; display: block;">Margen Ponderado</span>
+        <span style="font-size: 13px; font-weight: 900; color: #0d9488;">${margenGeneral.toFixed(1)}%</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer-note">
+    Documento oficial generado por <strong>${companyName}</strong>. Detalle de margen de ganancias de cada producto por factura emitida.
+  </div>
+
+  <script>
+    window.onload = function() {
+      setTimeout(function() {
+        window.focus();
+        window.print();
+      }, 250);
+    };
+  </script>
+</body>
+</html>
+            `;
+
+            let printWin: Window | null = null;
+            try { printWin = window.open('', '_blank'); } catch(e) { printWin = null; }
+            if (!printWin || printWin.closed || typeof printWin.closed === 'undefined') {
+              const iframe = document.createElement('iframe');
+              iframe.style.position = 'fixed';
+              iframe.style.right = '0';
+              iframe.style.bottom = '0';
+              iframe.style.width = '0';
+              iframe.style.height = '0';
+              iframe.style.border = '0';
+              document.body.appendChild(iframe);
+              const doc = iframe.contentWindow?.document;
+              if (doc) {
+                doc.open();
+                doc.write(htmlContent);
+                doc.close();
+                setTimeout(() => {
+                  iframe.contentWindow?.focus();
+                  iframe.contentWindow?.print();
+                  setTimeout(() => { try { document.body.removeChild(iframe); } catch(e) {} }, 2000);
+                }, 400);
+              }
+            } else {
+              printWin.document.open();
+              printWin.document.write(htmlContent);
+              printWin.document.close();
+            }
+            success('Generando PDF', 'Preparando vista de impresión / guardado en PDF');
+          } catch (e) {
+            console.error(e);
+            info('Error', 'No se pudo generar el reporte en PDF');
+          }
+        };
+
         return createPortal(
           <div className="fixed inset-0 z-[120] flex items-center justify-center p-3 sm:p-6 bg-slate-950/60 backdrop-blur-xs overflow-y-auto animate-in fade-in duration-150">
             <div className="my-auto w-full max-w-4xl max-h-[90vh] bg-white dark:bg-[#0b1329] rounded-3xl border border-slate-200 dark:border-slate-800 shadow-2xl overflow-hidden flex flex-col animate-in zoom-in-95 duration-150">
@@ -2238,10 +2723,20 @@ export default function MetricsPage() {
                     type="button"
                     onClick={handleExportProductCSV}
                     className="p-1.5 rounded-xl bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 transition cursor-pointer flex items-center gap-1 text-xs font-bold"
-                    title="Exportar listado a Excel"
+                    title="Exportar listado a Excel (CSV)"
                   >
                     <Download className="w-3.5 h-3.5 text-emerald-600" />
                     <span className="hidden sm:inline">CSV</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleExportProductPDF}
+                    className="p-1.5 rounded-xl bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 transition cursor-pointer flex items-center gap-1 text-xs font-bold shadow-2xs"
+                    title="Exportar margen de ganancias de cada producto a PDF"
+                  >
+                    <Printer className="w-3.5 h-3.5 text-rose-600" />
+                    <span className="hidden sm:inline">PDF</span>
                   </button>
                 </div>
               </div>
@@ -2504,56 +2999,284 @@ export default function MetricsPage() {
                 </div>
               </div>
 
-              {/* Line Items */}
-              <div className="pt-2 border-t border-dashed border-slate-300 dark:border-slate-700 space-y-1.5">
+              {/* Line Items with Profit Margins */}
+              <div className="pt-2 border-t border-dashed border-slate-300 dark:border-slate-700 space-y-2">
                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
-                  Artículos Facturados:
+                  Artículos y Margen de Rentabilidad:
                 </span>
-                {(inspectingInvoice.items || []).map((it: any, itIdx: number) => {
-                  const isCurrent =
-                    selectedProductDetail &&
-                    (it.product_name === selectedProductDetail.productName ||
-                      it.product_id === selectedProductDetail.productId);
+                {(() => {
+                  let invTotalCost = 0;
+                  let invTotalRevenue = 0;
+
+                  const itemsElements = (inspectingInvoice.items || []).map((it: any, itIdx: number) => {
+                    const isCurrent =
+                      selectedProductDetail &&
+                      (it.product_name === selectedProductDetail.productName ||
+                        it.product_id === selectedProductDetail.productId);
+
+                    const itProd = getProductInfo(it.product_id, it.product_name);
+                    const itQty = it.quantity || 1;
+                    const itUnitPrice = it.unit_price_cordobas || (it.total_cordobas ? it.total_cordobas / itQty : 0);
+                    const itRevenue = it.total_cordobas || (itQty * itUnitPrice);
+                    const itUnitCost = itProd?.cost_price || (isCurrent ? selectedProductDetail.costPrice : itUnitPrice * 0.7);
+                    const itCost = itUnitCost * itQty;
+                    const itProfit = itRevenue - itCost;
+                    const itMargin = itRevenue > 0 ? (itProfit / itRevenue) * 100 : 0;
+
+                    invTotalCost += itCost;
+                    invTotalRevenue += itRevenue;
+
+                    return (
+                      <div
+                        key={itIdx}
+                        className={`p-2.5 rounded-xl text-xs space-y-1.5 transition-all ${
+                          isCurrent
+                            ? 'bg-blue-50 dark:bg-blue-950/60 border border-blue-200 dark:border-blue-800'
+                            : 'bg-white dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-800'
+                        }`}
+                      >
+                        <div className="flex justify-between items-start">
+                          <span className={`font-bold ${isCurrent ? 'text-blue-700 dark:text-blue-300' : 'text-slate-900 dark:text-white'}`}>
+                            {isCurrent && '★ '}
+                            {itQty}x {it.product_name}
+                          </span>
+                          <span className="font-mono font-bold text-slate-900 dark:text-white">
+                            {formatMoney(itRevenue)}
+                          </span>
+                        </div>
+                        <div className="flex justify-between items-center text-[11px] pt-1 border-t border-slate-100 dark:border-slate-800 text-slate-500 dark:text-slate-400">
+                          <span>
+                            Costo: <strong className="font-mono text-slate-700 dark:text-slate-300">{formatMoney(itCost)}</strong>
+                            <span className="text-[10px] ml-1">({formatMoney(itUnitCost)} c/u)</span>
+                          </span>
+                          <span className="font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+                            +{formatMoney(itProfit)} ({itMargin.toFixed(1)}%)
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  });
+
+                  const invTotalProfit = invTotalRevenue - invTotalCost;
+                  const invMarginPercent = invTotalRevenue > 0 ? (invTotalProfit / invTotalRevenue) * 100 : 0;
 
                   return (
-                    <div
-                      key={itIdx}
-                      className={`flex justify-between py-1 px-1.5 rounded ${
-                        isCurrent
-                          ? 'bg-blue-50 dark:bg-blue-950/60 font-bold text-blue-700 dark:text-blue-300'
-                          : 'text-slate-700 dark:text-slate-200'
-                      }`}
-                    >
-                      <span className="truncate pr-2">
-                        {it.quantity}x {it.product_name}
-                      </span>
-                      <span className="shrink-0">{formatMoney(it.total_cordobas || (it.quantity * it.unit_price_cordobas))}</span>
-                    </div>
-                  );
-                })}
-              </div>
+                    <>
+                      <div className="space-y-1.5 max-h-[220px] overflow-y-auto pr-1">
+                        {itemsElements}
+                      </div>
 
-              {/* Total */}
-              <div className="pt-2 border-t border-dashed border-slate-300 dark:border-slate-700 space-y-1 text-xs">
-                <div className="flex justify-between text-base font-black text-slate-900 dark:text-white pt-1">
-                  <span>TOTAL PAGADO:</span>
-                  <span className="text-emerald-600 dark:text-emerald-400">
-                    {formatMoney(inspectingInvoice.total_cordobas || inspectingInvoice.total || 0)}
-                  </span>
-                </div>
+                      {/* Total & Profit Margin Summary */}
+                      <div className="pt-2.5 border-t border-dashed border-slate-300 dark:border-slate-700 space-y-1.5 text-xs">
+                        <div className="flex justify-between text-slate-600 dark:text-slate-400">
+                          <span>Costo Invertido (PEPS):</span>
+                          <span className="font-mono font-bold text-slate-800 dark:text-slate-200">
+                            {formatMoney(invTotalCost)}
+                          </span>
+                        </div>
+                        <div className="flex justify-between text-base font-black text-slate-900 dark:text-white pt-0.5">
+                          <span>TOTAL PAGADO:</span>
+                          <span className="text-blue-600 dark:text-blue-400">
+                            {formatMoney(invTotalRevenue || inspectingInvoice.total_cordobas || inspectingInvoice.total || 0)}
+                          </span>
+                        </div>
+                        <div className="flex justify-between items-center p-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800/80">
+                          <div>
+                            <span className="text-[9px] font-black uppercase text-emerald-800 dark:text-emerald-300 block">
+                              Ganancia Neta de la Factura:
+                            </span>
+                            <span className="text-xs font-black font-mono text-emerald-700 dark:text-emerald-400">
+                              +{formatMoney(invTotalProfit)}
+                            </span>
+                          </div>
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase bg-emerald-600 text-white">
+                            {invMarginPercent.toFixed(1)}% MARGEN
+                          </span>
+                        </div>
+                      </div>
+                    </>
+                  );
+                })()}
               </div>
             </div>
 
             {/* Actions */}
-            <div className="flex items-center justify-between gap-2 pt-2">
-              <button
-                type="button"
-                onClick={() => window.print()}
-                className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition cursor-pointer"
-              >
-                <Printer className="w-4 h-4" />
-                <span>Imprimir Ticket</span>
-              </button>
+            <div className="flex flex-wrap items-center justify-between gap-2 pt-2">
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const inv = inspectingInvoice;
+                    const companySettings = storage.getCompanySettings();
+                    const companyName = companySettings?.name || 'SENDAFACT POS';
+                    const companyRuc = companySettings?.ruc ? `RUC: ${companySettings.ruc}` : '';
+                    const companyPhone = companySettings?.phone ? `Tel: ${companySettings.phone}` : '';
+                    const companyAddress = companySettings?.address || 'Managua, Nicaragua';
+                    const emitDate = new Date(inv.created_at).toLocaleString('es-NI');
+
+                    let totalInvCost = 0;
+                    let totalInvRevenue = 0;
+
+                    const itemRows = (inv.items || []).map((it: any) => {
+                      const itemProd = getProductInfo(it.product_id, it.product_name);
+                      const itQty = it.quantity || 1;
+                      const itUnitPrice = it.unit_price_cordobas || (it.total_cordobas ? it.total_cordobas / itQty : 0);
+                      const itRevenue = it.total_cordobas || (itQty * itUnitPrice);
+                      const itUnitCost = itemProd?.cost_price || (selectedProductDetail && (it.product_name === selectedProductDetail.productName || it.product_id === selectedProductDetail.productId) ? selectedProductDetail.costPrice : itUnitPrice * 0.7);
+                      const itItemCost = itUnitCost * itQty;
+                      const itItemProfit = itRevenue - itItemCost;
+                      const itItemMargin = itRevenue > 0 ? (itItemProfit / itRevenue) * 100 : 0;
+
+                      totalInvCost += itItemCost;
+                      totalInvRevenue += itRevenue;
+
+                      return `
+                        <tr style="border-bottom: 1px solid #e2e8f0; font-size: 11px;">
+                          <td style="padding: 6px 8px; font-weight: bold; color: #0f172a;">${it.product_name}</td>
+                          <td style="padding: 6px 8px; text-align: center;">${itQty}</td>
+                          <td style="padding: 6px 8px; text-align: right; font-family: monospace;">C$ ${itUnitCost.toFixed(2)}</td>
+                          <td style="padding: 6px 8px; text-align: right; font-family: monospace;">C$ ${itUnitPrice.toFixed(2)}</td>
+                          <td style="padding: 6px 8px; text-align: right; font-family: monospace; font-weight: bold;">C$ ${itRevenue.toFixed(2)}</td>
+                          <td style="padding: 6px 8px; text-align: right; font-family: monospace; font-weight: bold; color: ${itItemProfit >= 0 ? '#16a34a' : '#dc2626'};">
+                            ${itItemProfit >= 0 ? '+' : ''}C$ ${itItemProfit.toFixed(2)}
+                          </td>
+                          <td style="padding: 6px 8px; text-align: right; font-weight: bold; color: #0d9488;">${itItemMargin.toFixed(1)}%</td>
+                        </tr>
+                      `;
+                    }).join('');
+
+                    const totalProfit = totalInvRevenue - totalInvCost;
+                    const marginPercent = totalInvRevenue > 0 ? (totalProfit / totalInvRevenue) * 100 : 0;
+
+                    const htmlContent = `
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <title>Factura_Margenes_${inv.ticket_number || inv.id}</title>
+  <style>
+    @page { size: letter portrait; margin: 15mm; }
+    * { box-sizing: border-box; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; color: #0f172a; margin: 0; padding: 0; font-size: 11px; }
+    .header { border-bottom: 2px solid #2563eb; padding-bottom: 12px; margin-bottom: 14px; display: flex; justify-content: space-between; }
+    table { width: 100%; border-collapse: collapse; border: 1px solid #cbd5e1; margin-bottom: 14px; }
+    th { background: #0f172a; color: #ffffff; padding: 7px 8px; font-size: 9px; text-transform: uppercase; }
+    .totals { background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px; padding: 12px; margin-bottom: 16px; }
+    @media print { body { width: 100%; } .no-print { display: none !important; } }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div>
+      <h2 style="margin: 0; font-size: 16px; font-weight: 900; text-transform: uppercase;">${companyName}</h2>
+      <p style="margin: 2px 0 0 0; font-size: 10px; color: #64748b;">${companyAddress} • ${companyPhone} ${companyRuc ? '• ' + companyRuc : ''}</p>
+      <div style="margin-top: 4px; font-size: 12px; font-weight: 800; color: #2563eb;">
+        COMPROBANTE DE FACTURA CON MARGEN DE GANANCIA POR PRODUCTO
+      </div>
+    </div>
+    <div style="text-align: right;">
+      <div style="font-size: 13px; font-weight: 900; font-family: monospace;">${inv.ticket_number || '#' + inv.id}</div>
+      <p style="margin: 3px 0 0 0; font-size: 10px; color: #64748b;">Fecha: ${emitDate}</p>
+      <p style="margin: 1px 0 0 0; font-size: 10px; color: #64748b;">Cliente: <strong>${inv.customer?.name || (inv as any).customer_name || 'Consumidor Final'}</strong></p>
+      <p style="margin: 1px 0 0 0; font-size: 10px; color: #64748b;">Cajero: ${inv.user_name || 'Caja Principal'} • Pago: <strong>${(inv.payment_method || '').toUpperCase()}</strong></p>
+    </div>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th style="text-align: left;">Producto Facturado</th>
+        <th style="text-align: center;">Cant.</th>
+        <th style="text-align: right;">Costo Unit.</th>
+        <th style="text-align: right;">Precio Venta</th>
+        <th style="text-align: right;">Total Facturado</th>
+        <th style="text-align: right;">Ganancia Neta</th>
+        <th style="text-align: right;">Margen (%)</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${itemRows}
+    </tbody>
+  </table>
+
+  <div class="totals">
+    <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+      <span style="font-weight: 600; color: #64748b;">Total Costo Invertido:</span>
+      <span style="font-family: monospace; font-weight: bold;">C$ ${totalInvCost.toFixed(2)}</span>
+    </div>
+    <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+      <span style="font-weight: 600; color: #64748b;">Total Facturado Venta:</span>
+      <span style="font-family: monospace; font-weight: bold; font-size: 13px;">C$ ${totalInvRevenue.toFixed(2)}</span>
+    </div>
+    <div style="display: flex; justify-content: space-between; margin-bottom: 4px; border-top: 1px dashed #cbd5e1; padding-top: 4px;">
+      <span style="font-weight: 800; color: #16a34a;">Ganancia Neta Obtenida:</span>
+      <span style="font-family: monospace; font-weight: 900; font-size: 14px; color: #16a34a;">+C$ ${totalProfit.toFixed(2)}</span>
+    </div>
+    <div style="display: flex; justify-content: space-between;">
+      <span style="font-weight: 800; color: #0d9488;">Margen de Rentabilidad de la Factura:</span>
+      <span style="font-weight: 900; font-size: 14px; color: #0d9488;">${marginPercent.toFixed(1)}%</span>
+    </div>
+  </div>
+
+  <div style="font-size: 9px; color: #64748b; text-align: center;">
+    Certificación de márgenes calculados por el sistema ${companyName} según método PEPS.
+  </div>
+
+  <script>
+    window.onload = function() {
+      setTimeout(function() { window.focus(); window.print(); }, 250);
+    };
+  </script>
+</body>
+</html>
+                    `;
+
+                    let printWin: Window | null = null;
+                    try { printWin = window.open('', '_blank'); } catch(e) { printWin = null; }
+                    if (!printWin || printWin.closed || typeof printWin.closed === 'undefined') {
+                      const iframe = document.createElement('iframe');
+                      iframe.style.position = 'fixed';
+                      iframe.style.right = '0';
+                      iframe.style.bottom = '0';
+                      iframe.style.width = '0';
+                      iframe.style.height = '0';
+                      iframe.style.border = '0';
+                      document.body.appendChild(iframe);
+                      const doc = iframe.contentWindow?.document;
+                      if (doc) {
+                        doc.open();
+                        doc.write(htmlContent);
+                        doc.close();
+                        setTimeout(() => {
+                          iframe.contentWindow?.focus();
+                          iframe.contentWindow?.print();
+                          setTimeout(() => { try { document.body.removeChild(iframe); } catch(e) {} }, 2000);
+                        }, 400);
+                      }
+                    } else {
+                      printWin.document.open();
+                      printWin.document.write(htmlContent);
+                      printWin.document.close();
+                    }
+                    success('Generando PDF', 'Preparando factura con márgenes para imprimir / guardar en PDF');
+                  }}
+                  className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold transition cursor-pointer shadow-xs"
+                  title="Imprimir o guardar PDF con márgenes de cada producto"
+                >
+                  <Printer className="w-3.5 h-3.5" />
+                  <span>PDF con Márgenes</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => window.print()}
+                  className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition cursor-pointer"
+                  title="Imprimir ticket estándar"
+                >
+                  <Printer className="w-3.5 h-3.5" />
+                  <span>Ticket</span>
+                </button>
+              </div>
 
               <button
                 type="button"
