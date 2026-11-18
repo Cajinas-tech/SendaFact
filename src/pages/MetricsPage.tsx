@@ -1401,25 +1401,25 @@ export default function MetricsPage() {
           {/* VIEW TAB 3: MATRIZ DE RENTABILIDAD & SUGERENCIAS (ULTRA MODERNO) */}
           {activeTab === 'matriz' && (
             <div className="space-y-5 animate-in fade-in">
-              {/* Header Banner & Modal Quick-Launch */}
-              <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white rounded-2xl p-4 sm:p-5 border border-indigo-900/60 shadow-lg relative overflow-hidden">
-                <div className="absolute -right-10 -bottom-10 w-44 h-44 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
+              {/* Header Banner & Modal Quick-Launch (Clean Light Mode Friendly) */}
+              <div className="bg-gradient-to-r from-blue-50/90 via-indigo-50/40 to-white dark:from-slate-900 dark:via-indigo-950/40 dark:to-slate-900 rounded-2xl p-4 sm:p-5 border border-blue-200/80 dark:border-slate-800 shadow-sm relative overflow-hidden">
+                <div className="absolute -right-10 -bottom-10 w-44 h-44 bg-blue-500/5 dark:bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
                 
                 <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
                   <div className="flex items-center gap-3">
-                    <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-blue-600 via-indigo-500 to-teal-400 text-white flex items-center justify-center shadow-lg shadow-indigo-500/25 shrink-0">
+                    <div className="w-11 h-11 rounded-2xl bg-blue-600 text-white flex items-center justify-center shadow-md shadow-blue-500/20 shrink-0">
                       <Sparkles className="w-5 h-5" />
                     </div>
                     <div>
                       <div className="flex items-center gap-2">
-                        <h3 className="text-sm sm:text-base font-black uppercase tracking-tight text-white">
+                        <h3 className="text-sm sm:text-base font-black uppercase tracking-tight text-slate-900 dark:text-white">
                           Matriz Estratégica de Rentabilidad y Precios
                         </h3>
-                        <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-indigo-500/30 text-indigo-200 border border-indigo-400/30">
+                        <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-blue-100/70 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
                           BCG 2.0
                         </span>
                       </div>
-                      <p className="text-xs text-indigo-200/80 mt-0.5">
+                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                         Clasificación cuadrangular (Margen % vs Rotación) para maximizar utilidades y flujo de caja
                       </p>
                     </div>
@@ -1432,7 +1432,7 @@ export default function MetricsPage() {
                         setMatrizActiveView('quadrants');
                         setShowMatrizModal(true);
                       }}
-                      className="flex-1 sm:flex-initial px-3.5 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold transition shadow-md shadow-blue-500/25 flex items-center justify-center gap-1.5 cursor-pointer"
+                      className="flex-1 sm:flex-initial px-3.5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition shadow-md shadow-blue-500/20 flex items-center justify-center gap-1.5 cursor-pointer"
                       title="Abrir vista expandida en modal"
                     >
                       <Maximize2 className="w-3.5 h-3.5" />
@@ -1442,10 +1442,10 @@ export default function MetricsPage() {
                     <button
                       type="button"
                       onClick={handleExportMatrizCSV}
-                      className="px-3 py-2 rounded-xl bg-white/10 hover:bg-white/15 text-white text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer border border-white/15"
+                      className="px-3 py-2 rounded-xl bg-white hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer border border-slate-200 dark:border-slate-700 shadow-xs"
                       title="Descargar reporte en CSV"
                     >
-                      <Download className="w-3.5 h-3.5" />
+                      <Download className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
                       <span className="hidden sm:inline">Exportar</span>
                     </button>
                   </div>
@@ -1546,8 +1546,8 @@ export default function MetricsPage() {
                   onClick={() => setMatrizFilter('all')}
                   className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer ${
                     matrizFilter === 'all'
-                      ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 shadow-xs'
-                      : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200'
+                      ? 'bg-blue-600 text-white shadow-md shadow-blue-500/20'
+                      : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
                   }`}
                 >
                   Todos los Cuadrantes ({matrizAnalysis.totalEvaluated})
@@ -3149,7 +3149,7 @@ export default function MetricsPage() {
               <button
                 type="button"
                 onClick={() => setShowMatrizModal(false)}
-                className="w-full sm:w-auto px-5 py-2 rounded-xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-xs font-bold transition hover:opacity-90 cursor-pointer"
+                className="w-full sm:w-auto px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition shadow-md shadow-blue-500/20 cursor-pointer"
               >
                 Cerrar Ventana
               </button>
