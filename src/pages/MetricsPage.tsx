@@ -23,7 +23,19 @@ import {
   Boxes,
   HelpCircle,
   BarChart3,
-  X
+  X,
+  Printer,
+  Copy,
+  Check,
+  FileText,
+  User,
+  Clock,
+  ArrowRight,
+  ExternalLink,
+  Share2,
+  Building2,
+  ArrowRightLeft,
+  Banknote
 } from 'lucide-react';
 import { storage } from '../lib/storage';
 import { Sale, Product, Category, Movement } from '../types';
@@ -57,6 +69,10 @@ export default function MetricsPage() {
   // Modals
   const [selectedProductDetail, setSelectedProductDetail] = useState<any | null>(null);
   const [showMermasModal, setShowMermasModal] = useState(false);
+  const [invoiceSearch, setInvoiceSearch] = useState('');
+  const [inspectingInvoice, setInspectingInvoice] = useState<any | null>(null);
+  const [copiedTicket, setCopiedTicket] = useState<string | null>(null);
+  const company = storage.getCompanySettings();
 
   // Reload data from storage
   const reloadData = () => {
@@ -331,11 +347,23 @@ export default function MetricsPage() {
           productSalesMap[prodKey].totalCost += itemCost;
           productSalesMap[prodKey].totalProfit += itemProfit;
           productSalesMap[prodKey].salesInvoices.push({
-            ticket: sale.ticket_number,
+            ticket: sale.ticket_number || ('#' + sale.id),
+            saleId: sale.id,
             date: sale.created_at,
+            customerName: sale.customer?.name || (sale as any).customer_name || 'Consumidor Final',
+            customerPhone: sale.customer?.phone || '',
+            userName: sale.user_name || 'Caja Principal',
+            userRole: sale.user_role || 'cajero',
+            paymentMethod: (sale.payment_method || 'efectivo').toLowerCase(),
+            status: sale.status || 'completed',
             qty: qty,
             unitPrice: unitPrice,
-            total: itemRevenue
+            unitCost: unitCost,
+            totalCost: itemCost,
+            total: itemRevenue,
+            profit: itemProfit,
+            margin: itemRevenue > 0 ? (itemProfit / itemRevenue) * 100 : 0,
+            sale: sale
           });
 
           // Aggregate by Brand
@@ -1464,103 +1492,512 @@ export default function MetricsPage() {
       </div>
 
       {/* =======================================================================
-          MODAL 1: DETALLE DE FACTURAS POR PRODUCTO (INVOICES DRILLDOWN)
+          MODAL 1: DETALLE DE FACTURAS POR PRODUCTO (INVOICES DRILLDOWN ULTRA MODERNO)
          ======================================================================= */}
-      {selectedProductDetail && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in">
-          <div className="bg-white dark:bg-[#0b1329] rounded-3xl border border-slate-200 dark:border-slate-800 w-full max-w-2xl overflow-hidden shadow-2xl space-y-4 p-6 animate-in zoom-in-95">
-            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center">
-                  <Boxes className="w-5 h-5" />
+      {selectedProductDetail && (() => {
+        const productInvoices = (selectedProductDetail.salesInvoices || []).filter((inv: any) => {
+          if (!invoiceSearch.trim()) return true;
+          const query = invoiceSearch.toLowerCase().trim();
+          return (
+            inv.ticket?.toLowerCase().includes(query) ||
+            inv.customerName?.toLowerCase().includes(query) ||
+            inv.userName?.toLowerCase().includes(query) ||
+            inv.paymentMethod?.toLowerCase().includes(query)
+          );
+        });
+
+        const handleCopyTicket = (ticket: string) => {
+          navigator.clipboard.writeText(ticket);
+          setCopiedTicket(ticket);
+          setTimeout(() => setCopiedTicket(null), 2000);
+        };
+
+        const handleExportProductCSV = () => {
+          try {
+            let csv = '\uFEFF';
+            csv += `REPORTE DE FACTURAS - ${selectedProductDetail.productName}\r\n`;
+            csv += `SKU:;${selectedProductDetail.sku}\r\n`;
+            csv += `Marca:;${selectedProductDetail.brand}\r\n`;
+            csv += `Categoría:;${selectedProductDetail.category}\r\n`;
+            csv += `Valor Compra (Costo):;${selectedProductDetail.costPrice.toFixed(2)}\r\n`;
+            csv += `Valor Venta (Precio):;${selectedProductDetail.salePrice.toFixed(2)}\r\n`;
+            csv += `Ganancia Total:;${selectedProductDetail.totalProfit.toFixed(2)} (${selectedProductDetail.marginPercent.toFixed(1)}%)\r\n\r\n`;
+
+            csv += 'Ticket;Fecha;Cliente;Cajero;Metodo Pago;Cantidad;Precio Unitario;Costo Invertido;Total Facturado;Ganancia Neta;Margen (%)\r\n';
+            selectedProductDetail.salesInvoices.forEach((inv: any) => {
+              const invCost = inv.qty * selectedProductDetail.costPrice;
+              const invProfit = inv.total - invCost;
+              const invMargin = inv.total > 0 ? (invProfit / inv.total) * 100 : 0;
+              csv += `"${inv.ticket}";"${new Date(inv.date).toLocaleString('es-NI')}";"${inv.customerName}";"${inv.userName}";"${inv.paymentMethod.toUpperCase()}";${inv.qty};${inv.unitPrice.toFixed(2)};${invCost.toFixed(2)};${inv.total.toFixed(2)};${invProfit.toFixed(2)};${invMargin.toFixed(1)}%\r\n`;
+            });
+
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `Facturas_${selectedProductDetail.sku}_${new Date().toISOString().slice(0, 10)}.csv`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            success('Reporte Descargado', 'Historial de facturas del producto exportado a Excel/CSV');
+          } catch (e) {
+            info('Error', 'No se pudo exportar el historial de facturas');
+          }
+        };
+
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-slate-950/75 backdrop-blur-md animate-in fade-in">
+            <div className="bg-white dark:bg-[#0b1329] rounded-3xl border border-slate-200/90 dark:border-slate-800 w-full max-w-4xl max-h-[92vh] overflow-hidden shadow-2xl flex flex-col animate-in zoom-in-95 duration-200 relative">
+              {/* Top Glow Ambient */}
+              <div className="absolute -top-24 left-1/2 -translate-x-1/2 w-96 h-36 bg-blue-500/20 blur-3xl pointer-events-none rounded-full" />
+
+              {/* 1. MODAL HEADER (Modern Gradient & Product Badges) */}
+              <div className="p-5 sm:p-6 bg-gradient-to-r from-slate-900 via-blue-950 to-slate-900 text-white relative z-10 shrink-0 border-b border-white/10">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex items-start sm:items-center gap-3.5">
+                    <div className="w-12 h-12 rounded-2xl bg-blue-600 flex items-center justify-center text-white shadow-lg shadow-blue-500/30 border border-blue-400/30 shrink-0">
+                      <Boxes className="w-6 h-6" />
+                    </div>
+                    <div>
+                      <div className="flex flex-wrap items-center gap-2 mb-1">
+                        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-blue-500/20 text-blue-300 border border-blue-400/30">
+                          {selectedProductDetail.brand}
+                        </span>
+                        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-white/10 text-slate-300 border border-white/15">
+                          {selectedProductDetail.category}
+                        </span>
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-mono text-slate-300 bg-black/40 border border-white/10">
+                          SKU: {selectedProductDetail.sku}
+                        </span>
+                      </div>
+                      <h3 className="text-base sm:text-xl font-black uppercase tracking-tight text-white flex items-center gap-2">
+                        {selectedProductDetail.productName}
+                      </h3>
+                      <p className="text-xs text-blue-200/80 mt-0.5">
+                        Historial detallado de ventas y cálculo de rentabilidad por factura
+                      </p>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedProductDetail(null);
+                      setInvoiceSearch('');
+                    }}
+                    className="w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition cursor-pointer shrink-0 border border-white/10"
+                    title="Cerrar ventana"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
                 </div>
-                <div>
-                  <h3 className="font-black text-slate-900 dark:text-white text-base">
-                    {selectedProductDetail.productName}
-                  </h3>
-                  <span className="text-xs text-slate-400">
-                    {selectedProductDetail.brand} • {selectedProductDetail.category} • SKU: {selectedProductDetail.sku}
-                  </span>
+
+                {/* 2. 4 FINANCIAL CARDS (Valor Compra vs Valor Venta vs Ganancia) */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 mt-5">
+                  {/* Valor Compra */}
+                  <div className="bg-white/10 backdrop-blur-md rounded-2xl p-3 border border-white/10">
+                    <div className="flex items-center justify-between text-amber-300 mb-1">
+                      <span className="text-[10px] font-black uppercase tracking-wider">Valor Compra</span>
+                      <ShoppingBag className="w-3.5 h-3.5" />
+                    </div>
+                    <span className="text-base sm:text-lg font-black font-mono text-white block">
+                      {formatMoney(selectedProductDetail.costPrice)}
+                    </span>
+                    <span className="text-[10px] text-slate-300 block">
+                      Inversión total: {formatMoney(selectedProductDetail.totalCost)}
+                    </span>
+                  </div>
+
+                  {/* Valor Venta */}
+                  <div className="bg-white/10 backdrop-blur-md rounded-2xl p-3 border border-white/10">
+                    <div className="flex items-center justify-between text-blue-300 mb-1">
+                      <span className="text-[10px] font-black uppercase tracking-wider">Valor Venta</span>
+                      <DollarSign className="w-3.5 h-3.5" />
+                    </div>
+                    <span className="text-base sm:text-lg font-black font-mono text-blue-300 block">
+                      {formatMoney(selectedProductDetail.salePrice)}
+                    </span>
+                    <span className="text-[10px] text-slate-300 block">
+                      Facturado total: {formatMoney(selectedProductDetail.totalRevenue)}
+                    </span>
+                  </div>
+
+                  {/* Ganancia Unitaria */}
+                  <div className="bg-white/10 backdrop-blur-md rounded-2xl p-3 border border-white/10">
+                    <div className="flex items-center justify-between text-emerald-300 mb-1">
+                      <span className="text-[10px] font-black uppercase tracking-wider">Ganancia / Unidad</span>
+                      <TrendingUp className="w-3.5 h-3.5" />
+                    </div>
+                    <span className="text-base sm:text-lg font-black font-mono text-emerald-400 block">
+                      +{formatMoney(selectedProductDetail.unitProfit)}
+                    </span>
+                    <span className="text-[10px] text-emerald-300/90 font-bold block">
+                      {selectedProductDetail.costPrice > 0
+                        ? `+${((selectedProductDetail.unitProfit / selectedProductDetail.costPrice) * 100).toFixed(1)}% markup`
+                        : '+100%'}
+                    </span>
+                  </div>
+
+                  {/* Ganancia Total & Margen */}
+                  <div className="bg-emerald-500/20 backdrop-blur-md rounded-2xl p-3 border border-emerald-400/40">
+                    <div className="flex items-center justify-between text-emerald-300 mb-1">
+                      <span className="text-[10px] font-black uppercase tracking-wider">Ganancia Neta Total</span>
+                      <Sparkles className="w-3.5 h-3.5 text-emerald-300" />
+                    </div>
+                    <span className="text-base sm:text-lg font-black font-mono text-emerald-300 block">
+                      +{formatMoney(selectedProductDetail.totalProfit)}
+                    </span>
+                    <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-500 text-slate-900 inline-block mt-0.5">
+                      {selectedProductDetail.marginPercent.toFixed(1)}% Margen
+                    </span>
+                  </div>
                 </div>
               </div>
 
+              {/* 3. TOOLBAR: Search & Invoices Count */}
+              <div className="p-4 sm:px-6 bg-slate-50 dark:bg-slate-900/60 border-b border-slate-200/80 dark:border-slate-800 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 shrink-0">
+                <div className="flex items-center gap-2">
+                  <FileText className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                  <h4 className="text-xs sm:text-sm font-black text-slate-900 dark:text-white uppercase tracking-tight">
+                    Facturas donde se vendió este producto ({productInvoices.length})
+                  </h4>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <div className="relative min-w-[220px]">
+                    <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                    <input
+                      type="text"
+                      value={invoiceSearch}
+                      onChange={(e) => setInvoiceSearch(e.target.value)}
+                      placeholder="Buscar por ticket, cliente o cajero..."
+                      className="w-full pl-8 pr-3 py-1.5 text-xs font-semibold bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-800 dark:text-slate-100 placeholder-slate-400"
+                    />
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={handleExportProductCSV}
+                    className="p-1.5 rounded-xl bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 transition cursor-pointer flex items-center gap-1 text-xs font-bold"
+                    title="Exportar listado a Excel"
+                  >
+                    <Download className="w-3.5 h-3.5 text-emerald-600" />
+                    <span className="hidden sm:inline">CSV</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* 4. INVOICES LIST (Elevated Modern Cards) */}
+              <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-3 divide-y-0">
+                {productInvoices.length === 0 ? (
+                  <div className="py-12 text-center text-slate-400 space-y-2">
+                    <FileText className="w-8 h-8 mx-auto text-slate-300 dark:text-slate-600" />
+                    <p className="text-xs font-semibold">
+                      {invoiceSearch
+                        ? 'No se encontraron facturas con el término de búsqueda.'
+                        : 'No hay facturas vinculadas a este producto en el período actual.'}
+                    </p>
+                  </div>
+                ) : (
+                  productInvoices.map((inv: any, iIdx: number) => {
+                    const invCost = inv.qty * selectedProductDetail.costPrice;
+                    const invProfit = inv.total - invCost;
+                    const invMargin = inv.total > 0 ? (invProfit / inv.total) * 100 : 0;
+                    const isCopied = copiedTicket === inv.ticket;
+
+                    // Payment method styling
+                    const method = (inv.paymentMethod || 'efectivo').toLowerCase();
+                    const isCash = method === 'efectivo';
+                    const isCredit = method === 'credito' || method === 'crédito';
+                    const isTransfer = method === 'transferencia';
+
+                    return (
+                      <div
+                        key={iIdx}
+                        className="bg-white dark:bg-[#070b14] rounded-2xl p-4 sm:p-4.5 border border-slate-200/90 dark:border-slate-800 hover:border-blue-500/60 shadow-xs hover:shadow-md transition-all space-y-3 group"
+                      >
+                        {/* Top: Ticket Number, Date, Status, Payment Method */}
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <div className="flex items-center gap-2">
+                            <div className="w-8 h-8 rounded-xl bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center font-bold text-xs shrink-0">
+                              <FileText className="w-4 h-4" />
+                            </div>
+
+                            <div className="flex items-center gap-1.5">
+                              <span className="font-mono font-black text-sm text-slate-900 dark:text-white tracking-tight">
+                                {inv.ticket}
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => handleCopyTicket(inv.ticket)}
+                                className="p-1 rounded-md text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
+                                title="Copiar folio"
+                              >
+                                {isCopied ? (
+                                  <Check className="w-3.5 h-3.5 text-emerald-500" />
+                                ) : (
+                                  <Copy className="w-3.5 h-3.5" />
+                                )}
+                              </button>
+                            </div>
+
+                            <span className="text-[11px] text-slate-400 dark:text-slate-500 flex items-center gap-1 ml-1">
+                              <Clock className="w-3 h-3" />
+                              {new Date(inv.date).toLocaleString('es-NI', {
+                                day: '2-digit',
+                                month: 'short',
+                                year: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit'
+                              })}
+                            </span>
+                          </div>
+
+                          {/* Badges: Payment Method & Status */}
+                          <div className="flex items-center gap-2">
+                            <span
+                              className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider flex items-center gap-1 ${
+                                isCash
+                                  ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800'
+                                  : isTransfer
+                                  ? 'bg-cyan-50 dark:bg-cyan-950/60 text-cyan-600 dark:text-cyan-400 border border-cyan-200 dark:border-cyan-800'
+                                  : isCredit
+                                  ? 'bg-purple-50 dark:bg-purple-950/60 text-purple-600 dark:text-purple-400 border border-purple-200 dark:border-purple-800'
+                                  : 'bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800'
+                              }`}
+                            >
+                              {isCash && <Banknote className="w-3 h-3" />}
+                              {isTransfer && <ArrowRightLeft className="w-3 h-3" />}
+                              {isCredit && <CreditCard className="w-3 h-3" />}
+                              <span>{inv.paymentMethod.toUpperCase()}</span>
+                            </span>
+
+                            <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
+                              COMPLETADA
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Middle: Customer & Cashier info */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs bg-slate-50/70 dark:bg-slate-800/40 p-2.5 rounded-xl">
+                          <div className="flex items-center gap-2 text-slate-600 dark:text-slate-300 truncate">
+                            <User className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                            <span className="font-semibold text-slate-500">Cliente:</span>
+                            <span className="font-bold text-slate-900 dark:text-white truncate">
+                              {inv.customerName}
+                            </span>
+                            {inv.customerPhone && (
+                              <span className="text-[10px] text-slate-400 font-mono">({inv.customerPhone})</span>
+                            )}
+                          </div>
+
+                          <div className="flex items-center gap-2 text-slate-600 dark:text-slate-300 truncate">
+                            <Building2 className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                            <span className="font-semibold text-slate-500">Atendido por:</span>
+                            <span className="font-bold text-slate-800 dark:text-slate-200 truncate">
+                              {inv.userName}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Bottom: Transaction Financial Details */}
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5 pt-1 text-xs">
+                          <div className="flex items-center gap-3">
+                            <span className="font-bold text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-slate-800 px-2.5 py-1 rounded-lg">
+                              {inv.qty} {inv.qty === 1 ? 'unidad' : 'unidades'} × {formatMoney(inv.unitPrice)}
+                            </span>
+                            <span className="text-[11px] text-slate-400">
+                              Costo invertido: {formatMoney(invCost)}
+                            </span>
+                          </div>
+
+                          <div className="flex items-center gap-3 self-end sm:self-auto">
+                            <div className="text-right">
+                              <span className="text-[10px] text-slate-400 block font-bold uppercase">
+                                Total Venta:
+                              </span>
+                              <span className="text-sm font-black font-mono text-slate-900 dark:text-white block">
+                                {formatMoney(inv.total)}
+                              </span>
+                            </div>
+
+                            <div className="text-right bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800/80 px-2.5 py-1 rounded-xl">
+                              <span className="text-[9px] text-emerald-700 dark:text-emerald-300 block font-black uppercase">
+                                Ganancia:
+                              </span>
+                              <span className="text-xs font-black font-mono text-emerald-600 dark:text-emerald-400 block">
+                                +{formatMoney(invProfit)} ({invMargin.toFixed(1)}%)
+                              </span>
+                            </div>
+
+                            {/* Action to view full ticket voucher */}
+                            {inv.sale && (
+                              <button
+                                type="button"
+                                onClick={() => setInspectingInvoice(inv.sale)}
+                                className="px-2.5 py-1.5 rounded-xl bg-blue-50 hover:bg-blue-100 dark:bg-blue-950/60 dark:hover:bg-blue-900/60 text-blue-600 dark:text-blue-400 text-xs font-bold transition flex items-center gap-1 cursor-pointer border border-blue-200 dark:border-blue-900/50 ml-1"
+                                title="Ver comprobante completo"
+                              >
+                                <Eye className="w-3.5 h-3.5" />
+                                <span className="hidden sm:inline">Ver Ticket</span>
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+
+              {/* 5. MODAL FOOTER */}
+              <div className="p-4 sm:px-6 bg-slate-50 dark:bg-slate-900/90 border-t border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-3 shrink-0">
+                <div className="text-xs text-slate-500 flex items-center gap-3">
+                  <span>
+                    Total Facturado:{' '}
+                    <strong className="text-slate-900 dark:text-white font-mono">
+                      {formatMoney(selectedProductDetail.totalRevenue)}
+                    </strong>
+                  </span>
+                  <span>•</span>
+                  <span>
+                    Ganancia Líquida:{' '}
+                    <strong className="text-emerald-600 dark:text-emerald-400 font-mono">
+                      +{formatMoney(selectedProductDetail.totalProfit)}
+                    </strong>
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedProductDetail(null);
+                      setInvoiceSearch('');
+                    }}
+                    className="w-full sm:w-auto px-5 py-2 rounded-xl bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 text-xs font-bold transition cursor-pointer"
+                  >
+                    Cerrar
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* =======================================================================
+          MODAL 1.1: COMPROBANTE DE TICKET COMPLETO (RECEIPT INSPECTOR)
+         ======================================================================= */}
+      {inspectingInvoice && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in">
+          <div className="bg-white dark:bg-[#0b1329] rounded-3xl border border-slate-200 dark:border-slate-800 w-full max-w-md overflow-hidden shadow-2xl space-y-4 p-6 animate-in zoom-in-95">
+            {/* Header */}
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+              <div className="flex items-center gap-2 text-blue-600 dark:text-blue-400">
+                <FileText className="w-5 h-5" />
+                <h4 className="font-black text-sm uppercase tracking-wider text-slate-900 dark:text-white">
+                  Comprobante de Venta
+                </h4>
+              </div>
               <button
                 type="button"
-                onClick={() => setSelectedProductDetail(null)}
-                className="p-1.5 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
+                onClick={() => setInspectingInvoice(null)}
+                className="p-1 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            {/* Profitability Snapshot */}
-            <div className="grid grid-cols-3 gap-3 p-3 bg-slate-50 dark:bg-slate-800/60 rounded-2xl text-xs">
-              <div>
-                <span className="text-slate-400 block text-[10px] uppercase font-bold">Valor Compra:</span>
-                <span className="font-black font-mono text-slate-800 dark:text-slate-200">
-                  {formatMoney(selectedProductDetail.costPrice)}
-                </span>
+            {/* Receipt Voucher Body */}
+            <div className="bg-slate-50 dark:bg-slate-900/80 rounded-2xl p-4 border border-dashed border-slate-300 dark:border-slate-700 font-mono text-xs space-y-3">
+              {/* Company Info */}
+              <div className="text-center space-y-1 pb-2 border-b border-dashed border-slate-300 dark:border-slate-700">
+                <h3 className="font-black text-sm text-slate-900 dark:text-white tracking-wider">
+                  {company?.name || 'SENDA SISTEMAS'}
+                </h3>
+                <p className="text-[10px] text-slate-400">{company?.address || 'Managua, Nicaragua'}</p>
+                <p className="text-[10px] text-slate-400">Tel: {company?.phone || '+505 8888-0000'}</p>
               </div>
-              <div>
-                <span className="text-slate-400 block text-[10px] uppercase font-bold">Valor Venta:</span>
-                <span className="font-black font-mono text-blue-600 dark:text-blue-400">
-                  {formatMoney(selectedProductDetail.salePrice)}
-                </span>
-              </div>
-              <div>
-                <span className="text-slate-400 block text-[10px] uppercase font-bold">Ganancia Total:</span>
-                <span className="font-black font-mono text-emerald-600 dark:text-emerald-400">
-                  +{formatMoney(selectedProductDetail.totalProfit)} ({selectedProductDetail.marginPercent.toFixed(1)}%)
-                </span>
-              </div>
-            </div>
 
-            {/* Invoices List */}
-            <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
-              <h5 className="text-xs font-bold text-slate-500 uppercase tracking-wider">
-                Facturas donde se vendió este producto:
-              </h5>
-              <div className="divide-y divide-slate-100 dark:divide-slate-800/80">
-                {selectedProductDetail.salesInvoices.map((inv: any, iIdx: number) => {
-                  const invCost = inv.qty * selectedProductDetail.costPrice;
-                  const invProfit = inv.total - invCost;
+              {/* Ticket Meta */}
+              <div className="space-y-1 text-[11px] text-slate-600 dark:text-slate-300">
+                <div className="flex justify-between">
+                  <span>Documento:</span>
+                  <span className="font-bold text-slate-900 dark:text-white">{inspectingInvoice.ticket_number || '#' + inspectingInvoice.id}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Fecha:</span>
+                  <span>{new Date(inspectingInvoice.created_at).toLocaleString('es-NI')}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Cliente:</span>
+                  <span className="font-bold">{inspectingInvoice.customer?.name || (inspectingInvoice as any).customer_name || 'Consumidor Final'}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Cajero/Vendedor:</span>
+                  <span>{inspectingInvoice.user_name || 'Caja Principal'}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Método de Pago:</span>
+                  <span className="font-bold uppercase text-blue-600 dark:text-blue-400">{inspectingInvoice.payment_method}</span>
+                </div>
+              </div>
+
+              {/* Line Items */}
+              <div className="pt-2 border-t border-dashed border-slate-300 dark:border-slate-700 space-y-1.5">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                  Artículos Facturados:
+                </span>
+                {(inspectingInvoice.items || []).map((it: any, itIdx: number) => {
+                  const isCurrent =
+                    selectedProductDetail &&
+                    (it.product_name === selectedProductDetail.productName ||
+                      it.product_id === selectedProductDetail.productId);
 
                   return (
-                    <div key={iIdx} className="py-2.5 flex items-center justify-between text-xs">
-                      <div>
-                        <span className="font-mono font-bold text-slate-900 dark:text-white block">
-                          {inv.ticket}
-                        </span>
-                        <span className="text-[10px] text-slate-400">
-                          {new Date(inv.date).toLocaleString('es-NI')}
-                        </span>
-                      </div>
-
-                      <div className="text-center">
-                        <span className="font-bold text-slate-700 dark:text-slate-300">
-                          {inv.qty} unds × {formatMoney(inv.unitPrice)}
-                        </span>
-                      </div>
-
-                      <div className="text-right">
-                        <span className="font-black font-mono text-slate-900 dark:text-white block">
-                          {formatMoney(inv.total)}
-                        </span>
-                        <span className="text-[10px] font-mono font-bold text-emerald-600 dark:text-emerald-400">
-                          +{formatMoney(invProfit)} ganancia
-                        </span>
-                      </div>
+                    <div
+                      key={itIdx}
+                      className={`flex justify-between py-1 px-1.5 rounded ${
+                        isCurrent
+                          ? 'bg-blue-50 dark:bg-blue-950/60 font-bold text-blue-700 dark:text-blue-300'
+                          : 'text-slate-700 dark:text-slate-200'
+                      }`}
+                    >
+                      <span className="truncate pr-2">
+                        {it.quantity}x {it.product_name}
+                      </span>
+                      <span className="shrink-0">{formatMoney(it.total_cordobas || (it.quantity * it.unit_price_cordobas))}</span>
                     </div>
                   );
                 })}
               </div>
+
+              {/* Total */}
+              <div className="pt-2 border-t border-dashed border-slate-300 dark:border-slate-700 space-y-1 text-xs">
+                <div className="flex justify-between text-base font-black text-slate-900 dark:text-white pt-1">
+                  <span>TOTAL PAGADO:</span>
+                  <span className="text-emerald-600 dark:text-emerald-400">
+                    {formatMoney(inspectingInvoice.total_cordobas || inspectingInvoice.total || 0)}
+                  </span>
+                </div>
+              </div>
             </div>
 
-            <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex justify-end">
+            {/* Actions */}
+            <div className="flex items-center justify-between gap-2 pt-2">
               <button
                 type="button"
-                onClick={() => setSelectedProductDetail(null)}
-                className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-xs font-bold transition cursor-pointer"
+                onClick={() => window.print()}
+                className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition cursor-pointer"
+              >
+                <Printer className="w-4 h-4" />
+                <span>Imprimir Ticket</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setInspectingInvoice(null)}
+                className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold transition cursor-pointer"
               >
                 Cerrar
               </button>
