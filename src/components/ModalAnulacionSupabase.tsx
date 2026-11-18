@@ -188,16 +188,29 @@ export function ModalAnulacionSupabase({
           storage.setProducts(updatedProducts);
 
           // Registrar movimiento de auditoría en inventario
-          targetSale.items.forEach((it) => {
-            storage.addMovement({
-              product_id: it.product_id,
-              product_name: it.product_name,
-              type: 'in',
-              quantity: it.quantity,
-              reason: `Reversión por anulación de factura ${targetSale.ticket_number || '#' + targetSale.id}: ${motivo.trim()} (Autorizado por: ${cleanEmail})`,
-              created_at: new Date().toISOString()
+          try {
+            targetSale.items.forEach((it, idx) => {
+              const movementData = {
+                id: Date.now() + idx,
+                product_id: it.product_id,
+                product_name: it.product_name,
+                type: 'in' as const,
+                sub_type: 'ENTRADA' as const,
+                quantity: it.quantity,
+                reason: `Reversión por anulación de factura ${targetSale.ticket_number || '#' + targetSale.id}: ${motivo.trim()} (Autorizado por: ${cleanEmail})`,
+                user_name: 'Jairo Cajina (Admin)',
+                user: cleanEmail,
+                created_at: new Date().toISOString()
+              };
+              if (typeof storage.saveMovement === 'function') {
+                storage.saveMovement(movementData);
+              } else if (typeof (storage as any).addMovement === 'function') {
+                (storage as any).addMovement(movementData);
+              }
             });
-          });
+          } catch (movErr) {
+            console.warn('Aviso al registrar movimiento de stock:', movErr);
+          }
         }
       }
 

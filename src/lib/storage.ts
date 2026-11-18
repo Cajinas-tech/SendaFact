@@ -1712,6 +1712,9 @@ export const storage = {
     movs.unshift(movement);
     this.setMovements(movs);
   },
+  addMovement(movement: any) {
+    this.saveMovement(movement);
+  },
 
   // CREDITS
   getCredits(): CreditAccount[] {
