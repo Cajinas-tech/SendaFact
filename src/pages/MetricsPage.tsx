@@ -36,7 +36,14 @@ import {
   Share2,
   Building2,
   ArrowRightLeft,
-  Banknote
+  Banknote,
+  Maximize2,
+  Lightbulb,
+  Zap,
+  Target,
+  Sliders,
+  ChevronRight,
+  FileSpreadsheet
 } from 'lucide-react';
 import { storage } from '../lib/storage';
 import { Sale, Product, Category, Movement } from '../types';
@@ -70,6 +77,11 @@ export default function MetricsPage() {
   // Modals
   const [selectedProductDetail, setSelectedProductDetail] = useState<any | null>(null);
   const [showMermasModal, setShowMermasModal] = useState(false);
+  const [showMatrizModal, setShowMatrizModal] = useState(false);
+  const [matrizActiveView, setMatrizActiveView] = useState<'quadrants' | 'simulator'>('quadrants');
+  const [matrizSearch, setMatrizSearch] = useState('');
+  const [matrizFilter, setMatrizFilter] = useState<'all' | 'estrellas' | 'potenciales' | 'volumen' | 'ajustes'>('all');
+  const [priceAdjustmentPercent, setPriceAdjustmentPercent] = useState<number>(10);
   const [invoiceSearch, setInvoiceSearch] = useState('');
   const [inspectingInvoice, setInspectingInvoice] = useState<any | null>(null);
   const [copiedTicket, setCopiedTicket] = useState<string | null>(null);
@@ -598,6 +610,119 @@ export default function MetricsPage() {
       .sort((a, b) => b.marginPercent - a.marginPercent)[0];
   }, [analytics.productStatsList]);
 
+  // Strategic BCG / Rentabilidad Matrix Analysis
+  const matrizAnalysis = useMemo(() => {
+    const list = analytics.productStatsList || [];
+    if (list.length === 0) {
+      return {
+        estrellas: [],
+        potenciales: [],
+        volumen: [],
+        ajustes: [],
+        portfolioHealthScore: 100,
+        avgMargin: 0,
+        totalEvaluated: 0,
+        potentialProfitGain: 0,
+        lowMarginCount: 0,
+        starsProfit: 0,
+      };
+    }
+
+    // Determine dynamic sales volume threshold
+    const sortedByUnits = [...list].sort((a, b) => b.unitsSold - a.unitsSold);
+    const medianUnits = sortedByUnits.length > 0
+      ? sortedByUnits[Math.floor(sortedByUnits.length / 2)].unitsSold
+      : 2;
+    const volumeThreshold = Math.max(2, Math.min(medianUnits, 4));
+
+    const estrellas: typeof list = [];
+    const potenciales: typeof list = [];
+    const volumen: typeof list = [];
+    const ajustes: typeof list = [];
+
+    let totalMarginSum = 0;
+    let potentialGain = 0;
+    let starsProfit = 0;
+
+    list.forEach((p) => {
+      totalMarginSum += p.marginPercent;
+
+      // Potential extra gain if low margin is raised to 20%
+      if (p.marginPercent < 20 && p.unitsSold > 0) {
+        const targetRevenue = p.totalCost / (1 - 0.20);
+        if (targetRevenue > p.totalRevenue) {
+          potentialGain += targetRevenue - p.totalRevenue;
+        }
+      }
+
+      // 4 Quadrants
+      if (p.marginPercent >= 20 && p.unitsSold >= volumeThreshold) {
+        estrellas.push(p);
+        starsProfit += p.totalProfit;
+      } else if (p.marginPercent >= 20 && p.unitsSold < volumeThreshold) {
+        potenciales.push(p);
+      } else if (p.marginPercent >= 15 && p.marginPercent < 20 && p.unitsSold >= volumeThreshold) {
+        volumen.push(p);
+      } else {
+        ajustes.push(p);
+      }
+    });
+
+    const avgMargin = list.length > 0 ? totalMarginSum / list.length : 0;
+    const healthyCount = list.filter((p) => p.marginPercent >= 20).length;
+    const portfolioHealthScore = list.length > 0 ? Math.round((healthyCount / list.length) * 100) : 100;
+
+    return {
+      estrellas: estrellas.sort((a, b) => b.totalProfit - a.totalProfit),
+      potenciales: potenciales.sort((a, b) => b.marginPercent - a.marginPercent),
+      volumen: volumen.sort((a, b) => b.unitsSold - a.unitsSold),
+      ajustes: ajustes.sort((a, b) => a.marginPercent - b.marginPercent),
+      portfolioHealthScore,
+      avgMargin,
+      totalEvaluated: list.length,
+      potentialProfitGain: potentialGain,
+      lowMarginCount: ajustes.length,
+      starsProfit,
+    };
+  }, [analytics.productStatsList]);
+
+  // Export Matrix to CSV
+  const handleExportMatrizCSV = () => {
+    try {
+      let csv = '\uFEFF';
+      csv += 'REPORTE ESTRATÉGICO - MATRIZ DE RENTABILIDAD & PRECIOS\r\n';
+      csv += `Fecha de Generación:;${new Date().toLocaleString('es-NI')}\r\n`;
+      csv += `Total Productos Evaluados:;${matrizAnalysis.totalEvaluated}\r\n`;
+      csv += `Margen Promedio de Cartera:;${matrizAnalysis.avgMargin.toFixed(1)}%\r\n`;
+      csv += `Ganancia en Productos Estrella:;${matrizAnalysis.starsProfit.toFixed(2)}\r\n\r\n`;
+
+      csv += 'Cuadrante Estratégico;SKU;Producto;Marca;Categoría;Unidades Vendidas;Costo Unitario;Precio Venta Actual;Ganancia Unitaria;Margen Actual (%);Ganancia Total (C$);Precio Sugerido (+10%);Margen Sugerido (%)\r\n';
+
+      const appendQuadrant = (items: typeof analytics.productStatsList, qName: string) => {
+        items.forEach((p) => {
+          const sugPrice = p.salePrice * 1.10;
+          const sugMargin = sugPrice > 0 ? ((sugPrice - p.costPrice) / sugPrice) * 100 : 0;
+          csv += `"${qName}";"${p.sku}";"${p.productName}";"${p.brand}";"${p.category}";${p.unitsSold};${p.costPrice.toFixed(2)};${p.salePrice.toFixed(2)};${p.unitProfit.toFixed(2)};${p.marginPercent.toFixed(1)}%;${p.totalProfit.toFixed(2)};${sugPrice.toFixed(2)};${sugMargin.toFixed(1)}%\r\n`;
+        });
+      };
+
+      appendQuadrant(matrizAnalysis.estrellas, '1. ESTRELLA (Alto Margen + Alta Rotación)');
+      appendQuadrant(matrizAnalysis.potenciales, '2. POTENCIAL / JOYA (Alto Margen + Baja Rotación)');
+      appendQuadrant(matrizAnalysis.volumen, '3. VOLUMEN / FLUJO (Margen Moderado + Alta Rotación)');
+      appendQuadrant(matrizAnalysis.ajustes, '4. ALERTA / AJUSTE (Bajo Margen < 20%)');
+
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = `Matriz_Rentabilidad_${new Date().toISOString().slice(0, 10)}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      success('Exportación Completa', 'Se ha descargado el análisis de la matriz en CSV exitosamente.');
+    } catch (e) {
+      info('Aviso', 'No se pudo generar el archivo de exportación.');
+    }
+  };
+
   return (
     <div className="space-y-6 pb-12 animate-fade-in text-slate-800 dark:text-slate-100">
       {/* 1. TOP MODULE HEADER (Matching Image 1 & 2) */}
@@ -840,7 +965,7 @@ export default function MetricsPage() {
           <button
             type="button"
             onClick={() => setActiveTab('productos')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition cursor-pointer relative ${
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition cursor-pointer ${
               activeTab === 'productos'
                 ? 'bg-blue-600 text-white shadow-md shadow-blue-500/20'
                 : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
@@ -848,15 +973,12 @@ export default function MetricsPage() {
           >
             <Boxes className="w-4 h-4" />
             <span>Ganancias por Productos</span>
-            <span className="px-1.5 py-0.5 rounded-full text-[9px] font-black bg-emerald-500 text-white">
-              NUEVO
-            </span>
           </button>
 
           <button
             type="button"
             onClick={() => setActiveTab('matriz')}
-            className={`hidden sm:flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition cursor-pointer ${
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition cursor-pointer ${
               activeTab === 'matriz'
                 ? 'bg-blue-600 text-white shadow-md shadow-blue-500/20'
                 : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
@@ -1039,61 +1161,87 @@ export default function MetricsPage() {
                 </div>
               </div>
 
-              {/* Toolbar: Search, Filters & Sorters */}
-              <div className="bg-white dark:bg-[#070b14] rounded-2xl p-4 border border-slate-200/80 dark:border-slate-800 shadow-sm flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
-                <div className="relative flex-1 min-w-[200px]">
-                  <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                  <input
-                    type="text"
-                    value={searchProduct}
-                    onChange={(e) => setSearchProduct(e.target.value)}
-                    placeholder="Buscar producto por nombre, SKU o marca..."
-                    className="w-full pl-9 pr-3 py-2 text-xs font-semibold rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-800 dark:text-slate-100 placeholder-slate-400"
-                  />
-                </div>
+              {/* Toolbar: Search, Filters & Sorters (Unified Horizontal Row) */}
+              <div className="bg-white dark:bg-[#070b14] rounded-2xl p-3 sm:p-3.5 border border-slate-200/80 dark:border-slate-800 shadow-sm">
+                <div className="flex flex-col lg:flex-row items-center gap-2.5 w-full">
+                  {/* Search Input */}
+                  <div className="relative flex-1 min-w-[200px] w-full">
+                    <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                    <input
+                      type="text"
+                      value={searchProduct}
+                      onChange={(e) => setSearchProduct(e.target.value)}
+                      placeholder="Buscar producto por nombre, SKU o marca..."
+                      className="w-full h-10 pl-9 pr-8 text-xs font-semibold rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-800 dark:text-slate-100 placeholder-slate-400 transition"
+                    />
+                    {searchProduct && (
+                      <button
+                        type="button"
+                        onClick={() => setSearchProduct('')}
+                        className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-lg transition cursor-pointer"
+                        title="Limpiar búsqueda"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                  </div>
 
-                <div className="flex flex-wrap items-center gap-2">
-                  {/* Category Filter */}
-                  <select
-                    value={categoryFilter}
-                    onChange={(e) => setCategoryFilter(e.target.value)}
-                    className="text-xs font-semibold px-2.5 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="all">Todas las Categorías</option>
-                    {categories.map((c) => (
-                      <option key={c.id} value={c.name}>
-                        {c.name}
-                      </option>
-                    ))}
-                  </select>
+                  {/* Filters in single horizontal group */}
+                  <div className="grid grid-cols-1 sm:grid-cols-3 lg:flex items-center gap-2 w-full lg:w-auto shrink-0">
+                    {/* Category Filter */}
+                    <div className="relative w-full lg:w-[155px] shrink-0">
+                      <select
+                        value={categoryFilter}
+                        onChange={(e) => setCategoryFilter(e.target.value)}
+                        className="w-full h-10 text-xs font-semibold pl-3 pr-8 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer appearance-none truncate"
+                        title="Filtrar por categoría"
+                      >
+                        <option value="all">Todas las Categorías</option>
+                        {categories.map((c) => (
+                          <option key={c.id} value={c.name}>
+                            {c.name}
+                          </option>
+                        ))}
+                      </select>
+                      <Filter className="w-3.5 h-3.5 absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                    </div>
 
-                  {/* Brand Filter */}
-                  <select
-                    value={brandFilter}
-                    onChange={(e) => setBrandFilter(e.target.value)}
-                    className="text-xs font-semibold px-2.5 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="all">Todas las Marcas</option>
-                    {analytics.brandStatsList.map((b) => (
-                      <option key={b.brand} value={b.brand}>
-                        {b.brand}
-                      </option>
-                    ))}
-                  </select>
+                    {/* Brand Filter */}
+                    <div className="relative w-full lg:w-[145px] shrink-0">
+                      <select
+                        value={brandFilter}
+                        onChange={(e) => setBrandFilter(e.target.value)}
+                        className="w-full h-10 text-xs font-semibold pl-3 pr-8 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer appearance-none truncate"
+                        title="Filtrar por marca"
+                      >
+                        <option value="all">Todas las Marcas</option>
+                        {analytics.brandStatsList.map((b) => (
+                          <option key={b.brand} value={b.brand}>
+                            {b.brand}
+                          </option>
+                        ))}
+                      </select>
+                      <Tag className="w-3.5 h-3.5 absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                    </div>
 
-                  {/* Sort By */}
-                  <select
-                    value={sortBy}
-                    onChange={(e) => setSortBy(e.target.value as any)}
-                    className="text-xs font-bold px-2.5 py-2 rounded-xl bg-blue-50 dark:bg-blue-950/60 border border-blue-200 dark:border-blue-900/60 text-blue-700 dark:text-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="ganancia_desc">Mayor Ganancia Total (C$)</option>
-                    <option value="margen_desc">Mayor Margen (%)</option>
-                    <option value="unidades_desc">Más Vendidos (Unidades)</option>
-                    <option value="ventas_desc">Mayor Venta Bruta (C$)</option>
-                    <option value="ganancia_unit_desc">Mayor Ganancia Unitaria</option>
-                    <option value="margen_asc">Menor Margen (Revisar precios)</option>
-                  </select>
+                    {/* Sort By */}
+                    <div className="relative w-full lg:w-[195px] shrink-0">
+                      <select
+                        value={sortBy}
+                        onChange={(e) => setSortBy(e.target.value as any)}
+                        className="w-full h-10 text-xs font-bold pl-3 pr-8 rounded-xl bg-blue-50/80 dark:bg-blue-950/60 border border-blue-200/80 dark:border-blue-900/60 text-blue-700 dark:text-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer appearance-none truncate"
+                        title="Ordenar resultados"
+                      >
+                        <option value="ganancia_desc">Mayor Ganancia Total (C$)</option>
+                        <option value="margen_desc">Mayor Margen (%)</option>
+                        <option value="unidades_desc">Más Vendidos (Unidades)</option>
+                        <option value="ventas_desc">Mayor Venta Bruta (C$)</option>
+                        <option value="ganancia_unit_desc">Mayor Ganancia Unitaria</option>
+                        <option value="margen_asc">Menor Margen (Revisar precios)</option>
+                      </select>
+                      <ArrowUpDown className="w-3.5 h-3.5 absolute right-2.5 top-1/2 -translate-y-1/2 text-blue-500 pointer-events-none" />
+                    </div>
+                  </div>
                 </div>
               </div>
 
@@ -1250,82 +1398,495 @@ export default function MetricsPage() {
             </div>
           )}
 
-          {/* VIEW TAB 3: MATRIZ DE RENTABILIDAD & SUGERENCIAS */}
+          {/* VIEW TAB 3: MATRIZ DE RENTABILIDAD & SUGERENCIAS (ULTRA MODERNO) */}
           {activeTab === 'matriz' && (
             <div className="space-y-5 animate-in fade-in">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Quadrant 1: Productos Estrella */}
-                <div className="bg-white dark:bg-[#070b14] rounded-2xl p-5 border border-slate-200/80 dark:border-slate-800 shadow-sm space-y-3">
-                  <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400">
-                    <Sparkles className="w-5 h-5" />
-                    <h4 className="font-black text-sm uppercase tracking-tight">
-                      ⭐ Productos Estrella (Alto Volumen + Alto Margen)
-                    </h4>
+              {/* Header Banner & Modal Quick-Launch */}
+              <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white rounded-2xl p-4 sm:p-5 border border-indigo-900/60 shadow-lg relative overflow-hidden">
+                <div className="absolute -right-10 -bottom-10 w-44 h-44 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
+                
+                <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-blue-600 via-indigo-500 to-teal-400 text-white flex items-center justify-center shadow-lg shadow-indigo-500/25 shrink-0">
+                      <Sparkles className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <h3 className="text-sm sm:text-base font-black uppercase tracking-tight text-white">
+                          Matriz Estratégica de Rentabilidad y Precios
+                        </h3>
+                        <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-indigo-500/30 text-indigo-200 border border-indigo-400/30">
+                          BCG 2.0
+                        </span>
+                      </div>
+                      <p className="text-xs text-indigo-200/80 mt-0.5">
+                        Clasificación cuadrangular (Margen % vs Rotación) para maximizar utilidades y flujo de caja
+                      </p>
+                    </div>
                   </div>
-                  <p className="text-xs text-slate-500">
-                    Productos que generan el mayor flujo de caja y mayor ganancia porcentual.
-                  </p>
-                  <div className="space-y-2">
-                    {analytics.productStatsList
-                      .filter((p) => p.marginPercent >= 25 && p.unitsSold >= 5)
-                      .slice(0, 4)
-                      .map((p) => (
-                        <div
-                          key={p.sku}
-                          className="flex items-center justify-between p-2.5 rounded-xl bg-emerald-50/50 dark:bg-emerald-950/20 text-xs"
-                        >
-                          <div>
-                            <span className="font-bold text-slate-900 dark:text-white block">
-                              {p.productName}
-                            </span>
-                            <span className="text-[10px] text-slate-400">
-                              {p.unitsSold} unds • Costo {formatMoney(p.costPrice)} ➔ Venta {formatMoney(p.salePrice)}
-                            </span>
-                          </div>
-                          <span className="font-black font-mono text-emerald-600 dark:text-emerald-400">
-                            +{formatMoney(p.totalProfit)}
-                          </span>
-                        </div>
-                      ))}
-                  </div>
-                </div>
 
-                {/* Quadrant 2: Oportunidades de Ajuste de Precios */}
-                <div className="bg-white dark:bg-[#070b14] rounded-2xl p-5 border border-slate-200/80 dark:border-slate-800 shadow-sm space-y-3">
-                  <div className="flex items-center gap-2 text-amber-500">
-                    <AlertCircle className="w-5 h-5" />
-                    <h4 className="font-black text-sm uppercase tracking-tight">
-                      ⚠️ Oportunidad de Ajuste (Margen Bajo &lt; 20%)
-                    </h4>
-                  </div>
-                  <p className="text-xs text-slate-500">
-                    Productos con margen reducido donde se sugiere revisar costo de compra o subir precio de venta.
-                  </p>
-                  <div className="space-y-2">
-                    {analytics.productStatsList
-                      .filter((p) => p.marginPercent < 20 && p.unitsSold > 0)
-                      .slice(0, 4)
-                      .map((p) => (
-                        <div
-                          key={p.sku}
-                          className="flex items-center justify-between p-2.5 rounded-xl bg-amber-50/50 dark:bg-amber-950/20 text-xs"
-                        >
-                          <div>
-                            <span className="font-bold text-slate-900 dark:text-white block">
-                              {p.productName}
-                            </span>
-                            <span className="text-[10px] text-amber-600 dark:text-amber-400 font-bold">
-                              Margen actual: {p.marginPercent.toFixed(1)}% (Ganancia unitaria: {formatMoney(p.unitProfit)})
-                            </span>
-                          </div>
-                          <span className="font-black font-mono text-slate-700 dark:text-slate-300">
-                            {formatMoney(p.totalRevenue)}
-                          </span>
-                        </div>
-                      ))}
+                  <div className="flex items-center gap-2 self-stretch sm:self-auto shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setMatrizActiveView('quadrants');
+                        setShowMatrizModal(true);
+                      }}
+                      className="flex-1 sm:flex-initial px-3.5 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold transition shadow-md shadow-blue-500/25 flex items-center justify-center gap-1.5 cursor-pointer"
+                      title="Abrir vista expandida en modal"
+                    >
+                      <Maximize2 className="w-3.5 h-3.5" />
+                      <span>Ver en Modal Completo</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={handleExportMatrizCSV}
+                      className="px-3 py-2 rounded-xl bg-white/10 hover:bg-white/15 text-white text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer border border-white/15"
+                      title="Descargar reporte en CSV"
+                    >
+                      <Download className="w-3.5 h-3.5" />
+                      <span className="hidden sm:inline">Exportar</span>
+                    </button>
                   </div>
                 </div>
               </div>
+
+              {/* 4 Micro KPI Cards */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                {/* Estrellas */}
+                <div
+                  onClick={() => setMatrizFilter(matrizFilter === 'estrellas' ? 'all' : 'estrellas')}
+                  className={`p-3.5 rounded-2xl border transition-all cursor-pointer ${
+                    matrizFilter === 'estrellas'
+                      ? 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-500 shadow-sm'
+                      : 'bg-white dark:bg-[#070b14] border-slate-200/80 dark:border-slate-800 hover:border-emerald-300'
+                  }`}
+                >
+                  <div className="flex items-center justify-between text-emerald-600 dark:text-emerald-400">
+                    <span className="text-[10px] font-black uppercase tracking-wider">Estrellas</span>
+                    <Sparkles className="w-3.5 h-3.5" />
+                  </div>
+                  <h4 className="text-lg sm:text-xl font-black font-mono text-slate-900 dark:text-white mt-1">
+                    {matrizAnalysis.estrellas.length}
+                  </h4>
+                  <span className="text-[10px] font-mono font-bold text-emerald-600 dark:text-emerald-400 block truncate">
+                    +{formatMoney(matrizAnalysis.starsProfit)}
+                  </span>
+                </div>
+
+                {/* Potenciales / Joyas */}
+                <div
+                  onClick={() => setMatrizFilter(matrizFilter === 'potenciales' ? 'all' : 'potenciales')}
+                  className={`p-3.5 rounded-2xl border transition-all cursor-pointer ${
+                    matrizFilter === 'potenciales'
+                      ? 'bg-purple-50 dark:bg-purple-950/40 border-purple-500 shadow-sm'
+                      : 'bg-white dark:bg-[#070b14] border-slate-200/80 dark:border-slate-800 hover:border-purple-300'
+                  }`}
+                >
+                  <div className="flex items-center justify-between text-purple-600 dark:text-purple-400">
+                    <span className="text-[10px] font-black uppercase tracking-wider">Alto Margen</span>
+                    <Target className="w-3.5 h-3.5" />
+                  </div>
+                  <h4 className="text-lg sm:text-xl font-black font-mono text-slate-900 dark:text-white mt-1">
+                    {matrizAnalysis.potenciales.length}
+                  </h4>
+                  <span className="text-[10px] font-bold text-purple-600 dark:text-purple-400 block truncate">
+                    Margen &ge; 20%
+                  </span>
+                </div>
+
+                {/* Volumen */}
+                <div
+                  onClick={() => setMatrizFilter(matrizFilter === 'volumen' ? 'all' : 'volumen')}
+                  className={`p-3.5 rounded-2xl border transition-all cursor-pointer ${
+                    matrizFilter === 'volumen'
+                      ? 'bg-blue-50 dark:bg-blue-950/40 border-blue-500 shadow-sm'
+                      : 'bg-white dark:bg-[#070b14] border-slate-200/80 dark:border-slate-800 hover:border-blue-300'
+                  }`}
+                >
+                  <div className="flex items-center justify-between text-blue-600 dark:text-blue-400">
+                    <span className="text-[10px] font-black uppercase tracking-wider">Alta Rotación</span>
+                    <RefreshCw className="w-3.5 h-3.5" />
+                  </div>
+                  <h4 className="text-lg sm:text-xl font-black font-mono text-slate-900 dark:text-white mt-1">
+                    {matrizAnalysis.volumen.length}
+                  </h4>
+                  <span className="text-[10px] font-bold text-blue-600 dark:text-blue-400 block truncate">
+                    Generador de flujo
+                  </span>
+                </div>
+
+                {/* Ajustes */}
+                <div
+                  onClick={() => setMatrizFilter(matrizFilter === 'ajustes' ? 'all' : 'ajustes')}
+                  className={`p-3.5 rounded-2xl border transition-all cursor-pointer ${
+                    matrizFilter === 'ajustes'
+                      ? 'bg-amber-50 dark:bg-amber-950/40 border-amber-500 shadow-sm'
+                      : 'bg-white dark:bg-[#070b14] border-slate-200/80 dark:border-slate-800 hover:border-amber-300'
+                  }`}
+                >
+                  <div className="flex items-center justify-between text-amber-500">
+                    <span className="text-[10px] font-black uppercase tracking-wider">Revisar Precios</span>
+                    <AlertCircle className="w-3.5 h-3.5" />
+                  </div>
+                  <h4 className="text-lg sm:text-xl font-black font-mono text-slate-900 dark:text-white mt-1">
+                    {matrizAnalysis.ajustes.length}
+                  </h4>
+                  <span className="text-[10px] font-bold text-amber-600 dark:text-amber-400 block truncate">
+                    Margen &lt; 20%
+                  </span>
+                </div>
+              </div>
+
+              {/* Quadrant Quick Filter Pills */}
+              <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                <button
+                  type="button"
+                  onClick={() => setMatrizFilter('all')}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer ${
+                    matrizFilter === 'all'
+                      ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 shadow-xs'
+                      : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200'
+                  }`}
+                >
+                  Todos los Cuadrantes ({matrizAnalysis.totalEvaluated})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setMatrizFilter('estrellas')}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer flex items-center gap-1 ${
+                    matrizFilter === 'estrellas'
+                      ? 'bg-emerald-600 text-white shadow-xs'
+                      : 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100'
+                  }`}
+                >
+                  ⭐ Estrellas ({matrizAnalysis.estrellas.length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setMatrizFilter('potenciales')}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer flex items-center gap-1 ${
+                    matrizFilter === 'potenciales'
+                      ? 'bg-purple-600 text-white shadow-xs'
+                      : 'bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 hover:bg-purple-100'
+                  }`}
+                >
+                  💎 Alto Margen ({matrizAnalysis.potenciales.length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setMatrizFilter('volumen')}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer flex items-center gap-1 ${
+                    matrizFilter === 'volumen'
+                      ? 'bg-blue-600 text-white shadow-xs'
+                      : 'bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 hover:bg-blue-100'
+                  }`}
+                >
+                  🔄 Alta Rotación ({matrizAnalysis.volumen.length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setMatrizFilter('ajustes')}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer flex items-center gap-1 ${
+                    matrizFilter === 'ajustes'
+                      ? 'bg-amber-600 text-white shadow-xs'
+                      : 'bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 hover:bg-amber-100'
+                  }`}
+                >
+                  ⚠️ Revisar Precios ({matrizAnalysis.ajustes.length})
+                </button>
+              </div>
+
+              {/* 4 Quadrants Interactive Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Quadrant 1: Productos Estrella */}
+                {(matrizFilter === 'all' || matrizFilter === 'estrellas') && (
+                  <div className="bg-white dark:bg-[#070b14] rounded-2xl p-5 border border-slate-200/80 dark:border-slate-800 shadow-sm space-y-3.5 hover:shadow-md transition-shadow">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400">
+                        <div className="w-7 h-7 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 flex items-center justify-center border border-emerald-200/60">
+                          <Sparkles className="w-4 h-4" />
+                        </div>
+                        <h4 className="font-black text-xs sm:text-sm uppercase tracking-tight text-slate-900 dark:text-white">
+                          ⭐ Productos Estrella
+                        </h4>
+                      </div>
+                      <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+                        Alto Margen + Alta Rotación
+                      </span>
+                    </div>
+
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                      Motores de utilidad líquida del negocio. <strong className="text-slate-700 dark:text-slate-200">Recomendación:</strong> Mantener siempre en inventario y en vitrinas prioritarias.
+                    </p>
+
+                    <div className="space-y-2 pt-1">
+                      {matrizAnalysis.estrellas.length === 0 ? (
+                        <div className="py-6 text-center text-xs text-slate-400 bg-slate-50 dark:bg-slate-800/40 rounded-xl">
+                          No hay productos en este cuadrante aún.
+                        </div>
+                      ) : (
+                        matrizAnalysis.estrellas.slice(0, 4).map((p) => (
+                          <div
+                            key={p.sku}
+                            className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 flex items-center justify-between gap-3 text-xs hover:border-emerald-500/40 transition group"
+                          >
+                            <div className="min-w-0">
+                              <span className="font-black text-slate-900 dark:text-white block truncate group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
+                                {p.productName}
+                              </span>
+                              <div className="flex items-center gap-2 mt-0.5 text-[10px] text-slate-400">
+                                <span className="font-semibold text-slate-500">{p.brand}</span>
+                                <span>•</span>
+                                <span className="font-mono">{p.unitsSold} unds</span>
+                                <span>•</span>
+                                <span>Margen: <strong className="text-emerald-600 dark:text-emerald-400">{p.marginPercent.toFixed(1)}%</strong></span>
+                              </div>
+                            </div>
+
+                            <div className="text-right shrink-0">
+                              <span className="font-black font-mono text-emerald-600 dark:text-emerald-400 block text-xs sm:text-sm">
+                                +{formatMoney(p.totalProfit)}
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => setSelectedProductDetail(p)}
+                                className="text-[10px] font-bold text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
+                              >
+                                Ver Facturas
+                              </button>
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Quadrant 2: Joyas de Alto Margen */}
+                {(matrizFilter === 'all' || matrizFilter === 'potenciales') && (
+                  <div className="bg-white dark:bg-[#070b14] rounded-2xl p-5 border border-slate-200/80 dark:border-slate-800 shadow-sm space-y-3.5 hover:shadow-md transition-shadow">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2 text-purple-600 dark:text-purple-400">
+                        <div className="w-7 h-7 rounded-lg bg-purple-50 dark:bg-purple-950/60 flex items-center justify-center border border-purple-200/60">
+                          <Target className="w-4 h-4" />
+                        </div>
+                        <h4 className="font-black text-xs sm:text-sm uppercase tracking-tight text-slate-900 dark:text-white">
+                          💎 Joyas de Alto Margen
+                        </h4>
+                      </div>
+                      <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-purple-50 dark:bg-purple-950/50 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800">
+                        Alto Margen + Menor Rotación
+                      </span>
+                    </div>
+
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                      Excelente rentabilidad por unidad. <strong className="text-slate-700 dark:text-slate-200">Recomendación:</strong> Impulsar con combos o promociones para acelerar su venta.
+                    </p>
+
+                    <div className="space-y-2 pt-1">
+                      {matrizAnalysis.potenciales.length === 0 ? (
+                        <div className="py-6 text-center text-xs text-slate-400 bg-slate-50 dark:bg-slate-800/40 rounded-xl">
+                          No hay productos en este cuadrante aún.
+                        </div>
+                      ) : (
+                        matrizAnalysis.potenciales.slice(0, 4).map((p) => (
+                          <div
+                            key={p.sku}
+                            className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 flex items-center justify-between gap-3 text-xs hover:border-purple-500/40 transition group"
+                          >
+                            <div className="min-w-0">
+                              <span className="font-black text-slate-900 dark:text-white block truncate group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors">
+                                {p.productName}
+                              </span>
+                              <div className="flex items-center gap-2 mt-0.5 text-[10px] text-slate-400">
+                                <span className="font-semibold text-slate-500">{p.brand}</span>
+                                <span>•</span>
+                                <span className="font-mono">{p.unitsSold} unds</span>
+                                <span>•</span>
+                                <span>Margen: <strong className="text-purple-600 dark:text-purple-400">{p.marginPercent.toFixed(1)}%</strong></span>
+                              </div>
+                            </div>
+
+                            <div className="text-right shrink-0">
+                              <span className="font-black font-mono text-purple-600 dark:text-purple-400 block text-xs sm:text-sm">
+                                +{formatMoney(p.totalProfit)}
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => setSelectedProductDetail(p)}
+                                className="text-[10px] font-bold text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
+                              >
+                                Ver Facturas
+                              </button>
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Quadrant 3: Flujo Continuo / Alta Rotación */}
+                {(matrizFilter === 'all' || matrizFilter === 'volumen') && (
+                  <div className="bg-white dark:bg-[#070b14] rounded-2xl p-5 border border-slate-200/80 dark:border-slate-800 shadow-sm space-y-3.5 hover:shadow-md transition-shadow">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2 text-blue-600 dark:text-blue-400">
+                        <div className="w-7 h-7 rounded-lg bg-blue-50 dark:bg-blue-950/60 flex items-center justify-center border border-blue-200/60">
+                          <RefreshCw className="w-4 h-4" />
+                        </div>
+                        <h4 className="font-black text-xs sm:text-sm uppercase tracking-tight text-slate-900 dark:text-white">
+                          🔄 Generadores de Flujo
+                        </h4>
+                      </div>
+                      <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-blue-50 dark:bg-blue-950/50 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
+                        Margen Moderado + Alta Rotación
+                      </span>
+                    </div>
+
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                      Atraen clientes y generan caja continua. <strong className="text-slate-700 dark:text-slate-200">Recomendación:</strong> Negociar compras por volumen con proveedores para ganar margen.
+                    </p>
+
+                    <div className="space-y-2 pt-1">
+                      {matrizAnalysis.volumen.length === 0 ? (
+                        <div className="py-6 text-center text-xs text-slate-400 bg-slate-50 dark:bg-slate-800/40 rounded-xl">
+                          No hay productos en este cuadrante aún.
+                        </div>
+                      ) : (
+                        matrizAnalysis.volumen.slice(0, 4).map((p) => (
+                          <div
+                            key={p.sku}
+                            className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 flex items-center justify-between gap-3 text-xs hover:border-blue-500/40 transition group"
+                          >
+                            <div className="min-w-0">
+                              <span className="font-black text-slate-900 dark:text-white block truncate group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                                {p.productName}
+                              </span>
+                              <div className="flex items-center gap-2 mt-0.5 text-[10px] text-slate-400">
+                                <span className="font-semibold text-slate-500">{p.brand}</span>
+                                <span>•</span>
+                                <span className="font-mono">{p.unitsSold} unds</span>
+                                <span>•</span>
+                                <span>Margen: <strong className="text-blue-600 dark:text-blue-400">{p.marginPercent.toFixed(1)}%</strong></span>
+                              </div>
+                            </div>
+
+                            <div className="text-right shrink-0">
+                              <span className="font-black font-mono text-slate-800 dark:text-slate-200 block text-xs sm:text-sm">
+                                {formatMoney(p.totalRevenue)}
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => setSelectedProductDetail(p)}
+                                className="text-[10px] font-bold text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
+                              >
+                                Ver Facturas
+                              </button>
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Quadrant 4: Oportunidad de Ajuste (Margen Bajo) */}
+                {(matrizFilter === 'all' || matrizFilter === 'ajustes') && (
+                  <div className="bg-white dark:bg-[#070b14] rounded-2xl p-5 border border-slate-200/80 dark:border-slate-800 shadow-sm space-y-3.5 hover:shadow-md transition-shadow">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2 text-amber-500">
+                        <div className="w-7 h-7 rounded-lg bg-amber-50 dark:bg-amber-950/60 flex items-center justify-center border border-amber-200/60">
+                          <AlertCircle className="w-4 h-4" />
+                        </div>
+                        <h4 className="font-black text-xs sm:text-sm uppercase tracking-tight text-slate-900 dark:text-white">
+                          ⚠️ Oportunidad de Ajuste
+                        </h4>
+                      </div>
+                      <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-50 dark:bg-amber-950/50 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
+                        Margen Bajo (&lt; 20%)
+                      </span>
+                    </div>
+
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                      Riesgo de rentabilidad reducida. <strong className="text-slate-700 dark:text-slate-200">Recomendación:</strong> Aumentar precio de venta entre 5% y 15% o revisar costo con proveedor.
+                    </p>
+
+                    <div className="space-y-2 pt-1">
+                      {matrizAnalysis.ajustes.length === 0 ? (
+                        <div className="py-6 text-center text-xs text-slate-400 bg-slate-50 dark:bg-slate-800/40 rounded-xl">
+                          ¡Excelente! No hay productos con margen bajo en este período.
+                        </div>
+                      ) : (
+                        matrizAnalysis.ajustes.slice(0, 4).map((p) => (
+                          <div
+                            key={p.sku}
+                            className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 flex items-center justify-between gap-3 text-xs hover:border-amber-500/40 transition group"
+                          >
+                            <div className="min-w-0">
+                              <span className="font-black text-slate-900 dark:text-white block truncate group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors">
+                                {p.productName}
+                              </span>
+                              <div className="flex items-center gap-2 mt-0.5 text-[10px]">
+                                <span className="font-mono text-slate-400">Costo: {formatMoney(p.costPrice)}</span>
+                                <span className="text-slate-400">➔</span>
+                                <span className="font-bold text-amber-600 dark:text-amber-400">
+                                  Margen: {p.marginPercent.toFixed(1)}%
+                                </span>
+                              </div>
+                            </div>
+
+                            <div className="text-right shrink-0">
+                              <span className="font-black font-mono text-slate-800 dark:text-slate-200 block text-xs sm:text-sm">
+                                {formatMoney(p.totalRevenue)}
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => setSelectedProductDetail(p)}
+                                className="text-[10px] font-bold text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
+                              >
+                                Ver Facturas
+                              </button>
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Strategic Financial Opportunity Banner */}
+              {matrizAnalysis.potentialProfitGain > 0 && (
+                <div className="bg-gradient-to-r from-amber-50 via-amber-100/50 to-orange-50 dark:from-amber-950/40 dark:via-orange-950/30 dark:to-slate-900 rounded-2xl p-4 border border-amber-200 dark:border-amber-900/60 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-xs">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-amber-500 text-white flex items-center justify-center shadow-md shadow-amber-500/20 shrink-0">
+                      <Lightbulb className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h4 className="text-xs sm:text-sm font-black text-slate-900 dark:text-white uppercase tracking-tight">
+                        Impacto Financiero Proyectado
+                      </h4>
+                      <p className="text-xs text-slate-600 dark:text-slate-300 mt-0.5">
+                        Si optimizas los precios en los {matrizAnalysis.lowMarginCount} productos con margen menor al 20%, tu utilidad aumentaría aproximadamente <strong className="text-emerald-600 dark:text-emerald-400">+{formatMoney(matrizAnalysis.potentialProfitGain)}</strong>.
+                      </p>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMatrizActiveView('simulator');
+                      setShowMatrizModal(true);
+                    }}
+                    className="px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold transition shadow-sm flex items-center gap-1.5 cursor-pointer shrink-0 self-end sm:self-auto"
+                  >
+                    <Sliders className="w-3.5 h-3.5" />
+                    <span>Simular Ajuste en Modal</span>
+                  </button>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -2090,6 +2651,507 @@ export default function MetricsPage() {
                 className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-xs font-bold transition cursor-pointer"
               >
                 Cerrar
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* =======================================================================
+          MODAL 3: MATRIZ DE RENTABILIDAD & OPTIMIZACIÓN ESTRATÉGICA (FULL MODAL)
+         ======================================================================= */}
+      {showMatrizModal && createPortal(
+        <div className="fixed inset-0 z-[120] flex items-center justify-center p-2 sm:p-4 md:p-6 bg-slate-950/70 backdrop-blur-md overflow-y-auto animate-in fade-in duration-150">
+          <div className="my-auto bg-white dark:bg-[#070b14] rounded-3xl border border-slate-200 dark:border-slate-800 w-full max-w-6xl overflow-hidden shadow-2xl flex flex-col max-h-[92vh] animate-in zoom-in-95 duration-150">
+            {/* Modal Header */}
+            <div className="p-5 border-b border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-50/50 dark:bg-slate-900/30">
+              <div className="flex items-center gap-3">
+                <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-blue-600 via-indigo-600 to-teal-400 text-white flex items-center justify-center shadow-lg shadow-blue-500/20 shrink-0">
+                  <Sparkles className="w-5 h-5" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-base sm:text-lg font-black text-slate-900 dark:text-white uppercase tracking-tight">
+                      Matriz Estratégica & Análisis de Rentabilidad
+                    </h3>
+                    <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800">
+                      V3.0
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    Clasificación matricial de portafolio y simulador dinámico de márgenes y precios
+                  </p>
+                </div>
+              </div>
+
+              {/* View Selector & Export & Close */}
+              <div className="flex items-center gap-2 self-end sm:self-auto">
+                <div className="flex items-center bg-slate-200/80 dark:bg-slate-800 p-1 rounded-xl text-xs font-bold">
+                  <button
+                    type="button"
+                    onClick={() => setMatrizActiveView('quadrants')}
+                    className={`px-3 py-1.5 rounded-lg transition cursor-pointer flex items-center gap-1.5 ${
+                      matrizActiveView === 'quadrants'
+                        ? 'bg-white dark:bg-[#070b14] text-blue-600 dark:text-blue-400 shadow-xs'
+                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+                    }`}
+                  >
+                    <Boxes className="w-3.5 h-3.5" />
+                    <span>Cuadrantes</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setMatrizActiveView('simulator')}
+                    className={`px-3 py-1.5 rounded-lg transition cursor-pointer flex items-center gap-1.5 ${
+                      matrizActiveView === 'simulator'
+                        ? 'bg-white dark:bg-[#070b14] text-blue-600 dark:text-blue-400 shadow-xs'
+                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+                    }`}
+                  >
+                    <Sliders className="w-3.5 h-3.5" />
+                    <span>Simulador de Precios</span>
+                  </button>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleExportMatrizCSV}
+                  className="p-2 sm:px-3 sm:py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold transition flex items-center gap-1.5 cursor-pointer"
+                  title="Exportar análisis en CSV"
+                >
+                  <Download className="w-4 h-4" />
+                  <span className="hidden sm:inline">CSV</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setShowMatrizModal(false)}
+                  className="p-2 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-5 sm:p-6 overflow-y-auto space-y-5 flex-1">
+              {matrizActiveView === 'quadrants' ? (
+                <>
+                  {/* Search and Filters Bar inside modal */}
+                  <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
+                    <div className="relative flex-1 w-full">
+                      <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                      <input
+                        type="text"
+                        value={matrizSearch}
+                        onChange={(e) => setMatrizSearch(e.target.value)}
+                        placeholder="Buscar producto en la matriz..."
+                        className="w-full h-10 pl-9 pr-3 text-xs font-semibold rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-800 dark:text-slate-100"
+                      />
+                    </div>
+
+                    <div className="flex items-center gap-1.5 w-full sm:w-auto overflow-x-auto pb-1 sm:pb-0">
+                      <button
+                        type="button"
+                        onClick={() => setMatrizFilter('all')}
+                        className={`px-3 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition cursor-pointer ${
+                          matrizFilter === 'all'
+                            ? 'bg-blue-600 text-white'
+                            : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
+                        }`}
+                      >
+                        Todos ({matrizAnalysis.totalEvaluated})
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setMatrizFilter('estrellas')}
+                        className={`px-3 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition cursor-pointer ${
+                          matrizFilter === 'estrellas'
+                            ? 'bg-emerald-600 text-white'
+                            : 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300'
+                        }`}
+                      >
+                        ⭐ Estrellas ({matrizAnalysis.estrellas.length})
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setMatrizFilter('potenciales')}
+                        className={`px-3 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition cursor-pointer ${
+                          matrizFilter === 'potenciales'
+                            ? 'bg-purple-600 text-white'
+                            : 'bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300'
+                        }`}
+                      >
+                        💎 Alto Margen ({matrizAnalysis.potenciales.length})
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setMatrizFilter('volumen')}
+                        className={`px-3 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition cursor-pointer ${
+                          matrizFilter === 'volumen'
+                            ? 'bg-blue-600 text-white'
+                            : 'bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300'
+                        }`}
+                      >
+                        🔄 Rotación ({matrizAnalysis.volumen.length})
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setMatrizFilter('ajustes')}
+                        className={`px-3 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition cursor-pointer ${
+                          matrizFilter === 'ajustes'
+                            ? 'bg-amber-600 text-white'
+                            : 'bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300'
+                        }`}
+                      >
+                        ⚠️ Ajustar ({matrizAnalysis.ajustes.length})
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* 4 Quadrants Detailed Display */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Quadrant 1 */}
+                    {(matrizFilter === 'all' || matrizFilter === 'estrellas') && (
+                      <div className="bg-slate-50/50 dark:bg-slate-900/30 rounded-2xl p-4 border border-emerald-200/60 dark:border-emerald-900/40 space-y-3">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <span className="w-7 h-7 rounded-lg bg-emerald-100 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-bold text-sm">
+                              ⭐
+                            </span>
+                            <h4 className="font-black text-xs sm:text-sm uppercase tracking-tight text-slate-900 dark:text-white">
+                              Productos Estrella (Alto Margen + Alta Rotación)
+                            </h4>
+                          </div>
+                          <span className="text-[10px] font-mono font-bold text-emerald-600 dark:text-emerald-400">
+                            {matrizAnalysis.estrellas.length} items
+                          </span>
+                        </div>
+
+                        <div className="space-y-2 max-h-80 overflow-y-auto pr-1">
+                          {matrizAnalysis.estrellas
+                            .filter((p) => !matrizSearch || p.productName.toLowerCase().includes(matrizSearch.toLowerCase()) || p.sku.toLowerCase().includes(matrizSearch.toLowerCase()))
+                            .map((p) => (
+                              <div
+                                key={p.sku}
+                                className="p-3 bg-white dark:bg-[#070b14] rounded-xl border border-slate-200/80 dark:border-slate-800 flex items-center justify-between gap-3 text-xs"
+                              >
+                                <div className="min-w-0">
+                                  <span className="font-bold text-slate-900 dark:text-white block truncate">
+                                    {p.productName}
+                                  </span>
+                                  <div className="text-[10px] text-slate-400 mt-0.5">
+                                    {p.brand} • {p.unitsSold} unds • Costo {formatMoney(p.costPrice)} ➔ Venta {formatMoney(p.salePrice)}
+                                  </div>
+                                </div>
+                                <div className="text-right shrink-0">
+                                  <span className="font-black font-mono text-emerald-600 dark:text-emerald-400 block">
+                                    +{formatMoney(p.totalProfit)}
+                                  </span>
+                                  <span className="text-[10px] font-bold text-emerald-600">
+                                    {p.marginPercent.toFixed(1)}% margen
+                                  </span>
+                                </div>
+                              </div>
+                            ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Quadrant 2 */}
+                    {(matrizFilter === 'all' || matrizFilter === 'potenciales') && (
+                      <div className="bg-slate-50/50 dark:bg-slate-900/30 rounded-2xl p-4 border border-purple-200/60 dark:border-purple-900/40 space-y-3">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <span className="w-7 h-7 rounded-lg bg-purple-100 dark:bg-purple-950 text-purple-600 dark:text-purple-400 flex items-center justify-center font-bold text-sm">
+                              💎
+                            </span>
+                            <h4 className="font-black text-xs sm:text-sm uppercase tracking-tight text-slate-900 dark:text-white">
+                              Joyas de Alto Margen (Alto Margen + Menor Rotación)
+                            </h4>
+                          </div>
+                          <span className="text-[10px] font-mono font-bold text-purple-600 dark:text-purple-400">
+                            {matrizAnalysis.potenciales.length} items
+                          </span>
+                        </div>
+
+                        <div className="space-y-2 max-h-80 overflow-y-auto pr-1">
+                          {matrizAnalysis.potenciales
+                            .filter((p) => !matrizSearch || p.productName.toLowerCase().includes(matrizSearch.toLowerCase()) || p.sku.toLowerCase().includes(matrizSearch.toLowerCase()))
+                            .map((p) => (
+                              <div
+                                key={p.sku}
+                                className="p-3 bg-white dark:bg-[#070b14] rounded-xl border border-slate-200/80 dark:border-slate-800 flex items-center justify-between gap-3 text-xs"
+                              >
+                                <div className="min-w-0">
+                                  <span className="font-bold text-slate-900 dark:text-white block truncate">
+                                    {p.productName}
+                                  </span>
+                                  <div className="text-[10px] text-slate-400 mt-0.5">
+                                    {p.brand} • {p.unitsSold} unds • Costo {formatMoney(p.costPrice)} ➔ Venta {formatMoney(p.salePrice)}
+                                  </div>
+                                </div>
+                                <div className="text-right shrink-0">
+                                  <span className="font-black font-mono text-purple-600 dark:text-purple-400 block">
+                                    +{formatMoney(p.totalProfit)}
+                                  </span>
+                                  <span className="text-[10px] font-bold text-purple-600">
+                                    {p.marginPercent.toFixed(1)}% margen
+                                  </span>
+                                </div>
+                              </div>
+                            ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Quadrant 3 */}
+                    {(matrizFilter === 'all' || matrizFilter === 'volumen') && (
+                      <div className="bg-slate-50/50 dark:bg-slate-900/30 rounded-2xl p-4 border border-blue-200/60 dark:border-blue-900/40 space-y-3">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <span className="w-7 h-7 rounded-lg bg-blue-100 dark:bg-blue-950 text-blue-600 dark:text-blue-400 flex items-center justify-center font-bold text-sm">
+                              🔄
+                            </span>
+                            <h4 className="font-black text-xs sm:text-sm uppercase tracking-tight text-slate-900 dark:text-white">
+                              Generadores de Flujo (Margen Moderado + Alta Rotación)
+                            </h4>
+                          </div>
+                          <span className="text-[10px] font-mono font-bold text-blue-600 dark:text-blue-400">
+                            {matrizAnalysis.volumen.length} items
+                          </span>
+                        </div>
+
+                        <div className="space-y-2 max-h-80 overflow-y-auto pr-1">
+                          {matrizAnalysis.volumen
+                            .filter((p) => !matrizSearch || p.productName.toLowerCase().includes(matrizSearch.toLowerCase()) || p.sku.toLowerCase().includes(matrizSearch.toLowerCase()))
+                            .map((p) => (
+                              <div
+                                key={p.sku}
+                                className="p-3 bg-white dark:bg-[#070b14] rounded-xl border border-slate-200/80 dark:border-slate-800 flex items-center justify-between gap-3 text-xs"
+                              >
+                                <div className="min-w-0">
+                                  <span className="font-bold text-slate-900 dark:text-white block truncate">
+                                    {p.productName}
+                                  </span>
+                                  <div className="text-[10px] text-slate-400 mt-0.5">
+                                    {p.brand} • {p.unitsSold} unds • Costo {formatMoney(p.costPrice)} ➔ Venta {formatMoney(p.salePrice)}
+                                  </div>
+                                </div>
+                                <div className="text-right shrink-0">
+                                  <span className="font-black font-mono text-slate-800 dark:text-slate-200 block">
+                                    {formatMoney(p.totalRevenue)}
+                                  </span>
+                                  <span className="text-[10px] font-bold text-blue-600">
+                                    {p.marginPercent.toFixed(1)}% margen
+                                  </span>
+                                </div>
+                              </div>
+                            ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Quadrant 4 */}
+                    {(matrizFilter === 'all' || matrizFilter === 'ajustes') && (
+                      <div className="bg-slate-50/50 dark:bg-slate-900/30 rounded-2xl p-4 border border-amber-200/60 dark:border-amber-900/40 space-y-3">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <span className="w-7 h-7 rounded-lg bg-amber-100 dark:bg-amber-950 text-amber-600 dark:text-amber-400 flex items-center justify-center font-bold text-sm">
+                              ⚠️
+                            </span>
+                            <h4 className="font-black text-xs sm:text-sm uppercase tracking-tight text-slate-900 dark:text-white">
+                              Oportunidad de Ajuste (Margen Bajo &lt; 20%)
+                            </h4>
+                          </div>
+                          <span className="text-[10px] font-mono font-bold text-amber-600 dark:text-amber-400">
+                            {matrizAnalysis.ajustes.length} items
+                          </span>
+                        </div>
+
+                        <div className="space-y-2 max-h-80 overflow-y-auto pr-1">
+                          {matrizAnalysis.ajustes
+                            .filter((p) => !matrizSearch || p.productName.toLowerCase().includes(matrizSearch.toLowerCase()) || p.sku.toLowerCase().includes(matrizSearch.toLowerCase()))
+                            .map((p) => (
+                              <div
+                                key={p.sku}
+                                className="p-3 bg-white dark:bg-[#070b14] rounded-xl border border-slate-200/80 dark:border-slate-800 flex items-center justify-between gap-3 text-xs"
+                              >
+                                <div className="min-w-0">
+                                  <span className="font-bold text-slate-900 dark:text-white block truncate">
+                                    {p.productName}
+                                  </span>
+                                  <div className="text-[10px] text-slate-400 mt-0.5">
+                                    {p.brand} • {p.unitsSold} unds • Costo {formatMoney(p.costPrice)} ➔ Venta {formatMoney(p.salePrice)}
+                                  </div>
+                                </div>
+                                <div className="text-right shrink-0">
+                                  <span className="font-black font-mono text-amber-600 dark:text-amber-400 block">
+                                    {formatMoney(p.totalRevenue)}
+                                  </span>
+                                  <span className="text-[10px] font-bold text-amber-600">
+                                    {p.marginPercent.toFixed(1)}% margen
+                                  </span>
+                                </div>
+                              </div>
+                            ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </>
+              ) : (
+                /* SIMULATOR VIEW */
+                <div className="space-y-5">
+                  {/* Simulator Controls & Projection Card */}
+                  <div className="bg-gradient-to-r from-blue-50 via-indigo-50/60 to-purple-50 dark:from-slate-900 dark:via-indigo-950/40 dark:to-slate-900 rounded-2xl p-5 border border-blue-200/80 dark:border-blue-900/60 space-y-4">
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                      <div>
+                        <h4 className="text-xs sm:text-sm font-black text-slate-900 dark:text-white uppercase tracking-tight">
+                          Simulador de Optimización de Precios en Productos con Margen Bajo
+                        </h4>
+                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                          Proyecta el impacto en ganancias líquidas al ajustar el precio de venta sugerido
+                        </p>
+                      </div>
+
+                      {/* Percentage selector */}
+                      <div className="flex items-center gap-1.5 bg-white dark:bg-slate-800 p-1 rounded-xl border border-slate-200 dark:border-slate-700">
+                        {[5, 10, 15, 20].map((pct) => (
+                          <button
+                            key={pct}
+                            type="button"
+                            onClick={() => setPriceAdjustmentPercent(pct)}
+                            className={`px-3 py-1.5 rounded-lg text-xs font-black transition cursor-pointer ${
+                              priceAdjustmentPercent === pct
+                                ? 'bg-blue-600 text-white shadow-xs'
+                                : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'
+                            }`}
+                          >
+                            +{pct}%
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Simulation Live Metrics */}
+                    {(() => {
+                      const lowMarginItems = matrizAnalysis.ajustes;
+                      const extraProfit = lowMarginItems.reduce((acc, p) => {
+                        const sugPrice = p.salePrice * (1 + priceAdjustmentPercent / 100);
+                        return acc + p.unitsSold * (sugPrice - p.salePrice);
+                      }, 0);
+
+                      return (
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
+                          <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xs rounded-xl p-3 border border-slate-200/60 dark:border-slate-700/60">
+                            <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 block">
+                              Productos Evaluados para Ajuste
+                            </span>
+                            <span className="text-lg font-black font-mono text-slate-900 dark:text-white">
+                              {lowMarginItems.length} artículos
+                            </span>
+                          </div>
+
+                          <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xs rounded-xl p-3 border border-emerald-200/60 dark:border-emerald-800/60">
+                            <span className="text-[10px] font-black uppercase tracking-wider text-emerald-600 dark:text-emerald-400 block">
+                              Ganancia Adicional Proyectada (+{priceAdjustmentPercent}%)
+                            </span>
+                            <span className="text-lg font-black font-mono text-emerald-600 dark:text-emerald-400">
+                              +{formatMoney(extraProfit)}
+                            </span>
+                          </div>
+
+                          <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xs rounded-xl p-3 border border-blue-200/60 dark:border-blue-800/60">
+                            <span className="text-[10px] font-black uppercase tracking-wider text-blue-600 dark:text-blue-400 block">
+                              Margen Promedio Sugerido
+                            </span>
+                            <span className="text-lg font-black font-mono text-blue-600 dark:text-blue-400">
+                              {(matrizAnalysis.avgMargin + (priceAdjustmentPercent * 0.7)).toFixed(1)}%
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })()}
+                  </div>
+
+                  {/* Simulator Products Table */}
+                  <div className="rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden">
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left text-xs">
+                        <thead className="bg-slate-50 dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-700 font-bold text-slate-600 dark:text-slate-300">
+                          <tr>
+                            <th className="py-3 px-4">Producto & Marca</th>
+                            <th className="py-3 px-3">Costo PEPS</th>
+                            <th className="py-3 px-3">Precio Actual</th>
+                            <th className="py-3 px-3">Margen Actual</th>
+                            <th className="py-3 px-3 text-blue-600 dark:text-blue-400">Precio Sugerido (+{priceAdjustmentPercent}%)</th>
+                            <th className="py-3 px-3 text-emerald-600 dark:text-emerald-400">Nuevo Margen</th>
+                            <th className="py-3 px-4 text-right">Ganancia Extra</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                          {matrizAnalysis.ajustes.length === 0 ? (
+                            <tr>
+                              <td colSpan={7} className="py-8 text-center text-slate-400">
+                                No hay productos con margen bajo para simular.
+                              </td>
+                            </tr>
+                          ) : (
+                            matrizAnalysis.ajustes.map((p) => {
+                              const sugPrice = p.salePrice * (1 + priceAdjustmentPercent / 100);
+                              const newUnitProfit = sugPrice - p.costPrice;
+                              const newMargin = sugPrice > 0 ? (newUnitProfit / sugPrice) * 100 : 0;
+                              const extraProfit = p.unitsSold * (sugPrice - p.salePrice);
+
+                              return (
+                                <tr key={p.sku} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition">
+                                  <td className="py-3 px-4 font-semibold text-slate-900 dark:text-white">
+                                    <div className="truncate max-w-[220px]">{p.productName}</div>
+                                    <span className="text-[10px] text-slate-400">{p.brand} • {p.sku}</span>
+                                  </td>
+                                  <td className="py-3 px-3 font-mono text-slate-600 dark:text-slate-300">
+                                    {formatMoney(p.costPrice)}
+                                  </td>
+                                  <td className="py-3 px-3 font-mono font-bold text-slate-800 dark:text-slate-100">
+                                    {formatMoney(p.salePrice)}
+                                  </td>
+                                  <td className="py-3 px-3 font-bold text-amber-600 dark:text-amber-400">
+                                    {p.marginPercent.toFixed(1)}%
+                                  </td>
+                                  <td className="py-3 px-3 font-mono font-black text-blue-600 dark:text-blue-400">
+                                    {formatMoney(sugPrice)}
+                                  </td>
+                                  <td className="py-3 px-3 font-bold text-emerald-600 dark:text-emerald-400">
+                                    {newMargin.toFixed(1)}%
+                                  </td>
+                                  <td className="py-3 px-4 text-right font-mono font-black text-emerald-600 dark:text-emerald-400">
+                                    +{formatMoney(extraProfit)}
+                                  </td>
+                                </tr>
+                              );
+                            })
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="p-4 border-t border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-3 bg-slate-50/50 dark:bg-slate-900/30">
+              <span className="text-xs text-slate-500">
+                Matriz calculada con base en {matrizAnalysis.totalEvaluated} productos y costos PEPS en inventario.
+              </span>
+              <button
+                type="button"
+                onClick={() => setShowMatrizModal(false)}
+                className="w-full sm:w-auto px-5 py-2 rounded-xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-xs font-bold transition hover:opacity-90 cursor-pointer"
+              >
+                Cerrar Ventana
               </button>
             </div>
           </div>
