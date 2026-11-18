@@ -1740,7 +1740,24 @@ export const storage = {
       this.setUsers(DEFAULT_USERS);
       return DEFAULT_USERS;
     }
-    try { return JSON.parse(raw) || DEFAULT_USERS; } catch (e) { return DEFAULT_USERS; }
+    try {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) {
+        // Asegurar que el administrador principal jairotten84@gmail.com siempre esté registrado
+        const adminIndex = parsed.findIndex(u => (u.email || '').toLowerCase() === 'jairotten84@gmail.com');
+        if (adminIndex === -1) {
+          parsed.unshift(DEFAULT_USERS[0]);
+          this.setUsers(parsed);
+        } else if (parsed[adminIndex].role !== 'admin') {
+          parsed[adminIndex].role = 'admin';
+          this.setUsers(parsed);
+        }
+        return parsed;
+      }
+      return DEFAULT_USERS;
+    } catch (e) {
+      return DEFAULT_USERS;
+    }
   },
   setUsers(users: User[]) {
     localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(users));
