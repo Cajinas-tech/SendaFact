@@ -18,12 +18,16 @@ import {
   Ban,
   ArrowUpDown,
   MessageCircle,
-  Check
+  Check,
+  ShieldAlert,
+  Lock,
+  Undo2
 } from 'lucide-react';
 import { storage } from '../lib/storage';
 import { Sale, CompanySetting, User, CreditAccount } from '../types';
 import { useToast } from '../components/UI/Toast';
 import ConfirmModal from '../components/UI/ConfirmModal';
+import { ModalAnulacionSupabase } from '../components/ModalAnulacionSupabase';
 
 export const InvoicesPage: React.FC = () => {
   const [sales, setSales] = useState<Sale[]>([]);
@@ -68,6 +72,13 @@ export const InvoicesPage: React.FC = () => {
   // Void/Cancel sale modal
   const [saleToCancel, setSaleToCancel] = useState<Sale | null>(null);
   const [showCancelModal, setShowCancelModal] = useState(false);
+
+  // Active main tab & Supabase Anulación
+  const [activeMainTab, setActiveMainTab] = useState<'historial' | 'anulaciones'>('historial');
+  const [anulacionSubFilter, setAnulacionSubFilter] = useState<'activas' | 'anuladas'>('activas');
+  const [anulacionSearch, setAnulacionSearch] = useState('');
+  const [saleToAnulate, setSaleToAnulate] = useState<Sale | null>(null);
+  const [showSupabaseAnulacionModal, setShowSupabaseAnulacionModal] = useState(false);
 
   const { success, warning, info } = useToast();
 
@@ -270,6 +281,40 @@ export const InvoicesPage: React.FC = () => {
       .filter(s => s.status !== 'cancelled' && getUserRole(s) === 'vendedor')
       .reduce((sum, s) => sum + (s.total_cordobas || 0), 0);
   }, [filteredSales]);
+
+  // Cancelled vs Active statistics for Anulación tab
+  const cancelledSales = useMemo(() => {
+    return sales.filter(s => s.status === 'cancelled');
+  }, [sales]);
+
+  const activeSales = useMemo(() => {
+    return sales.filter(s => s.status !== 'cancelled');
+  }, [sales]);
+
+  const totalCancelledAmount = useMemo(() => {
+    return cancelledSales.reduce((sum, s) => sum + (s.total_cordobas || 0), 0);
+  }, [cancelledSales]);
+
+  const totalReturnedUnits = useMemo(() => {
+    return cancelledSales.reduce((sum, s) => {
+      const units = (s.items || []).reduce((uSum, it) => uSum + (it.quantity || 0), 0);
+      return sum + units;
+    }, 0);
+  }, [cancelledSales]);
+
+  // Filtered sales for Anulación tab
+  const filteredAnulacionSales = useMemo(() => {
+    const list = anulacionSubFilter === 'activas' ? activeSales : cancelledSales;
+    if (!anulacionSearch.trim()) return list;
+    const q = anulacionSearch.toLowerCase().trim();
+    return list.filter(s => {
+      const ticket = (s.ticket_number || `#FACT-${s.id}`).toLowerCase();
+      const client = (s.customer?.name || (s as any).customer_name || 'consumidor final').toLowerCase();
+      const user = (s.user_name || '').toLowerCase();
+      const reason = (s.cancellation_reason || '').toLowerCase();
+      return ticket.includes(q) || client.includes(q) || user.includes(q) || reason.includes(q);
+    });
+  }, [activeSales, cancelledSales, anulacionSubFilter, anulacionSearch]);
 
   // Export CSV
   const handleExportCSV = () => {
@@ -490,8 +535,53 @@ export const InvoicesPage: React.FC = () => {
         </div>
       </div>
 
-      {/* 2. MAIN CARD: HISTORIAL DE FACTURAS (EXACTLY MATCHING THE USER SCREENSHOT) */}
-      <div className="bg-white dark:bg-[#080d1a] rounded-2xl border border-slate-200 dark:border-slate-800/80 shadow-sm overflow-hidden">
+      {/* 2. NAVIGATION VIEW TABS: Historial de Facturas vs Anulación de Facturas */}
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 dark:border-slate-800 pb-3">
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setActiveMainTab('historial')}
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition cursor-pointer ${
+              activeMainTab === 'historial'
+                ? 'bg-blue-600 text-white shadow-md shadow-blue-500/20'
+                : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
+            }`}
+          >
+            <FileText className="w-4 h-4" />
+            <span>Historial de Facturas</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveMainTab('anulaciones')}
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition cursor-pointer relative ${
+              activeMainTab === 'anulaciones'
+                ? 'bg-rose-600 text-white shadow-md shadow-rose-600/20'
+                : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
+            }`}
+          >
+            <Ban className="w-4 h-4" />
+            <span>Anulación de Facturas</span>
+            {cancelledSales.length > 0 && (
+              <span className={`px-1.5 py-0.5 rounded-full text-[9px] font-black ${
+                activeMainTab === 'anulaciones' ? 'bg-white text-rose-600' : 'bg-rose-500 text-white'
+              }`}>
+                {cancelledSales.length}
+              </span>
+            )}
+          </button>
+        </div>
+
+        <div className="text-xs text-slate-500 dark:text-slate-400">
+          {activeMainTab === 'historial'
+            ? 'Historial de ventas y comprobantes emitidos'
+            : 'Procedimiento de anulación y reversión con autorización Supabase'}
+        </div>
+      </div>
+
+      {/* VIEW TAB 1: HISTORIAL DE FACTURAS */}
+      {activeMainTab === 'historial' && (
+      <div className="bg-white dark:bg-[#080d1a] rounded-2xl border border-slate-200 dark:border-slate-800/80 shadow-sm overflow-hidden animate-in fade-in">
         
         {/* CARD TOP HEADER */}
         <div className="p-4 sm:p-6 border-b border-slate-100 dark:border-slate-800 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
@@ -773,6 +863,21 @@ export const InvoicesPage: React.FC = () => {
                           >
                             <Printer className="w-4 h-4" />
                           </button>
+
+                          {/* Ban: Anular Factura con Supabase */}
+                          {!isCancelled && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setSaleToAnulate(sale);
+                                setShowSupabaseAnulacionModal(true);
+                              }}
+                              className="w-8 h-8 rounded-xl bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-900/60 transition flex items-center justify-center cursor-pointer shadow-2xs"
+                              title="Anular factura (Autorización Supabase)"
+                            >
+                              <Ban className="w-4 h-4" />
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>
@@ -812,6 +917,349 @@ export const InvoicesPage: React.FC = () => {
           </div>
         </div>
       </div>
+      )}
+
+      {/* VIEW TAB 2: ANULACIÓN DE FACTURAS (SUPABASE RPC INTEGRADO) */}
+      {activeMainTab === 'anulaciones' && (
+        <div className="space-y-5 animate-in fade-in">
+          {/* Header Banner - Clean Light Friendly */}
+          <div className="bg-gradient-to-r from-rose-50/90 via-orange-50/40 to-white dark:from-slate-900 dark:via-rose-950/30 dark:to-slate-900 rounded-2xl p-4 sm:p-5 border border-rose-200/80 dark:border-rose-900/60 shadow-sm relative overflow-hidden flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="w-11 h-11 rounded-2xl bg-rose-600 text-white flex items-center justify-center shadow-md shadow-rose-600/20 shrink-0">
+                <ShieldAlert className="w-5 h-5" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h3 className="text-sm sm:text-base font-black uppercase tracking-tight text-slate-900 dark:text-white">
+                    Centro de Anulación y Reversión de Facturas
+                  </h3>
+                  <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-rose-100 text-rose-700 dark:bg-rose-950/80 dark:text-rose-300 border border-rose-200 dark:border-rose-800">
+                    Supabase RPC
+                  </span>
+                </div>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                  Las anulaciones requieren autenticación de Administrador, reversión atómica y reintegro inmediato de stock a inventario.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 self-stretch sm:self-auto shrink-0">
+              <span className="text-[11px] font-bold text-rose-700 dark:text-rose-300 bg-rose-50 dark:bg-rose-950/50 px-3 py-1.5 rounded-xl border border-rose-200 dark:border-rose-900/60 flex items-center gap-1.5">
+                <Lock className="w-3.5 h-3.5 text-rose-600" />
+                <span>Autorización Protegida</span>
+              </span>
+            </div>
+          </div>
+
+          {/* 4 Micro KPI Cards for Anulaciones */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            {/* Activas */}
+            <div
+              onClick={() => setAnulacionSubFilter('activas')}
+              className={`p-3.5 rounded-2xl border transition-all cursor-pointer ${
+                anulacionSubFilter === 'activas'
+                  ? 'bg-blue-50 dark:bg-blue-950/40 border-blue-500 shadow-sm'
+                  : 'bg-white dark:bg-[#070b14] border-slate-200/80 dark:border-slate-800 hover:border-blue-300'
+              }`}
+            >
+              <div className="flex items-center justify-between text-blue-600 dark:text-blue-400">
+                <span className="text-[10px] font-black uppercase tracking-wider">Facturas Emitidas</span>
+                <FileText className="w-3.5 h-3.5" />
+              </div>
+              <h4 className="text-lg sm:text-xl font-black font-mono text-slate-900 dark:text-white mt-1">
+                {activeSales.length}
+              </h4>
+              <span className="text-[10px] font-bold text-blue-600 dark:text-blue-400 block truncate">
+                Disponibles para anular
+              </span>
+            </div>
+
+            {/* Anuladas */}
+            <div
+              onClick={() => setAnulacionSubFilter('anuladas')}
+              className={`p-3.5 rounded-2xl border transition-all cursor-pointer ${
+                anulacionSubFilter === 'anuladas'
+                  ? 'bg-rose-50 dark:bg-rose-950/40 border-rose-500 shadow-sm'
+                  : 'bg-white dark:bg-[#070b14] border-slate-200/80 dark:border-slate-800 hover:border-rose-300'
+              }`}
+            >
+              <div className="flex items-center justify-between text-rose-600 dark:text-rose-400">
+                <span className="text-[10px] font-black uppercase tracking-wider">Facturas Anuladas</span>
+                <Ban className="w-3.5 h-3.5" />
+              </div>
+              <h4 className="text-lg sm:text-xl font-black font-mono text-slate-900 dark:text-white mt-1">
+                {cancelledSales.length}
+              </h4>
+              <span className="text-[10px] font-bold text-rose-600 dark:text-rose-400 block truncate">
+                Procesadas con éxito
+              </span>
+            </div>
+
+            {/* Monto Total Anulado */}
+            <div className="p-3.5 rounded-2xl border bg-white dark:bg-[#070b14] border-slate-200/80 dark:border-slate-800">
+              <div className="flex items-center justify-between text-amber-500">
+                <span className="text-[10px] font-black uppercase tracking-wider">Monto Total Anulado</span>
+                <AlertCircle className="w-3.5 h-3.5" />
+              </div>
+              <h4 className="text-lg sm:text-xl font-black font-mono text-rose-600 dark:text-rose-400 mt-1">
+                C$ {totalCancelledAmount.toLocaleString('es-NI', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </h4>
+              <span className="text-[10px] font-bold text-slate-400 block truncate">
+                Flujo revertido
+              </span>
+            </div>
+
+            {/* Stock Reintegrado */}
+            <div className="p-3.5 rounded-2xl border bg-white dark:bg-[#070b14] border-slate-200/80 dark:border-slate-800">
+              <div className="flex items-center justify-between text-emerald-600 dark:text-emerald-400">
+                <span className="text-[10px] font-black uppercase tracking-wider">Stock Reintegrado</span>
+                <Undo2 className="w-3.5 h-3.5" />
+              </div>
+              <h4 className="text-lg sm:text-xl font-black font-mono text-emerald-600 dark:text-emerald-400 mt-1">
+                {totalReturnedUnits} unds
+              </h4>
+              <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 block truncate">
+                Devueltas al inventario
+              </span>
+            </div>
+          </div>
+
+          {/* Main Anulaciones Card */}
+          <div className="bg-white dark:bg-[#080d1a] rounded-2xl border border-slate-200 dark:border-slate-800/80 shadow-sm overflow-hidden">
+            {/* Toolbar */}
+            <div className="p-4 sm:p-5 border-b border-slate-100 dark:border-slate-800 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
+              {/* Sub-Filter Pills */}
+              <div className="inline-flex rounded-xl p-1 bg-slate-100 dark:bg-slate-800 text-xs font-bold">
+                <button
+                  type="button"
+                  onClick={() => setAnulacionSubFilter('activas')}
+                  className={`px-3 py-1.5 rounded-lg transition cursor-pointer flex items-center gap-1.5 ${
+                    anulacionSubFilter === 'activas'
+                      ? 'bg-blue-600 text-white shadow-xs'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+                  }`}
+                >
+                  <FileText className="w-3.5 h-3.5" />
+                  <span>Facturas Emitidas ({activeSales.length})</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setAnulacionSubFilter('anuladas')}
+                  className={`px-3 py-1.5 rounded-lg transition cursor-pointer flex items-center gap-1.5 ${
+                    anulacionSubFilter === 'anuladas'
+                      ? 'bg-rose-600 text-white shadow-xs'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+                  }`}
+                >
+                  <Ban className="w-3.5 h-3.5" />
+                  <span>Historial de Anuladas ({cancelledSales.length})</span>
+                </button>
+              </div>
+
+              {/* Search Bar */}
+              <div className="relative flex-1 max-w-md">
+                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+                <input
+                  type="text"
+                  placeholder={
+                    anulacionSubFilter === 'activas'
+                      ? 'Buscar factura para anular por número, cliente...'
+                      : 'Buscar en historial de anuladas...'
+                  }
+                  value={anulacionSearch}
+                  onChange={(e) => setAnulacionSearch(e.target.value)}
+                  className="w-full bg-slate-50 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-700/80 rounded-xl pl-9 pr-8 py-2 text-xs sm:text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition"
+                />
+                {anulacionSearch && (
+                  <button
+                    type="button"
+                    onClick={() => setAnulacionSearch('')}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-xs"
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Table */}
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse text-xs">
+                <thead>
+                  <tr className="bg-slate-50 dark:bg-slate-900/60 border-b border-slate-100 dark:border-slate-800 text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                    <th className="py-3 px-4 sm:px-6">Nº Factura</th>
+                    <th className="py-3 px-4">Fecha Emisión</th>
+                    <th className="py-3 px-4">Cliente</th>
+                    {anulacionSubFilter === 'anuladas' ? (
+                      <>
+                        <th className="py-3 px-4">Fecha Anulación</th>
+                        <th className="py-3 px-4">Motivo de Anulación</th>
+                        <th className="py-3 px-4">Autorizado Por</th>
+                        <th className="py-3 px-4">Estado Stock</th>
+                      </>
+                    ) : (
+                      <>
+                        <th className="py-3 px-4">Método</th>
+                        <th className="py-3 px-4">Cajero / Emisor</th>
+                      </>
+                    )}
+                    <th className="py-3 px-4">Total</th>
+                    <th className="py-3 px-4 sm:px-6 text-center">Acción</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80">
+                  {filteredAnulacionSales.length > 0 ? (
+                    filteredAnulacionSales.map((sale) => {
+                      const isCancelled = sale.status === 'cancelled';
+                      const clientName = sale.customer?.name || (sale as any).customer_name || 'Consumidor Final';
+
+                      return (
+                        <tr
+                          key={sale.id}
+                          className={`hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition-colors ${
+                            isCancelled ? 'bg-rose-50/30 dark:bg-rose-950/10' : ''
+                          }`}
+                        >
+                          {/* Nº FACTURA */}
+                          <td className="py-3.5 px-4 sm:px-6 font-mono text-xs text-slate-600 dark:text-slate-300 whitespace-nowrap">
+                            <span className="font-semibold">{sale.ticket_number || `#FACT-${sale.id}`}</span>
+                            {isCancelled && (
+                              <span className="ml-2 inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-black bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300 uppercase">
+                                Anulada
+                              </span>
+                            )}
+                          </td>
+
+                          {/* FECHA */}
+                          <td className="py-3.5 px-4 text-xs text-slate-600 dark:text-slate-400 whitespace-nowrap">
+                            {formatDateTime(sale.created_at)}
+                          </td>
+
+                          {/* CLIENTE */}
+                          <td className="py-3.5 px-4 font-bold text-slate-900 dark:text-white">
+                            <span className="capitalize">{clientName}</span>
+                          </td>
+
+                          {anulacionSubFilter === 'anuladas' ? (
+                            <>
+                              {/* FECHA ANULACIÓN */}
+                              <td className="py-3.5 px-4 text-xs text-rose-600 dark:text-rose-400 font-mono whitespace-nowrap">
+                                {sale.cancelled_at ? formatDateTime(sale.cancelled_at) : 'Reciente'}
+                              </td>
+
+                              {/* MOTIVO */}
+                              <td className="py-3.5 px-4 max-w-xs truncate text-xs text-slate-700 dark:text-slate-300 italic" title={sale.cancellation_reason || 'Sin motivo registrado'}>
+                                {sale.cancellation_reason || 'Sin motivo especificado'}
+                              </td>
+
+                              {/* AUTORIZADO POR */}
+                              <td className="py-3.5 px-4 text-xs whitespace-nowrap">
+                                <span className="inline-flex items-center gap-1 font-mono text-slate-700 dark:text-slate-300">
+                                  <Lock className="w-3 h-3 text-rose-500" />
+                                  {sale.cancelled_by || 'Administrador'}
+                                </span>
+                              </td>
+
+                              {/* ESTADO STOCK */}
+                              <td className="py-3.5 px-4 whitespace-nowrap">
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-800 dark:bg-emerald-950/70 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60 uppercase">
+                                  <Check className="w-3 h-3 text-emerald-600" />
+                                  Reintegrado
+                                </span>
+                              </td>
+                            </>
+                          ) : (
+                            <>
+                              {/* MÉTODO */}
+                              <td className="py-3.5 px-4 whitespace-nowrap">
+                                {renderPaymentBadge(sale.payment_method)}
+                              </td>
+
+                              {/* CAJERO */}
+                              <td className="py-3.5 px-4 whitespace-nowrap">
+                                <span className="text-slate-700 dark:text-slate-200 font-medium">
+                                  {sale.user_name || 'Usuario'}
+                                </span>
+                              </td>
+                            </>
+                          )}
+
+                          {/* TOTAL */}
+                          <td className="py-3.5 px-4 font-bold text-slate-900 dark:text-white whitespace-nowrap text-sm">
+                            C$ {(sale.total_cordobas || 0).toLocaleString('es-NI', {
+                              minimumFractionDigits: 2,
+                              maximumFractionDigits: 2
+                            })}
+                          </td>
+
+                          {/* ACCIONES */}
+                          <td className="py-3.5 px-4 sm:px-6 text-center whitespace-nowrap">
+                            <div className="flex items-center justify-center gap-2">
+                              {/* View detail button */}
+                              <button
+                                type="button"
+                                onClick={() => handleViewDetail(sale)}
+                                className="w-8 h-8 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 transition flex items-center justify-center cursor-pointer shadow-2xs"
+                                title="Ver detalle de factura"
+                              >
+                                <Eye className="w-4 h-4" />
+                              </button>
+
+                              {/* Action to Annull if not cancelled */}
+                              {!isCancelled && (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setSaleToAnulate(sale);
+                                    setShowSupabaseAnulacionModal(true);
+                                  }}
+                                  className="px-3 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs transition flex items-center gap-1.5 shadow-sm shadow-rose-600/20 cursor-pointer"
+                                  title="Anular factura con autorización Supabase"
+                                >
+                                  <Lock className="w-3.5 h-3.5" />
+                                  <span>Anular</span>
+                                </button>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })
+                  ) : (
+                    <tr>
+                      <td colSpan={anulacionSubFilter === 'anuladas' ? 8 : 7} className="py-12 text-center text-slate-400">
+                        <div className="flex flex-col items-center justify-center space-y-2">
+                          <Ban className="w-10 h-10 text-slate-300 dark:text-slate-600" />
+                          <p className="text-sm font-semibold text-slate-600 dark:text-slate-300">
+                            {anulacionSubFilter === 'anuladas'
+                              ? 'No hay facturas anuladas registradas'
+                              : 'No se encontraron facturas para anular'}
+                          </p>
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Table Footer */}
+            <div className="p-4 sm:px-6 bg-slate-50 dark:bg-slate-900/40 border-t border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-500">
+              <div>
+                Mostrando <span className="font-bold text-slate-800 dark:text-slate-200">{filteredAnulacionSales.length}</span> facturas
+              </div>
+              <div className="flex items-center gap-4">
+                <span>
+                  {anulacionSubFilter === 'anuladas' ? 'Total Anulado: ' : 'Total Emitido: '}
+                  <strong className="text-rose-600 dark:text-rose-400 font-black text-sm">
+                    C$ {filteredAnulacionSales.reduce((sum, s) => sum + (s.total_cordobas || 0), 0).toLocaleString('es-NI', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </strong>
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* 4. MODAL: DETALLE COMPLETO DE FACTURA (PORTAL DIRECTO A BODY PARA EVITAR CORTES DE VISUALIZACIÓN) */}
       {showDetailModal && selectedSale && createPortal((() => {
@@ -1131,13 +1579,14 @@ export const InvoicesPage: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => {
-                        setSaleToCancel(selectedSale);
-                        setShowCancelModal(true);
+                        setSaleToAnulate(selectedSale);
+                        setShowSupabaseAnulacionModal(true);
                       }}
-                      className="flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs font-bold text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 border border-rose-200 dark:border-rose-900/60 bg-white dark:bg-slate-900 transition cursor-pointer"
+                      className="flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs font-bold text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 border border-rose-200 dark:border-rose-900/60 bg-white dark:bg-slate-900 transition cursor-pointer shadow-xs"
+                      title="Anular factura mediante autorización Supabase"
                     >
-                      <Ban className="w-4 h-4 text-rose-500" />
-                      <span>Anular Factura</span>
+                      <Lock className="w-4 h-4 text-rose-500" />
+                      <span>Anular Factura (Supabase)</span>
                     </button>
                   )}
                 </div>
@@ -1816,7 +2265,7 @@ export const InvoicesPage: React.FC = () => {
         document.body
       )}
 
-      {/* 6. MODAL: ANULAR FACTURA */}
+      {/* 6. MODAL: ANULAR FACTURA CLÁSICO */}
       <ConfirmModal
         isOpen={showCancelModal}
         onClose={() => setShowCancelModal(false)}
@@ -1827,6 +2276,27 @@ export const InvoicesPage: React.FC = () => {
         cancelText="Volver"
         type="danger"
         iconShape="circle"
+      />
+
+      {/* 7. MODAL: AUTORIZACIÓN Y ANULACIÓN SUPABASE (RPC / STOCK REINTEGRADO) */}
+      <ModalAnulacionSupabase
+        facturaId={saleToAnulate?.id || ''}
+        sale={saleToAnulate}
+        isOpen={showSupabaseAnulacionModal}
+        onClose={() => {
+          setShowSupabaseAnulacionModal(false);
+          setSaleToAnulate(null);
+        }}
+        onSuccess={() => {
+          loadData();
+          success(
+            'Factura Anulada Exitosamente',
+            'La factura ha sido anulada con autorización Supabase y los productos fueron reintegrados al inventario.'
+          );
+          if (selectedSale && saleToAnulate && selectedSale.id === saleToAnulate.id) {
+            setSelectedSale(prev => prev ? { ...prev, status: 'cancelled' } : null);
+          }
+        }}
       />
     </div>
   );

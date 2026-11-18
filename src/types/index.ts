@@ -141,6 +141,9 @@ export interface Sale {
   status: 'completed' | 'cancelled' | 'pending';
   items?: SaleItem[];
   created_at: string;
+  cancellation_reason?: string;
+  cancelled_by?: string;
+  cancelled_at?: string;
 }
 
 export interface CashRegister {
