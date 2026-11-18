@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import {
   TrendingUp,
   TrendingDown,
@@ -1492,7 +1493,7 @@ export default function MetricsPage() {
       </div>
 
       {/* =======================================================================
-          MODAL 1: DETALLE DE FACTURAS POR PRODUCTO (INVOICES DRILLDOWN ULTRA MODERNO)
+          MODAL 1: DETALLE DE FACTURAS POR PRODUCTO (INVOICES DRILLDOWN ULTRA MODERNO & CLARO)
          ======================================================================= */}
       {selectedProductDetail && (() => {
         const productInvoices = (selectedProductDetail.salesInvoices || []).filter((inv: any) => {
@@ -1544,35 +1545,33 @@ export default function MetricsPage() {
           }
         };
 
-        return (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-slate-950/75 backdrop-blur-md animate-in fade-in">
-            <div className="bg-white dark:bg-[#0b1329] rounded-3xl border border-slate-200/90 dark:border-slate-800 w-full max-w-4xl max-h-[92vh] overflow-hidden shadow-2xl flex flex-col animate-in zoom-in-95 duration-200 relative">
-              {/* Top Glow Ambient */}
-              <div className="absolute -top-24 left-1/2 -translate-x-1/2 w-96 h-36 bg-blue-500/20 blur-3xl pointer-events-none rounded-full" />
-
-              {/* 1. MODAL HEADER (Modern Gradient & Product Badges) */}
-              <div className="p-5 sm:p-6 bg-gradient-to-r from-slate-900 via-blue-950 to-slate-900 text-white relative z-10 shrink-0 border-b border-white/10">
+        return createPortal(
+          <div className="fixed inset-0 z-[120] flex items-center justify-center p-3 sm:p-6 bg-slate-950/60 backdrop-blur-xs overflow-y-auto animate-in fade-in duration-150">
+            <div className="my-auto w-full max-w-4xl max-h-[90vh] bg-white dark:bg-[#0b1329] rounded-3xl border border-slate-200 dark:border-slate-800 shadow-2xl overflow-hidden flex flex-col animate-in zoom-in-95 duration-150">
+              
+              {/* 1. MODAL HEADER (Light & Clean Theme Friendly) */}
+              <div className="p-5 sm:p-6 bg-white dark:bg-slate-900 border-b border-slate-200/80 dark:border-slate-800 shrink-0">
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex items-start sm:items-center gap-3.5">
-                    <div className="w-12 h-12 rounded-2xl bg-blue-600 flex items-center justify-center text-white shadow-lg shadow-blue-500/30 border border-blue-400/30 shrink-0">
+                    <div className="w-12 h-12 rounded-2xl bg-blue-600 flex items-center justify-center text-white shadow-md shadow-blue-500/25 shrink-0">
                       <Boxes className="w-6 h-6" />
                     </div>
                     <div>
                       <div className="flex flex-wrap items-center gap-2 mb-1">
-                        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-blue-500/20 text-blue-300 border border-blue-400/30">
+                        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
                           {selectedProductDetail.brand}
                         </span>
-                        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-white/10 text-slate-300 border border-white/15">
+                        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
                           {selectedProductDetail.category}
                         </span>
-                        <span className="px-2 py-0.5 rounded-full text-[10px] font-mono text-slate-300 bg-black/40 border border-white/10">
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-mono text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
                           SKU: {selectedProductDetail.sku}
                         </span>
                       </div>
-                      <h3 className="text-base sm:text-xl font-black uppercase tracking-tight text-white flex items-center gap-2">
+                      <h3 className="text-base sm:text-xl font-black uppercase tracking-tight text-slate-900 dark:text-white flex items-center gap-2">
                         {selectedProductDetail.productName}
                       </h3>
-                      <p className="text-xs text-blue-200/80 mt-0.5">
+                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                         Historial detallado de ventas y cálculo de rentabilidad por factura
                       </p>
                     </div>
@@ -1584,53 +1583,53 @@ export default function MetricsPage() {
                       setSelectedProductDetail(null);
                       setInvoiceSearch('');
                     }}
-                    className="w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition cursor-pointer shrink-0 border border-white/10"
+                    className="w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 flex items-center justify-center transition cursor-pointer shrink-0 border border-slate-200 dark:border-slate-700"
                     title="Cerrar ventana"
                   >
                     <X className="w-5 h-5" />
                   </button>
                 </div>
 
-                {/* 2. 4 FINANCIAL CARDS (Valor Compra vs Valor Venta vs Ganancia) */}
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 mt-5">
+                {/* 2. 4 FINANCIAL CARDS (Clean, Bright & High Contrast in Light Mode) */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 mt-4">
                   {/* Valor Compra */}
-                  <div className="bg-white/10 backdrop-blur-md rounded-2xl p-3 border border-white/10">
-                    <div className="flex items-center justify-between text-amber-300 mb-1">
+                  <div className="bg-amber-50/80 dark:bg-amber-950/30 rounded-2xl p-3 border border-amber-200/90 dark:border-amber-800/50">
+                    <div className="flex items-center justify-between text-amber-800 dark:text-amber-400 mb-1">
                       <span className="text-[10px] font-black uppercase tracking-wider">Valor Compra</span>
                       <ShoppingBag className="w-3.5 h-3.5" />
                     </div>
-                    <span className="text-base sm:text-lg font-black font-mono text-white block">
+                    <span className="text-base sm:text-lg font-black font-mono text-slate-900 dark:text-white block">
                       {formatMoney(selectedProductDetail.costPrice)}
                     </span>
-                    <span className="text-[10px] text-slate-300 block">
-                      Inversión total: {formatMoney(selectedProductDetail.totalCost)}
+                    <span className="text-[10px] text-amber-700/90 dark:text-slate-400 block mt-0.5">
+                      Inversión: {formatMoney(selectedProductDetail.totalCost)}
                     </span>
                   </div>
 
                   {/* Valor Venta */}
-                  <div className="bg-white/10 backdrop-blur-md rounded-2xl p-3 border border-white/10">
-                    <div className="flex items-center justify-between text-blue-300 mb-1">
+                  <div className="bg-blue-50/80 dark:bg-blue-950/30 rounded-2xl p-3 border border-blue-200/90 dark:border-blue-800/50">
+                    <div className="flex items-center justify-between text-blue-800 dark:text-blue-400 mb-1">
                       <span className="text-[10px] font-black uppercase tracking-wider">Valor Venta</span>
                       <DollarSign className="w-3.5 h-3.5" />
                     </div>
-                    <span className="text-base sm:text-lg font-black font-mono text-blue-300 block">
+                    <span className="text-base sm:text-lg font-black font-mono text-blue-600 dark:text-blue-400 block">
                       {formatMoney(selectedProductDetail.salePrice)}
                     </span>
-                    <span className="text-[10px] text-slate-300 block">
-                      Facturado total: {formatMoney(selectedProductDetail.totalRevenue)}
+                    <span className="text-[10px] text-blue-700/90 dark:text-slate-400 block mt-0.5">
+                      Ventas: {formatMoney(selectedProductDetail.totalRevenue)}
                     </span>
                   </div>
 
                   {/* Ganancia Unitaria */}
-                  <div className="bg-white/10 backdrop-blur-md rounded-2xl p-3 border border-white/10">
-                    <div className="flex items-center justify-between text-emerald-300 mb-1">
+                  <div className="bg-emerald-50/80 dark:bg-emerald-950/30 rounded-2xl p-3 border border-emerald-200/90 dark:border-emerald-800/50">
+                    <div className="flex items-center justify-between text-emerald-800 dark:text-emerald-400 mb-1">
                       <span className="text-[10px] font-black uppercase tracking-wider">Ganancia / Unidad</span>
                       <TrendingUp className="w-3.5 h-3.5" />
                     </div>
-                    <span className="text-base sm:text-lg font-black font-mono text-emerald-400 block">
+                    <span className="text-base sm:text-lg font-black font-mono text-emerald-600 dark:text-emerald-400 block">
                       +{formatMoney(selectedProductDetail.unitProfit)}
                     </span>
-                    <span className="text-[10px] text-emerald-300/90 font-bold block">
+                    <span className="text-[10px] text-emerald-700/90 dark:text-emerald-300 font-bold block mt-0.5">
                       {selectedProductDetail.costPrice > 0
                         ? `+${((selectedProductDetail.unitProfit / selectedProductDetail.costPrice) * 100).toFixed(1)}% markup`
                         : '+100%'}
@@ -1638,15 +1637,15 @@ export default function MetricsPage() {
                   </div>
 
                   {/* Ganancia Total & Margen */}
-                  <div className="bg-emerald-500/20 backdrop-blur-md rounded-2xl p-3 border border-emerald-400/40">
-                    <div className="flex items-center justify-between text-emerald-300 mb-1">
-                      <span className="text-[10px] font-black uppercase tracking-wider">Ganancia Neta Total</span>
-                      <Sparkles className="w-3.5 h-3.5 text-emerald-300" />
+                  <div className="bg-teal-50/90 dark:bg-teal-950/40 rounded-2xl p-3 border border-teal-300 dark:border-teal-800/60 shadow-xs">
+                    <div className="flex items-center justify-between text-teal-800 dark:text-teal-400 mb-1">
+                      <span className="text-[10px] font-black uppercase tracking-wider">Ganancia Neta</span>
+                      <Sparkles className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
                     </div>
-                    <span className="text-base sm:text-lg font-black font-mono text-emerald-300 block">
+                    <span className="text-base sm:text-lg font-black font-mono text-teal-700 dark:text-teal-300 block">
                       +{formatMoney(selectedProductDetail.totalProfit)}
                     </span>
-                    <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-500 text-slate-900 inline-block mt-0.5">
+                    <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-teal-600 text-white inline-block mt-0.5">
                       {selectedProductDetail.marginPercent.toFixed(1)}% Margen
                     </span>
                   </div>
@@ -1654,7 +1653,7 @@ export default function MetricsPage() {
               </div>
 
               {/* 3. TOOLBAR: Search & Invoices Count */}
-              <div className="p-4 sm:px-6 bg-slate-50 dark:bg-slate-900/60 border-b border-slate-200/80 dark:border-slate-800 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 shrink-0">
+              <div className="p-3.5 sm:px-6 bg-slate-50 dark:bg-slate-900 border-b border-slate-200/80 dark:border-slate-800 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 shrink-0">
                 <div className="flex items-center gap-2">
                   <FileText className="w-4 h-4 text-blue-600 dark:text-blue-400" />
                   <h4 className="text-xs sm:text-sm font-black text-slate-900 dark:text-white uppercase tracking-tight">
@@ -1677,7 +1676,7 @@ export default function MetricsPage() {
                   <button
                     type="button"
                     onClick={handleExportProductCSV}
-                    className="p-1.5 rounded-xl bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 transition cursor-pointer flex items-center gap-1 text-xs font-bold"
+                    className="p-1.5 rounded-xl bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 transition cursor-pointer flex items-center gap-1 text-xs font-bold"
                     title="Exportar listado a Excel"
                   >
                     <Download className="w-3.5 h-3.5 text-emerald-600" />
@@ -1687,7 +1686,7 @@ export default function MetricsPage() {
               </div>
 
               {/* 4. INVOICES LIST (Elevated Modern Cards) */}
-              <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-3 divide-y-0">
+              <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-3 bg-slate-50/50 dark:bg-[#070b14]">
                 {productInvoices.length === 0 ? (
                   <div className="py-12 text-center text-slate-400 space-y-2">
                     <FileText className="w-8 h-8 mx-auto text-slate-300 dark:text-slate-600" />
@@ -1713,7 +1712,7 @@ export default function MetricsPage() {
                     return (
                       <div
                         key={iIdx}
-                        className="bg-white dark:bg-[#070b14] rounded-2xl p-4 sm:p-4.5 border border-slate-200/90 dark:border-slate-800 hover:border-blue-500/60 shadow-xs hover:shadow-md transition-all space-y-3 group"
+                        className="bg-white dark:bg-slate-900 rounded-2xl p-4 border border-slate-200/80 dark:border-slate-800 hover:border-blue-500/60 shadow-xs hover:shadow-md transition-all space-y-2.5 group"
                       >
                         {/* Top: Ticket Number, Date, Status, Payment Method */}
                         <div className="flex flex-wrap items-center justify-between gap-2">
@@ -1757,12 +1756,12 @@ export default function MetricsPage() {
                             <span
                               className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider flex items-center gap-1 ${
                                 isCash
-                                  ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800'
+                                  ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800'
                                   : isTransfer
-                                  ? 'bg-cyan-50 dark:bg-cyan-950/60 text-cyan-600 dark:text-cyan-400 border border-cyan-200 dark:border-cyan-800'
+                                  ? 'bg-cyan-50 dark:bg-cyan-950/60 text-cyan-700 dark:text-cyan-400 border border-cyan-200 dark:border-cyan-800'
                                   : isCredit
-                                  ? 'bg-purple-50 dark:bg-purple-950/60 text-purple-600 dark:text-purple-400 border border-purple-200 dark:border-purple-800'
-                                  : 'bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800'
+                                  ? 'bg-purple-50 dark:bg-purple-950/60 text-purple-700 dark:text-purple-400 border border-purple-200 dark:border-purple-800'
+                                  : 'bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-400 border border-blue-200 dark:border-blue-800'
                               }`}
                             >
                               {isCash && <Banknote className="w-3 h-3" />}
@@ -1771,15 +1770,15 @@ export default function MetricsPage() {
                               <span>{inv.paymentMethod.toUpperCase()}</span>
                             </span>
 
-                            <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
+                            <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30">
                               COMPLETADA
                             </span>
                           </div>
                         </div>
 
                         {/* Middle: Customer & Cashier info */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs bg-slate-50/70 dark:bg-slate-800/40 p-2.5 rounded-xl">
-                          <div className="flex items-center gap-2 text-slate-600 dark:text-slate-300 truncate">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs bg-slate-50 dark:bg-slate-800/50 p-2.5 rounded-xl border border-slate-100 dark:border-slate-800/80">
+                          <div className="flex items-center gap-2 text-slate-700 dark:text-slate-300 truncate">
                             <User className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                             <span className="font-semibold text-slate-500">Cliente:</span>
                             <span className="font-bold text-slate-900 dark:text-white truncate">
@@ -1790,7 +1789,7 @@ export default function MetricsPage() {
                             )}
                           </div>
 
-                          <div className="flex items-center gap-2 text-slate-600 dark:text-slate-300 truncate">
+                          <div className="flex items-center gap-2 text-slate-700 dark:text-slate-300 truncate">
                             <Building2 className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                             <span className="font-semibold text-slate-500">Atendido por:</span>
                             <span className="font-bold text-slate-800 dark:text-slate-200 truncate">
@@ -1801,16 +1800,16 @@ export default function MetricsPage() {
 
                         {/* Bottom: Transaction Financial Details */}
                         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5 pt-1 text-xs">
-                          <div className="flex items-center gap-3">
-                            <span className="font-bold text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-slate-800 px-2.5 py-1 rounded-lg">
+                          <div className="flex items-center gap-2.5">
+                            <span className="font-bold text-slate-800 dark:text-slate-200 bg-slate-100 dark:bg-slate-800 px-2.5 py-1 rounded-lg">
                               {inv.qty} {inv.qty === 1 ? 'unidad' : 'unidades'} × {formatMoney(inv.unitPrice)}
                             </span>
-                            <span className="text-[11px] text-slate-400">
+                            <span className="text-[11px] text-slate-500 dark:text-slate-400">
                               Costo invertido: {formatMoney(invCost)}
                             </span>
                           </div>
 
-                          <div className="flex items-center gap-3 self-end sm:self-auto">
+                          <div className="flex items-center gap-2.5 self-end sm:self-auto">
                             <div className="text-right">
                               <span className="text-[10px] text-slate-400 block font-bold uppercase">
                                 Total Venta:
@@ -1821,10 +1820,10 @@ export default function MetricsPage() {
                             </div>
 
                             <div className="text-right bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800/80 px-2.5 py-1 rounded-xl">
-                              <span className="text-[9px] text-emerald-700 dark:text-emerald-300 block font-black uppercase">
+                              <span className="text-[9px] text-emerald-800 dark:text-emerald-300 block font-black uppercase">
                                 Ganancia:
                               </span>
-                              <span className="text-xs font-black font-mono text-emerald-600 dark:text-emerald-400 block">
+                              <span className="text-xs font-black font-mono text-emerald-700 dark:text-emerald-400 block">
                                 +{formatMoney(invProfit)} ({invMargin.toFixed(1)}%)
                               </span>
                             </div>
@@ -1834,7 +1833,7 @@ export default function MetricsPage() {
                               <button
                                 type="button"
                                 onClick={() => setInspectingInvoice(inv.sale)}
-                                className="px-2.5 py-1.5 rounded-xl bg-blue-50 hover:bg-blue-100 dark:bg-blue-950/60 dark:hover:bg-blue-900/60 text-blue-600 dark:text-blue-400 text-xs font-bold transition flex items-center gap-1 cursor-pointer border border-blue-200 dark:border-blue-900/50 ml-1"
+                                className="px-2.5 py-1.5 rounded-xl bg-blue-50 hover:bg-blue-100 dark:bg-blue-950/60 dark:hover:bg-blue-900/60 text-blue-700 dark:text-blue-300 text-xs font-bold transition flex items-center gap-1 cursor-pointer border border-blue-200 dark:border-blue-900/50 ml-1"
                                 title="Ver comprobante completo"
                               >
                                 <Eye className="w-3.5 h-3.5" />
@@ -1850,8 +1849,8 @@ export default function MetricsPage() {
               </div>
 
               {/* 5. MODAL FOOTER */}
-              <div className="p-4 sm:px-6 bg-slate-50 dark:bg-slate-900/90 border-t border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-3 shrink-0">
-                <div className="text-xs text-slate-500 flex items-center gap-3">
+              <div className="p-4 sm:px-6 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-3 shrink-0">
+                <div className="text-xs text-slate-600 dark:text-slate-400 flex items-center gap-3">
                   <span>
                     Total Facturado:{' '}
                     <strong className="text-slate-900 dark:text-white font-mono">
@@ -1874,23 +1873,24 @@ export default function MetricsPage() {
                       setSelectedProductDetail(null);
                       setInvoiceSearch('');
                     }}
-                    className="w-full sm:w-auto px-5 py-2 rounded-xl bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 text-xs font-bold transition cursor-pointer"
+                    className="w-full sm:w-auto px-5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 text-xs font-bold transition cursor-pointer"
                   >
                     Cerrar
                   </button>
                 </div>
               </div>
             </div>
-          </div>
+          </div>,
+          document.body
         );
       })()}
 
       {/* =======================================================================
           MODAL 1.1: COMPROBANTE DE TICKET COMPLETO (RECEIPT INSPECTOR)
          ======================================================================= */}
-      {inspectingInvoice && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in">
-          <div className="bg-white dark:bg-[#0b1329] rounded-3xl border border-slate-200 dark:border-slate-800 w-full max-w-md overflow-hidden shadow-2xl space-y-4 p-6 animate-in zoom-in-95">
+      {inspectingInvoice && createPortal(
+        <div className="fixed inset-0 z-[130] flex items-center justify-center p-3 sm:p-5 bg-slate-950/60 backdrop-blur-xs overflow-y-auto animate-in fade-in duration-150">
+          <div className="my-auto bg-white dark:bg-[#0b1329] rounded-3xl border border-slate-200 dark:border-slate-800 w-full max-w-md overflow-hidden shadow-2xl space-y-4 p-5 sm:p-6 animate-in zoom-in-95 duration-150">
             {/* Header */}
             <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
               <div className="flex items-center gap-2 text-blue-600 dark:text-blue-400">
@@ -1915,8 +1915,8 @@ export default function MetricsPage() {
                 <h3 className="font-black text-sm text-slate-900 dark:text-white tracking-wider">
                   {company?.name || 'SENDA SISTEMAS'}
                 </h3>
-                <p className="text-[10px] text-slate-400">{company?.address || 'Managua, Nicaragua'}</p>
-                <p className="text-[10px] text-slate-400">Tel: {company?.phone || '+505 8888-0000'}</p>
+                <p className="text-[10px] text-slate-500">{company?.address || 'Managua, Nicaragua'}</p>
+                <p className="text-[10px] text-slate-500">Tel: {company?.phone || '+505 8888-0000'}</p>
               </div>
 
               {/* Ticket Meta */}
@@ -2003,15 +2003,16 @@ export default function MetricsPage() {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* =======================================================================
           MODAL 2: HISTORIAL DE MERMAS Y BAJAS
          ======================================================================= */}
-      {showMermasModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in">
-          <div className="bg-white dark:bg-[#0b1329] rounded-3xl border border-slate-200 dark:border-slate-800 w-full max-w-xl overflow-hidden shadow-2xl space-y-4 p-6 animate-in zoom-in-95">
+      {showMermasModal && createPortal(
+        <div className="fixed inset-0 z-[120] flex items-center justify-center p-3 sm:p-5 bg-slate-950/60 backdrop-blur-xs overflow-y-auto animate-in fade-in duration-150">
+          <div className="my-auto bg-white dark:bg-[#0b1329] rounded-3xl border border-slate-200 dark:border-slate-800 w-full max-w-xl overflow-hidden shadow-2xl space-y-4 p-6 animate-in zoom-in-95 duration-150">
             <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 flex items-center justify-center">
@@ -2092,7 +2093,8 @@ export default function MetricsPage() {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
