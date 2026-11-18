@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { 
   TrendingUp, Package, AlertCircle, Wallet, 
   CheckCircle, PieChart, CalendarClock, AlertTriangle, Calendar,
@@ -73,8 +74,16 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        <div className="hidden lg:flex items-center gap-2 z-10">
-          <span className="text-[11px] font-bold text-emerald-700 dark:text-emerald-400 bg-white/80 dark:bg-slate-900/60 px-3 py-1.5 rounded-xl border border-emerald-200 dark:border-emerald-800/50">
+        <div className="flex items-center gap-2 z-10">
+          <Link
+            to="/metricas"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition shadow-xs hover:shadow-md cursor-pointer"
+            title="Ir al módulo de Métricas y Ganancias"
+          >
+            <TrendingUp className="w-3.5 h-3.5" />
+            <span>Métricas y Ganancias</span>
+          </Link>
+          <span className="hidden lg:inline-block text-[11px] font-bold text-emerald-700 dark:text-emerald-400 bg-white/80 dark:bg-slate-900/60 px-3 py-1.5 rounded-xl border border-emerald-200 dark:border-emerald-800/50">
             {new Date().toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
           </span>
         </div>

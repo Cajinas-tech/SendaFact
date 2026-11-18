@@ -25,6 +25,10 @@ const DEFAULT_CATEGORIES: Category[] = [
   { id: 4, code: 'beb99w1', name: 'BEBIDAS', slug: 'bebidas', icon: 'cup-soda', description: 'BEBIDAS, JUGOS Y REFRESCOS', products_count: 1 },
   { id: 5, code: 'fer55k8', name: 'FERRETERÍA', slug: 'ferreteria', icon: 'wrench', description: 'HERRAMIENTAS Y ACCESORIOS DE FERRETERÍA', products_count: 1 },
   { id: 6, code: 'gen00a1', name: 'GENERAL', slug: 'general', icon: 'folder', description: 'CATEGORÍA GENERAL SIN CLASIFICAR', products_count: 0 },
+  { id: 7, code: 'gas11g1', name: 'GASEOSAS', slug: 'gaseosas', icon: 'cup-soda', description: 'BEBIDAS GASEOSAS Y CARBONATADAS', products_count: 4 },
+  { id: 8, code: 'cer22c1', name: 'CERVEZAS', slug: 'cervezas', icon: 'beer', description: 'CERVEZAS Y BEBIDAS DE MALTA', products_count: 2 },
+  { id: 9, code: 'agu33a1', name: 'AGUAS', slug: 'aguas', icon: 'droplet', description: 'AGUAS PURIFICADAS Y MINERALES', products_count: 2 },
+  { id: 10, code: 'jug44j1', name: 'JUGOS', slug: 'jugos', icon: 'citrus', description: 'JUGOS Y NÉCTARES NATURALES', products_count: 2 },
 ];
 
 const DEFAULT_PRODUCTS: Product[] = [
@@ -80,6 +84,7 @@ const DEFAULT_PRODUCTS: Product[] = [
     name: 'Leche Entera Pasteurizada 1L',
     subtitle: 'Lácteos • SKU: LAC001',
     description: 'Leche entera fresca enriquecida con vitaminas A y D 1 Litro',
+    brand: 'DOS PINOS',
     dimensions: '1 Litro',
     cost_price: 25.00,
     price_cordobas: 40.00,
@@ -102,9 +107,10 @@ const DEFAULT_PRODUCTS: Product[] = [
     name: 'Jugo de Naranja Natural 1L',
     subtitle: 'Bebidas • SKU: BEB002',
     description: 'Jugo pasteurizado 100% puro 1 Litro',
+    brand: 'DOS PINOS',
     dimensions: '1 Litro',
-    cost_price: 30.00,
-    price_cordobas: 45.00,
+    cost_price: 33.00,
+    price_cordobas: 48.00,
     price_usd: 1.22,
     stock: 18,
     min_stock: 5,
@@ -125,6 +131,7 @@ const DEFAULT_PRODUCTS: Product[] = [
     subtitle: 'Ferretería • SKU: FER001',
     description: 'Caja de 100 unidades de tornillos para ensamble',
     dimensions: '2 pulgadas',
+    brand: 'GENERAL',
     cost_price: 80.00,
     price_cordobas: 130.00,
     price_usd: 3.53,
@@ -165,52 +172,182 @@ const DEFAULT_PRODUCTS: Product[] = [
   },
   {
     id: 7,
-    category_id: 4,
+    category_id: 7,
     sku: 'SKU-8589',
     barcode: '74010008589',
     name: 'COCA COLA 500ML',
-    subtitle: 'General • Gaseosas • COCA COLA 500ML',
+    subtitle: 'Gaseosas • COCA COLA 500ML',
     description: 'Bebida gaseosa Coca Cola 500ml',
-    brand: 'Coca Cola Company',
+    brand: 'COCA-COLA',
     dimensions: '500ml',
-    cost_price: 18.00,
-    price_cordobas: 28.00,
-    price_usd: 0.76,
-    stock: 8,
-    min_stock: 5,
+    cost_price: 52.00,
+    price_cordobas: 73.33,
+    price_usd: 2.00,
+    stock: 150,
+    min_stock: 10,
     image_url: null,
     is_finished_good: true,
     unit: 'UNIDAD',
     status: 'active',
     expiry_date: '2026-10-11',
     lotes: [
-      { idLote: 'LOT-2026-171', cantidad: 8, fechaVencimiento: '2026-10-11', costoCompra: 18.00 }
+      { idLote: 'LOT-2026-171', cantidad: 150, fechaVencimiento: '2026-10-11', costoCompra: 52.00 }
     ],
     created_at: '2026-09-01T10:00:00Z',
     updated_at: '2026-09-05T12:00:00Z'
   },
   {
     id: 8,
-    category_id: 4,
+    category_id: 9,
     sku: 'SKU-3914',
     barcode: '74010003914',
     name: 'AGUA FUENTE PURA 600ML',
-    subtitle: 'General • Aguas • AGUA FUENTE PURA 600ML',
+    subtitle: 'Aguas • AGUA FUENTE PURA 600ML',
     description: 'Agua purificada Fuente Pura 600ml',
-    brand: 'Fuente Pura',
+    brand: 'FUENTE PURA',
     dimensions: '600ml',
-    cost_price: 10.00,
-    price_cordobas: 18.00,
-    price_usd: 0.49,
-    stock: 15,
-    min_stock: 5,
+    cost_price: 12.00,
+    price_cordobas: 20.00,
+    price_usd: 0.55,
+    stock: 80,
+    min_stock: 10,
     image_url: null,
     is_finished_good: true,
     unit: 'UNIDAD',
     status: 'active',
     expiry_date: '2026-10-11',
     lotes: [
-      { idLote: 'LOT-2026-172', cantidad: 15, fechaVencimiento: '2026-10-11', costoCompra: 10.00 }
+      { idLote: 'LOT-2026-172', cantidad: 80, fechaVencimiento: '2026-10-11', costoCompra: 12.00 }
+    ],
+    created_at: '2026-09-01T10:00:00Z',
+    updated_at: '2026-09-05T12:00:00Z'
+  },
+  {
+    id: 9,
+    category_id: 8,
+    sku: 'SKU-7721',
+    barcode: '74010007721',
+    name: 'Cerveza Toña 350ml',
+    subtitle: 'Cervezas • Cerveza Toña 350ml',
+    description: 'Cerveza nacional de Nicaragua 350ml',
+    brand: 'COMPAÑÍA CERVECERA',
+    dimensions: '350ml',
+    cost_price: 185.00,
+    price_cordobas: 233.33,
+    price_usd: 6.37,
+    stock: 50,
+    min_stock: 10,
+    image_url: null,
+    is_finished_good: true,
+    unit: 'UNIDAD',
+    status: 'active',
+    expiry_date: '2026-12-31',
+    lotes: [
+      { idLote: 'LOT-2026-210', cantidad: 50, fechaVencimiento: '2026-12-31', costoCompra: 185.00 }
+    ],
+    created_at: '2026-09-01T10:00:00Z',
+    updated_at: '2026-09-05T12:00:00Z'
+  },
+  {
+    id: 10,
+    category_id: 7,
+    sku: 'SKU-4412',
+    barcode: '74010004412',
+    name: 'PEPSI COLA 500ML',
+    subtitle: 'Gaseosas • PEPSI COLA 500ML',
+    description: 'Bebida gaseosa Pepsi Cola 500ml',
+    brand: 'PEPSI',
+    dimensions: '500ml',
+    cost_price: 45.00,
+    price_cordobas: 68.00,
+    price_usd: 1.86,
+    stock: 25,
+    min_stock: 5,
+    image_url: null,
+    is_finished_good: true,
+    unit: 'UNIDAD',
+    status: 'active',
+    expiry_date: '2026-11-30',
+    lotes: [
+      { idLote: 'LOT-2026-301', cantidad: 25, fechaVencimiento: '2026-11-30', costoCompra: 45.00 }
+    ],
+    created_at: '2026-09-01T10:00:00Z',
+    updated_at: '2026-09-05T12:00:00Z'
+  },
+  {
+    id: 11,
+    category_id: 10,
+    sku: 'SKU-5520',
+    barcode: '74010005520',
+    name: 'Jugo Melocotón Dos Pinos 1L',
+    subtitle: 'Jugos • Jugo Dos Pinos 1L',
+    description: 'Jugo néctar sabor melocotón Dos Pinos 1L',
+    brand: 'DOS PINOS',
+    dimensions: '1 Litro',
+    cost_price: 33.00,
+    price_cordobas: 48.00,
+    price_usd: 1.31,
+    stock: 30,
+    min_stock: 5,
+    image_url: null,
+    is_finished_good: true,
+    unit: 'UN LITRO',
+    status: 'active',
+    expiry_date: '2026-11-25',
+    lotes: [
+      { idLote: 'LOT-2026-402', cantidad: 30, fechaVencimiento: '2026-11-25', costoCompra: 33.00 }
+    ],
+    created_at: '2026-09-01T10:00:00Z',
+    updated_at: '2026-09-05T12:00:00Z'
+  },
+  {
+    id: 12,
+    category_id: 9,
+    sku: 'SKU-3915',
+    barcode: '74010003915',
+    name: 'Agua Purificada Galón',
+    subtitle: 'Aguas • Agua Purificada Galón',
+    description: 'Agua purificada Fuente Pura presentación 1 galón',
+    brand: 'FUENTE PURA',
+    dimensions: '1 Galón',
+    cost_price: 18.00,
+    price_cordobas: 28.00,
+    price_usd: 0.76,
+    stock: 40,
+    min_stock: 5,
+    image_url: null,
+    is_finished_good: true,
+    unit: 'UNIDAD',
+    status: 'active',
+    expiry_date: '2026-12-15',
+    lotes: [
+      { idLote: 'LOT-2026-505', cantidad: 40, fechaVencimiento: '2026-12-15', costoCompra: 18.00 }
+    ],
+    created_at: '2026-09-01T10:00:00Z',
+    updated_at: '2026-09-05T12:00:00Z'
+  },
+  {
+    id: 13,
+    category_id: 6,
+    sku: 'SKU-9901',
+    barcode: '74010009901',
+    name: 'Empaque y Varios General',
+    subtitle: 'General • Insumos de empaque y ferretería',
+    description: 'Accesorios y empaques generales para despacho',
+    brand: 'GENERAL',
+    dimensions: 'Estándar',
+    cost_price: 21.82,
+    price_cordobas: 24.55,
+    price_usd: 0.67,
+    stock: 120,
+    min_stock: 20,
+    image_url: null,
+    is_finished_good: true,
+    unit: 'UNIDAD',
+    status: 'active',
+    expiry_date: '2028-12-31',
+    lotes: [
+      { idLote: 'LOT-2026-601', cantidad: 120, fechaVencimiento: '2028-12-31', costoCompra: 21.82 }
     ],
     created_at: '2026-09-01T10:00:00Z',
     updated_at: '2026-09-05T12:00:00Z'
@@ -411,166 +548,213 @@ const DEFAULT_USERS: User[] = [
 
 const DEFAULT_SALES: Sale[] = [
   {
-    id: 12,
-    ticket_number: '#FACT-20260905-000012',
-    customer_id: 4,
-    customer: { id: 4, name: 'Cliente General', credit_limit: 0, current_debt: 0 },
-    user_name: 'jairotten84 (ADMINISTRADOR)',
-    user_role: 'admin',
-    payment_method: 'efectivo',
-    subtotal_cordobas: 22.00,
-    tax_rate: 15,
-    tax_amount: 3.30,
-    total_cordobas: 25.30,
-    total_usd: 0.69,
-    status: 'completed',
-    items: [
-      { product_name: 'BIG COLA 500ML', quantity: 1, unit_price_cordobas: 25.30, total_cordobas: 25.30 }
-    ],
-    created_at: '2026-09-05T04:05:02'
-  },
-  {
-    id: 16,
-    ticket_number: '#FACT-20260624-000016',
+    id: 101,
+    ticket_number: '#FACT-20261019-000001',
     customer_id: 1,
-    customer: { id: 1, name: 'jairo cajina', phone: '444334405', credit_limit: 5000, current_debt: 0 },
-    user_name: 'jairotten84',
+    customer: { id: 1, name: 'Abarrotería San José', phone: '+50588881234', credit_limit: 10000, current_debt: 3502.90 },
+    user_name: 'Jairo (ADMINISTRADOR)',
     user_role: 'admin',
     payment_method: 'efectivo',
-    subtotal_cordobas: 131.00,
-    total_cordobas: 131.00,
-    total_usd: 3.56,
+    subtotal_cordobas: 4200.00,
+    total_cordobas: 4200.00,
+    total_usd: 114.66,
     status: 'completed',
     items: [
-      { product_name: 'Tornillos Galvanizados 2"', quantity: 1, unit_price_cordobas: 130.00, total_cordobas: 130.00 },
-      { product_name: 'Empaque de Goma', quantity: 1, unit_price_cordobas: 1.00, total_cordobas: 1.00 }
+      { product_id: 7, product_name: 'COCA COLA 500ML', quantity: 58, unit_price_cordobas: 72.41, total_cordobas: 4200.00 }
     ],
-    created_at: '2026-06-24T23:08:36'
+    created_at: '2026-10-19T14:22:10'
   },
   {
-    id: 15,
-    ticket_number: '#FACT-20260624-000015',
-    customer_id: 1,
-    customer: { id: 1, name: 'jairo cajina', phone: '444334405', credit_limit: 5000, current_debt: 0 },
-    user_name: 'jairotten84',
-    user_role: 'admin',
-    payment_method: 'tarjeta',
-    subtotal_cordobas: 87.00,
-    total_cordobas: 87.00,
-    total_usd: 2.36,
-    status: 'completed',
-    items: [
-      { product_name: 'Jugo de Naranja Natural 1L', quantity: 1, unit_price_cordobas: 45.00, total_cordobas: 45.00 },
-      { product_name: 'Leche Entera Pasteurizada 1L', quantity: 1, unit_price_cordobas: 42.00, total_cordobas: 42.00 }
-    ],
-    created_at: '2026-05-24T23:07:31'
-  },
-  {
-    id: 14,
-    ticket_number: '#FACT-20260624-000014',
-    customer_id: 5,
-    customer: { id: 5, name: 'loira rivas', credit_limit: 2000, current_debt: 0 },
-    user_name: 'jairotten84',
-    user_role: 'admin',
-    payment_method: 'efectivo',
-    subtotal_cordobas: 58.00,
-    total_cordobas: 58.00,
-    total_usd: 1.58,
-    status: 'completed',
-    items: [
-      { product_name: 'COCA COLA 500ML', quantity: 2, unit_price_cordobas: 29.00, total_cordobas: 58.00 }
-    ],
-    created_at: '2026-05-24T23:05:16'
-  },
-  {
-    id: 13,
-    ticket_number: '#FACT-20260624-000013',
-    customer_id: 5,
-    customer: { id: 5, name: 'loira rivas', credit_limit: 2000, current_debt: 0 },
-    user_name: 'jairotten84',
-    user_role: 'admin',
-    payment_method: 'efectivo',
-    subtotal_cordobas: 40.00,
-    total_cordobas: 40.00,
-    total_usd: 1.09,
-    status: 'completed',
-    items: [
-      { product_name: 'Leche Entera Pasteurizada 1L', quantity: 1, unit_price_cordobas: 40.00, total_cordobas: 40.00 }
-    ],
-    created_at: '2026-06-24T23:03:42'
-  },
-  {
-    id: 120,
-    ticket_number: '#FACT-20260624-000012',
-    customer_id: 1,
-    customer: { id: 1, name: 'jairo cajina', phone: '444334405', credit_limit: 5000, current_debt: 0 },
-    user_name: 'jairotten84',
+    id: 102,
+    ticket_number: '#FACT-20261019-000002',
+    customer_id: 2,
+    customer: { id: 2, name: 'Pulpería La Bendición', phone: '+50587654321', credit_limit: 5000, current_debt: 1250.00 },
+    user_name: 'Jairo (ADMINISTRADOR)',
     user_role: 'admin',
     payment_method: 'transferencia',
-    subtotal_cordobas: 40.00,
-    total_cordobas: 40.00,
-    total_usd: 1.09,
+    subtotal_cordobas: 3500.00,
+    total_cordobas: 3500.00,
+    total_usd: 95.55,
     status: 'completed',
     items: [
-      { product_name: 'Leche Entera Pasteurizada 1L', quantity: 1, unit_price_cordobas: 40.00, total_cordobas: 40.00 }
+      { product_id: 9, product_name: 'Cerveza Toña 350ml', quantity: 15, unit_price_cordobas: 233.33, total_cordobas: 3500.00 }
     ],
-    created_at: '2026-06-24T23:01:48'
+    created_at: '2026-10-19T11:45:00'
   },
   {
-    id: 11,
-    ticket_number: '#FACT-20260331-000011',
-    customer_id: 6,
-    customer: { id: 6, name: 'Consumidor Final', credit_limit: 0, current_debt: 0 },
+    id: 103,
+    ticket_number: '#FACT-20261018-000003',
+    customer_id: 3,
+    customer: { id: 3, name: 'Comidería Doña Chepita', phone: '+50581239876', credit_limit: 3000, current_debt: 800.00 },
+    user_name: 'Jairo (ADMINISTRADOR)',
+    user_role: 'admin',
+    payment_method: 'credito',
+    subtotal_cordobas: 2800.00,
+    total_cordobas: 2800.00,
+    total_usd: 76.44,
+    status: 'completed',
+    items: [
+      { product_id: 7, product_name: 'COCA COLA 500ML', quantity: 38, unit_price_cordobas: 73.68, total_cordobas: 2800.00 }
+    ],
+    created_at: '2026-10-18T16:30:15'
+  },
+  {
+    id: 104,
+    ticket_number: '#FACT-20261018-000004',
+    customer_id: 4,
+    customer: { id: 4, name: 'Minisúper El Éxito', phone: '+50584561230', credit_limit: 8000, current_debt: 2200.00 },
+    user_name: 'Jairo (ADMINISTRADOR)',
+    user_role: 'admin',
+    payment_method: 'credito',
+    subtotal_cordobas: 1465.90,
+    total_cordobas: 1465.90,
+    total_usd: 40.02,
+    status: 'completed',
+    items: [
+      { product_id: 7, product_name: 'COCA COLA 500ML', quantity: 18, unit_price_cordobas: 73.33, total_cordobas: 1320.00 },
+      { product_id: 13, product_name: 'Empaque y Varios General', quantity: 6, unit_price_cordobas: 24.32, total_cordobas: 145.90 }
+    ],
+    created_at: '2026-10-18T10:15:30'
+  },
+  {
+    id: 105,
+    ticket_number: '#FACT-20261017-000005',
+    customer_id: 5,
+    customer: { id: 5, name: 'Cliente Mostrador / Venta Rápida', credit_limit: 0, current_debt: 0 },
     user_name: 'Loira',
     user_role: 'cajero',
     payment_method: 'efectivo',
-    subtotal_cordobas: 311.00,
-    total_cordobas: 311.00,
-    total_usd: 8.45,
+    subtotal_cordobas: 1500.00,
+    total_cordobas: 1500.00,
+    total_usd: 40.95,
     status: 'completed',
     items: [
-      { product_name: 'Tornillos Galvanizados 2"', quantity: 2, unit_price_cordobas: 130.00, total_cordobas: 260.00 },
-      { product_name: 'Jugo de Naranja Natural 1L', quantity: 1, unit_price_cordobas: 45.00, total_cordobas: 45.00 },
-      { product_name: 'Bolsa Ecológica', quantity: 1, unit_price_cordobas: 6.00, total_cordobas: 6.00 }
+      { product_id: 7, product_name: 'COCA COLA 500ML', quantity: 20, unit_price_cordobas: 75.00, total_cordobas: 1500.00 }
     ],
-    created_at: '2026-03-31T22:51:36'
+    created_at: '2026-10-17T18:40:00'
   },
   {
-    id: 10,
-    ticket_number: '#FACT-20260331-000010',
+    id: 106,
+    ticket_number: '#FACT-20261017-000006',
+    customer_id: 5,
+    customer: { id: 5, name: 'Cliente Mostrador / Venta Rápida', credit_limit: 0, current_debt: 0 },
+    user_name: 'Loira',
+    user_role: 'cajero',
+    payment_method: 'efectivo',
+    subtotal_cordobas: 960.00,
+    total_cordobas: 960.00,
+    total_usd: 26.21,
+    status: 'completed',
+    items: [
+      { product_id: 7, product_name: 'COCA COLA 500ML', quantity: 12, unit_price_cordobas: 75.00, total_cordobas: 900.00 },
+      { product_id: 8, product_name: 'AGUA FUENTE PURA 600ML', quantity: 3, unit_price_cordobas: 20.00, total_cordobas: 60.00 }
+    ],
+    created_at: '2026-10-17T14:10:20'
+  },
+  {
+    id: 107,
+    ticket_number: '#FACT-20261016-000007',
     customer_id: 6,
-    customer: { id: 6, name: 'Consumidor Final', credit_limit: 0, current_debt: 0 },
+    customer: { id: 6, name: 'Eduardo López', credit_limit: 0, current_debt: 0 },
     user_name: 'Dylan',
     user_role: 'vendedor',
-    payment_method: 'tarjeta',
-    subtotal_cordobas: 88.00,
-    total_cordobas: 88.00,
-    total_usd: 2.39,
+    payment_method: 'efectivo',
+    subtotal_cordobas: 650.00,
+    total_cordobas: 650.00,
+    total_usd: 17.74,
     status: 'completed',
     items: [
-      { product_name: 'COCA COLA 500ML', quantity: 2, unit_price_cordobas: 28.00, total_cordobas: 56.00 },
-      { product_name: 'BIG COLA 500ML', quantity: 1, unit_price_cordobas: 25.00, total_cordobas: 25.00 },
-      { product_name: 'Empaque biodegradable', quantity: 1, unit_price_cordobas: 7.00, total_cordobas: 7.00 }
+      { product_id: 8, product_name: 'AGUA FUENTE PURA 600ML', quantity: 18, unit_price_cordobas: 20.00, total_cordobas: 360.00 },
+      { product_id: 12, product_name: 'Agua Purificada Galón', quantity: 10, unit_price_cordobas: 29.00, total_cordobas: 290.00 }
     ],
-    created_at: '2026-03-31T22:23:39'
+    created_at: '2026-10-16T17:25:40'
   },
   {
-    id: 9,
-    ticket_number: '#FACT-20260328-000009',
-    customer_id: 6,
-    customer: { id: 6, name: 'Consumidor Final', credit_limit: 0, current_debt: 0 },
-    user_name: 'admin',
-    user_role: 'admin',
+    id: 108,
+    ticket_number: '#FACT-20261016-000008',
+    customer_id: 5,
+    customer: { id: 5, name: 'Cliente Mostrador / Venta Rápida', credit_limit: 0, current_debt: 0 },
+    user_name: 'Dylan',
+    user_role: 'vendedor',
     payment_method: 'efectivo',
-    subtotal_cordobas: 70.00,
-    total_cordobas: 70.00,
-    total_usd: 1.90,
+    subtotal_cordobas: 416.20,
+    total_cordobas: 416.20,
+    total_usd: 11.36,
     status: 'completed',
     items: [
-      { product_name: 'BIG COLA 500ML', quantity: 1, unit_price_cordobas: 25.00, total_cordobas: 25.00 },
-      { product_name: 'Jugo de Naranja Natural 1L', quantity: 1, unit_price_cordobas: 45.00, total_cordobas: 45.00 }
+      { product_id: 13, product_name: 'Empaque y Varios General', quantity: 17, unit_price_cordobas: 24.48, total_cordobas: 416.20 }
     ],
-    created_at: '2026-03-28T22:36:41'
+    created_at: '2026-10-16T12:05:10'
+  },
+  {
+    id: 109,
+    ticket_number: '#FACT-20261015-000009',
+    customer_id: 5,
+    customer: { id: 5, name: 'Cliente Mostrador / Venta Rápida', credit_limit: 0, current_debt: 0 },
+    user_name: 'Jairo (ADMINISTRADOR)',
+    user_role: 'admin',
+    payment_method: 'efectivo',
+    subtotal_cordobas: 280.00,
+    total_cordobas: 280.00,
+    total_usd: 7.64,
+    status: 'completed',
+    items: [
+      { product_id: 13, product_name: 'Empaque y Varios General', quantity: 10, unit_price_cordobas: 28.00, total_cordobas: 280.00 }
+    ],
+    created_at: '2026-10-15T16:50:00'
+  },
+  {
+    id: 110,
+    ticket_number: '#FACT-20261015-000010',
+    customer_id: 5,
+    customer: { id: 5, name: 'Cliente Mostrador / Venta Rápida', credit_limit: 0, current_debt: 0 },
+    user_name: 'Loira',
+    user_role: 'cajero',
+    payment_method: 'efectivo',
+    subtotal_cordobas: 158.00,
+    total_cordobas: 158.00,
+    total_usd: 4.31,
+    status: 'completed',
+    items: [
+      { product_id: 8, product_name: 'AGUA FUENTE PURA 600ML', quantity: 4, unit_price_cordobas: 22.50, total_cordobas: 90.00 },
+      { product_id: 10, product_name: 'PEPSI COLA 500ML', quantity: 1, unit_price_cordobas: 68.00, total_cordobas: 68.00 }
+    ],
+    created_at: '2026-10-15T11:20:15'
+  },
+  {
+    id: 111,
+    ticket_number: '#FACT-20261014-000011',
+    customer_id: 5,
+    customer: { id: 5, name: 'Cliente Mostrador / Venta Rápida', credit_limit: 0, current_debt: 0 },
+    user_name: 'Loira',
+    user_role: 'cajero',
+    payment_method: 'efectivo',
+    subtotal_cordobas: 74.00,
+    total_cordobas: 74.00,
+    total_usd: 2.02,
+    status: 'completed',
+    items: [
+      { product_id: 11, product_name: 'Jugo Melocotón Dos Pinos 1L', quantity: 1, unit_price_cordobas: 48.00, total_cordobas: 48.00 },
+      { product_id: 5, product_name: 'Tornillos Galvanizados 2"', quantity: 1, unit_price_cordobas: 26.00, total_cordobas: 26.00 }
+    ],
+    created_at: '2026-10-14T15:10:00'
+  },
+  {
+    id: 112,
+    ticket_number: '#FACT-20261014-000012',
+    customer_id: 5,
+    customer: { id: 5, name: 'Cliente Mostrador / Venta Rápida', credit_limit: 0, current_debt: 0 },
+    user_name: 'Jairo (ADMINISTRADOR)',
+    user_role: 'admin',
+    payment_method: 'efectivo',
+    subtotal_cordobas: 48.00,
+    total_cordobas: 48.00,
+    total_usd: 1.31,
+    status: 'completed',
+    items: [
+      { product_id: 7, product_name: 'COCA COLA 500ML', quantity: 4, unit_price_cordobas: 12.00, total_cordobas: 48.00 }
+    ],
+    created_at: '2026-10-14T09:30:00'
   }
 ];
 
@@ -1028,6 +1212,8 @@ const DEFAULT_CREDITS: CreditAccount[] = [
 ];
 
 const DEFAULT_MOVEMENTS: Movement[] = [
+  { id: 'MOV-1010', product_id: 4, product_name: 'Jugo de Naranja Natural 1L', sku: 'BEB002', type: 'out', sub_type: 'MERMA', quantity: 1, lot_number: 'LOT-2026-095', unit_cost: 41.00, reason: 'Merma por daño y derrame accidental en estante', user_name: 'Jairo Cajina (Admin)', user: 'Jairo Cajina (Admin)', created_at: '2026-10-18T16:00:00Z' },
+  { id: 'MOV-1009', product_id: 3, product_name: 'Leche Entera Pasteurizada 1L', sku: 'LAC001', type: 'out', sub_type: 'MERMA', quantity: 1, lot_number: 'LOT-2026-092', unit_cost: 25.00, reason: 'Merma por fecha de vencimiento alcanzada', user_name: 'Jairo Cajina (Admin)', user: 'Jairo Cajina (Admin)', created_at: '2026-10-17T11:30:00Z' },
   { id: 'MOV-1008', product_id: 3, product_name: 'AGUA FUENTE PURA 600ML', sku: '#SKU-6208', type: 'out', sub_type: 'VENTA', quantity: 1, lot_number: 'LOT-2026-277', unit_cost: 20.00, reason: 'Venta FACT-20261019-461704 (Abarrotería San José)', user_name: 'Jairo Cajina (Admin)', user: 'Jairo Cajina (Admin)', created_at: '2026-10-19T11:05:00Z' },
   { id: 'MOV-1007', product_id: 1, product_name: 'BIG COLA 500ML', sku: '#SKU-3291', type: 'out', sub_type: 'VENTA', quantity: 1, lot_number: 'LOT-2026-834', unit_cost: 20.00, reason: 'Venta FACT-20261019-461704 (Abarrotería San José)', user_name: 'Jairo Cajina (Admin)', user: 'Jairo Cajina (Admin)', created_at: '2026-10-19T11:05:00Z' },
   { id: 'MOV-1006', product_id: 2, product_name: 'COCA COLA 500ML', sku: '#SKU-8589', type: 'out', sub_type: 'VENTA', quantity: 1, lot_number: 'LOT-2026-894', unit_cost: 24.00, reason: 'Venta NOVA-V-6985 (Cliente Ocasional / Público General)', user_name: 'Jairo', user: 'Jairo', created_at: '2026-10-03T20:25:00Z' },
@@ -1616,6 +1802,12 @@ export const storage = {
   },
   importAllDataJSON(jsonStr: string): boolean {
     return this.importFullBackupJSON(jsonStr);
+  },
+  resetMetricsDemo() {
+    this.setProducts(DEFAULT_PRODUCTS);
+    this.setCategories(DEFAULT_CATEGORIES);
+    this.setSales(DEFAULT_SALES);
+    this.setMovements(DEFAULT_MOVEMENTS);
   },
   resetAllData() {
     this.setProducts(DEFAULT_PRODUCTS);

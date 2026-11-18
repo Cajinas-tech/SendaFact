@@ -18,6 +18,7 @@ import { SuppliersPage } from './pages/SuppliersPage';
 import { PurchasesPage } from './pages/PurchasesPage';
 import { SettingsPage } from './pages/SettingsPage';
 import InvoicesPage from './pages/InvoicesPage';
+import MetricsPage from './pages/MetricsPage';
 import { LoginPage } from './pages/LoginPage';
 
 export default function App() {
@@ -33,6 +34,7 @@ export default function App() {
       case '/pos': return 'TERMINAL DE VENTAS (POS)';
       case '/facturas': return 'FACTURAS Y VENTAS';
       case '/caja': return 'CONTROL DE CAJA & ARQUEO';
+      case '/metricas': return 'MÉTRICAS Y GANANCIAS';
       case '/productos': return 'GESTIÓN DE PRODUCTOS';
       case '/categorias': return 'CATEGORÍAS DE PRODUCTOS';
       case '/movimientos': return 'INVENTARIO & MOVIMIENTOS';
@@ -79,6 +81,7 @@ export default function App() {
               <Route path="/pos" element={<POSPage />} />
               <Route path="/facturas" element={<InvoicesPage />} />
               <Route path="/caja" element={<CashPage />} />
+              <Route path="/metricas" element={<MetricsPage />} />
               <Route path="/productos" element={<ProductsPage />} />
               <Route path="/categorias" element={<CategoriesPage />} />
               <Route path="/movimientos" element={<MovementsPage />} />
